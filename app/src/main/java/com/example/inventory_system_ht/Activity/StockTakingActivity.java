@@ -340,25 +340,46 @@ public class StockTakingActivity extends BaseScannerActivity
         dialog.show();
     }
 
+    // Ganti showRemoveConfirmDialog
     private void showRemoveConfirmDialog(StockTakingModels.SessionItem item, int position) {
-        new AlertDialog.Builder(this)
-                .setTitle("Hapus Item")
-                .setMessage("Yakin mau hapus item ini dari daftar?\nQty akan berkurang.")
-                .setPositiveButton("Ya, Hapus", (d, w) -> {
-                    // Catat tagId untuk dikirim ke API saat finalize
+        showCustomConfirmDialog(
+                "Yakin mau hapus item ini dari daftar?\nQty akan berkurang.",
+                () -> {
                     if (item.tagId != null && !item.tagId.isEmpty()) {
                         removedTagIds.add(item.tagId);
                     }
-                    // Hapus dari list
                     sessionItems.remove(position);
                     adapter.notifyItemRemoved(position);
                     adapter.notifyItemRangeChanged(position, sessionItems.size());
                     hasChanges = true;
                     updateInfo();
                     showSuccess("Item dihapus dari daftar.");
-                })
-                .setNegativeButton("Batal", null)
-                .show();
+                }
+        );
+    }
+
+    // Ganti showFinalizeConfirmDialog
+    private void showFinalizeConfirmDialog() {
+        int scanned = countScanned();
+        String msg = "Yakin ingin finalisasi?\nScanned: " + scanned
+                + "\nRemoved: " + removedTagIds.size()
+                + "\nManual Add: " + manualEntries.size();
+        showCustomConfirmDialog(msg, this::startFinalize);
+    }
+
+    // Ganti handleBackPressed (bagian AlertDialog)
+    private void handleBackPressed() {
+        if (!hasChanges) { finish(); return; }
+        showCustomConfirmDialog(
+                "Yakin mau keluar?\nSemua perubahan akan dibatalkan.",
+                () -> {
+                    sessionItems.clear();
+                    removedTagIds.clear();
+                    manualEntries.clear();
+                    hasChanges = false;
+                    finish();
+                }
+        );
     }
 
     private void showManualAddDialog(StockTakingModels.SessionItem item, int position) {
@@ -407,19 +428,6 @@ public class StockTakingActivity extends BaseScannerActivity
     }
 
     // ── Finalize ──────────────────────────────────────────────────
-
-    private void showFinalizeConfirmDialog() {
-        int scanned = countScanned();
-        int total   = sessionItems.size() + removedTagIds.size(); // total awal = sekarang + yg dihapus
-        new AlertDialog.Builder(this)
-                .setTitle("Selesaikan Stock Taking")
-                .setMessage("Yakin ingin finalisasi?\nScanned: " + scanned
-                        + "\nRemoved: " + removedTagIds.size()
-                        + "\nManual Add: " + manualEntries.size())
-                .setPositiveButton("Finalize", (d, w) -> startFinalize())
-                .setNegativeButton("Batal", null)
-                .show();
-    }
 
     private void startFinalize() {
         showLoading();
@@ -475,7 +483,7 @@ public class StockTakingActivity extends BaseScannerActivity
 
     private void sendManualAdds(int index) {
         if (index >= manualEntries.size()) {
-            sendFinalize();
+            sendApplyAdjustment(); // ← ganti dari sendFinalize ke applyAdjustment
             return;
         }
         StockTakingModels.ManualAddReq req = manualEntries.get(index);
@@ -491,18 +499,18 @@ public class StockTakingActivity extends BaseScannerActivity
         });
     }
 
-    private void sendFinalize() {
-        showWarning("Finalisasi sesi...");
+    private void sendApplyAdjustment() {
+        showWarning("Menerapkan adjustment...");
         StockTakingModels.FinalizeReq req = new StockTakingModels.FinalizeReq(sttId);
-        api.finalizeStockTaking(token, req).enqueue(new Callback<GeneralResponse>() {
+        api.applyAdjustment(token, req).enqueue(new Callback<GeneralResponse>() {
             @Override
             public void onResponse(Call<GeneralResponse> call, Response<GeneralResponse> response) {
                 hideLoading();
                 if (response.isSuccessful()) {
-                    showSuccess("Stock Taking selesai!");
+                    showSuccess("Data berhasil dikirim! Tunggu admin untuk finalisasi.");
                     playScanFeedback(0);
                     hasChanges = false;
-                    finish(); // Kembali ke list
+                    finish();
                 } else {
                     handleApiError(response.code());
                     playScanFeedback(2);
@@ -516,29 +524,6 @@ public class StockTakingActivity extends BaseScannerActivity
             }
         });
     }
-
-    // ── Back Handling ─────────────────────────────────────────────
-
-    private void handleBackPressed() {
-        if (!hasChanges) {
-            finish();
-            return;
-        }
-        new AlertDialog.Builder(this)
-                .setTitle("Keluar")
-                .setMessage("Yakin mau keluar? Semua perubahan (scan, hapus, manual add) akan dibatalkan.")
-                .setPositiveButton("Keluar", (d, w) -> {
-                    // Buang semua perubahan, kembali ke list
-                    sessionItems.clear();
-                    removedTagIds.clear();
-                    manualEntries.clear();
-                    hasChanges = false;
-                    finish();
-                })
-                .setNegativeButton("Batal", null)
-                .show();
-    }
-
     // ── FAQ ───────────────────────────────────────────────────────
 
     private void showFaqDialog() {
@@ -607,5 +592,29 @@ public class StockTakingActivity extends BaseScannerActivity
     protected void onDestroy() {
         super.onDestroy();
         if (toneGen != null) { toneGen.release(); toneGen = null; }
+    }
+    // Helper: custom confirm dialog pakai dialog_confirm.xml
+    private void showCustomConfirmDialog(String message, Runnable onYes) {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_confirm);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            int w = (int)(getResources().getDisplayMetrics().widthPixels * 0.85);
+            dialog.getWindow().setLayout(w, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        TextView tvMsg    = dialog.findViewById(R.id.tvConfirmMessage);
+        Button   btnNo    = dialog.findViewById(R.id.btnConfirmNo);
+        Button   btnYes   = dialog.findViewById(R.id.btnConfirmYes);
+
+        tvMsg.setText(message);
+        btnNo.setOnClickListener(v -> dialog.dismiss());
+        btnYes.setOnClickListener(v -> {
+            dialog.dismiss();
+            onYes.run();
+        });
+
+        dialog.show();
     }
 }

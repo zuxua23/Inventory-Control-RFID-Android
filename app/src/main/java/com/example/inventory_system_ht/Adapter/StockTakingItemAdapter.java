@@ -57,12 +57,13 @@ public class StockTakingItemAdapter
     public void onBindViewHolder(@NonNull VH h, int position) {
         StockTakingModels.SessionItem item = list.get(position);
 
-        h.tvItemId.setText(item.itemId != null ? item.itemId : "-");
-        h.tvLocation.setText(item.location != null ? item.location : "-");
+        // Tampilkan nama item, fallback ke itemId jika null
+        String displayName = (item.itemName != null && !item.itemName.isEmpty())
+                ? item.itemName : (item.itemId != null ? item.itemId : "-");
+        h.tvItemName.setText(displayName);
 
         String state = item.state != null ? item.state : "PENDING";
 
-        // Warna background card
         int bgColor;
         switch (state) {
             case "FOUND":
@@ -75,7 +76,6 @@ public class StockTakingItemAdapter
         }
         h.card.setCardBackgroundColor(bgColor);
 
-        // Label status
         switch (state) {
             case "FOUND":
                 h.tvStatus.setText("✓ Scanned");
@@ -90,7 +90,6 @@ public class StockTakingItemAdapter
                 break;
         }
 
-        // Hanya PENDING yang bisa diklik
         boolean clickable = "PENDING".equals(state);
         h.card.setClickable(clickable);
         h.card.setFocusable(clickable);
@@ -98,12 +97,22 @@ public class StockTakingItemAdapter
         if (clickable && listener != null) {
             h.card.setOnClickListener(v -> {
                 int pos = h.getAdapterPosition();
-                if (pos != RecyclerView.NO_ID) {
-                    listener.onItemClick(list.get(pos), pos);
-                }
+                if (pos != RecyclerView.NO_ID) listener.onItemClick(list.get(pos), pos);
             });
         } else {
             h.card.setOnClickListener(null);
+        }
+    }
+
+    static class VH extends RecyclerView.ViewHolder {
+        CardView card;
+        TextView tvItemName, tvStatus; // ← ganti tvItemId + tvLocation → tvItemName
+
+        VH(@NonNull View itemView) {
+            super(itemView);
+            card       = (CardView) itemView;
+            tvItemName = itemView.findViewById(R.id.tvItemName);
+            tvStatus   = itemView.findViewById(R.id.tvStatus);
         }
     }
 
@@ -112,16 +121,4 @@ public class StockTakingItemAdapter
         return list.size();
     }
 
-    static class VH extends RecyclerView.ViewHolder {
-        CardView card;
-        TextView tvItemId, tvLocation, tvStatus;
-
-        VH(@NonNull View itemView) {
-            super(itemView);
-            card       = (CardView) itemView;
-            tvItemId   = itemView.findViewById(R.id.tvItemId);
-            tvLocation = itemView.findViewById(R.id.tvLocation);
-            tvStatus   = itemView.findViewById(R.id.tvStatus);
-        }
-    }
 }

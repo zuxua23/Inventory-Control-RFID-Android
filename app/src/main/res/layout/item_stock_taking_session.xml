@@ -26,33 +26,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/white"
-            android:textSize="12sp"
-            android:fontFamily="@font/raleway_bold"
+            android:textSize="13sp"
+            android:fontFamily="@font/raleway_extra_bold"
             tools:text="STT-001"
             tools:ignore="TextContrastCheck" />
 
         <TextView
-            android:id="@+id/tvSttRemark"
+            android:id="@+id/tvSttLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#CCFFFFFF"
             android:textSize="11sp"
             android:fontFamily="@font/raleway_bold"
-            android:layout_marginTop="2dp"
-            tools:text="PT Sato Routine Inventory"
-            tools:ignore="TextContrastCheck" />
-
-        <TextView
-            android:id="@+id/tvSttStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#01C470"
-            android:textSize="11sp"
-            android:fontFamily="@font/raleway_bold"
             android:layout_marginTop="4dp"
-            tools:text="● OPEN"
+            tools:text="Rack A, Rack B"
             tools:ignore="TextContrastCheck" />
 
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

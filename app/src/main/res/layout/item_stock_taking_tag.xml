@@ -20,36 +20,18 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp"
-        android:paddingVertical="10dp">
+        android:paddingVertical="12dp">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvItemName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tvItemId"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/white"
-                android:textSize="13sp"
-                android:fontFamily="@font/raleway_bold"
-                tools:text="ITEM-001"
-                tools:ignore="TextContrastCheck" />
-
-            <TextView
-                android:id="@+id/tvLocation"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#CCFFFFFF"
-                android:textSize="11sp"
-                android:fontFamily="@font/raleway_bold"
-                android:layout_marginTop="2dp"
-                tools:text="Rack A - Shelf 2"
-                tools:ignore="TextContrastCheck" />
-
-        </LinearLayout>
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:fontFamily="@font/raleway_bold"
+            tools:text="Label Barcode A4"
+            tools:ignore="TextContrastCheck" />
 
         <TextView
             android:id="@+id/tvStatus"
@@ -63,5 +45,4 @@
             tools:ignore="TextContrastCheck" />
 
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

@@ -930,6 +930,7 @@ public class StockPrepProductActivity extends BaseScannerActivity implements Bar
 
     @Override
     public void onBackPressed() {
+        super.onBackPressed();
         confirmExit();
     }
 

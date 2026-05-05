@@ -71,15 +71,17 @@ public class StockTakingModels {
     }
 
     public static class ActiveRes implements Serializable {
-        @SerializedName("sttId")   public String sttId;
-        @SerializedName("remark")  public String remark;
-        @SerializedName("status")  public String status;
+        @SerializedName("sttId")     public String sttId;
+        @SerializedName("remark")    public String remark;
+        @SerializedName("status")    public String status;
+        @SerializedName("location")  public String location; // ← tambah
     }
 
     public static class SessionItem implements Serializable {
         @SerializedName("tagId")    public String tagId;
         @SerializedName("epcTag")   public String epcTag;
         @SerializedName("itemId")   public String itemId;
+        @SerializedName("itemName") public String itemName; // ← tambah
         @SerializedName("location") public String location;
 
         public transient String state = "PENDING";

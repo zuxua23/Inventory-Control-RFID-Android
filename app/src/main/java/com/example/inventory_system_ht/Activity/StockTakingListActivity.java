@@ -14,6 +14,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -34,9 +35,6 @@ import retrofit2.Response;
 
 public class StockTakingListActivity extends BaseScannerActivity {
 
-    private ImageView btnBack;
-    private CardView  btnRefresh;
-    private RecyclerView rvSessions;
     private TextView tvEmpty;
     private ApiService api;
     private String token;
@@ -56,9 +54,9 @@ public class StockTakingListActivity extends BaseScannerActivity {
         token = "Bearer " + pref.getToken();
         api   = ApiClient.getClient(this).create(ApiService.class);
 
-        btnBack    = findViewById(R.id.btnBack);
-        btnRefresh = findViewById(R.id.btnRefresh);
-        rvSessions = findViewById(R.id.rvTags);
+        ImageView btnBack    = findViewById(R.id.btnBack);
+        CardView btnRefresh = findViewById(R.id.btnRefresh);
+        RecyclerView rvSessions = findViewById(R.id.rvTags);
         tvEmpty    = findViewById(R.id.tvEmpty);
 
         adapter = new SessionAdapter(sessionList, session -> {
@@ -80,7 +78,6 @@ public class StockTakingListActivity extends BaseScannerActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh list setiap kembali ke halaman ini
         loadActiveSession();
     }
 
@@ -92,8 +89,8 @@ public class StockTakingListActivity extends BaseScannerActivity {
         showLoading();
         api.getActiveStockTaking(token).enqueue(new Callback<StockTakingModels.ActiveRes>() {
             @Override
-            public void onResponse(Call<StockTakingModels.ActiveRes> call,
-                                   Response<StockTakingModels.ActiveRes> response) {
+            public void onResponse(@NonNull Call<StockTakingModels.ActiveRes> call,
+                                   @NonNull Response<StockTakingModels.ActiveRes> response) {
                 hideLoading();
                 sessionList.clear();
                 if (response.isSuccessful() && response.body() != null) {
@@ -106,7 +103,7 @@ public class StockTakingListActivity extends BaseScannerActivity {
             }
 
             @Override
-            public void onFailure(Call<StockTakingModels.ActiveRes> call, Throwable t) {
+            public void onFailure(@NonNull Call<StockTakingModels.ActiveRes> call, @NonNull Throwable t) {
                 hideLoading();
                 showError("Gagal memuat sesi: " + t.getMessage());
                 tvEmpty.setVisibility(View.VISIBLE);
@@ -115,10 +112,11 @@ public class StockTakingListActivity extends BaseScannerActivity {
         });
     }
 
+    @SuppressWarnings("unused")
     private void showCreateSessionDialog() {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.dialog_manual_add); // reuse layout input
+        dialog.setContentView(R.layout.dialog_manual_add);
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             int w = (int)(getResources().getDisplayMetrics().widthPixels * 0.90);
@@ -149,8 +147,8 @@ public class StockTakingListActivity extends BaseScannerActivity {
         StockTakingModels.CreateReq req = new StockTakingModels.CreateReq(remark);
         api.createNewStockTaking(token, req).enqueue(new Callback<StockTakingModels.CreateRes>() {
             @Override
-            public void onResponse(Call<StockTakingModels.CreateRes> call,
-                                   Response<StockTakingModels.CreateRes> response) {
+            public void onResponse(@NonNull Call<StockTakingModels.CreateRes> call,
+                                   @NonNull Response<StockTakingModels.CreateRes> response) {
                 hideLoading();
                 if (response.isSuccessful() && response.body() != null) {
                     showSuccess("Sesi berhasil dibuat!");
@@ -160,7 +158,7 @@ public class StockTakingListActivity extends BaseScannerActivity {
                 }
             }
             @Override
-            public void onFailure(Call<StockTakingModels.CreateRes> call, Throwable t) {
+            public void onFailure(@NonNull Call<StockTakingModels.CreateRes> call, @NonNull Throwable t) {
                 hideLoading();
                 handleFailure(t);
             }
@@ -180,19 +178,21 @@ public class StockTakingListActivity extends BaseScannerActivity {
             this.click = click;
         }
 
+        @NonNull
         @Override
-        public VH onCreateViewHolder(ViewGroup parent, int viewType) {
+        public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_stock_taking_session, parent, false);
             return new VH(v);
         }
 
         @Override
-        public void onBindViewHolder(VH h, int position) {
+        public void onBindViewHolder(@NonNull VH h, int position) {
             StockTakingModels.ActiveRes s = list.get(position);
-            h.tvSttId.setText(s.sttId != null ? "ID: " + s.sttId.substring(0, Math.min(8, s.sttId.length())) + "..." : "-");
-            h.tvRemark.setText(s.remark != null ? s.remark : "-");
-            h.tvStatus.setText("● " + (s.status != null ? s.status : "OPEN"));
+            h.tvSttId.setText(s.sttId != null
+                    ? "ID: " + s.sttId.substring(0, Math.min(8, s.sttId.length())) + (s.sttId.length() > 8 ? "..." : "")
+                    : "-");
+            h.tvLocation.setText(s.location != null ? s.location : "-");
             h.itemView.setOnClickListener(v -> click.onClick(s));
         }
 
@@ -200,12 +200,11 @@ public class StockTakingListActivity extends BaseScannerActivity {
         public int getItemCount() { return list.size(); }
 
         static class VH extends RecyclerView.ViewHolder {
-            TextView tvSttId, tvRemark, tvStatus;
+            TextView tvSttId, tvLocation;
             VH(View v) {
                 super(v);
-                tvSttId  = v.findViewById(R.id.tvSttId);
-                tvRemark = v.findViewById(R.id.tvSttRemark);
-                tvStatus = v.findViewById(R.id.tvSttStatus);
+                tvSttId   = v.findViewById(R.id.tvSttId);
+                tvLocation = v.findViewById(R.id.tvSttLocation);
             }
         }
     }
