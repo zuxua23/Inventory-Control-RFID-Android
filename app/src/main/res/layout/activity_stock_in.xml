@@ -12,8 +12,8 @@
         android:id="@+id/btnBack"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
         android:padding="12dp"
         android:src="@drawable/baseline_arrow_back_24"
         app:tint="@color/white"
@@ -311,7 +311,7 @@
                         android:paddingBottom="10dp"
                         android:verticalScrollbarPosition="left"
                         android:scrollbars="vertical"
-                        tools:listitem="@layout/item_product" />
+                        tools:listitem="@layout/item_product_stock_in" />
 
                 </androidx.cardview.widget.CardView>
 

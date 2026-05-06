@@ -48,6 +48,20 @@ public class SearchSignalActivity extends BaseScannerActivity implements RFIDDat
     private String token;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private BottomSheetDialog currentDialog;
+    private static final int NO_SIGNAL_TIMEOUT_MS = 8000; // 8 detik tanpa sinyal = warning
+    private boolean tagFoundNotified = false;
+
+    // Perbaikan: Menggunakan Anonymous Class agar bisa memanggil dirinya sendiri (this)
+    private final Runnable noSignalRunnable = new Runnable() {
+        @Override
+        public void run() {
+            showWarning("Tag belum terdeteksi. Coba gerakkan alat mendekati area penyimpanan.");
+            playScanFeedback(2);
+            resetSignalDisplay();
+            // Jadwal ulang agar warning muncul berkala
+            handler.postDelayed(this, NO_SIGNAL_TIMEOUT_MS);
+        }
+    };
 
     private final List<String> powerList = Arrays.asList(
             "10 dBm", "15 dBm", "20 dBm", "25 dBm", "27 dBm"
@@ -106,9 +120,12 @@ public class SearchSignalActivity extends BaseScannerActivity implements RFIDDat
             float  rssi = data.getRSSI() / 10f; // SDK return x10, e.g. -605 = -60.5 dBm
 
             if (selectedItem != null && epc.equalsIgnoreCase(selectedItem.getEpcTag())) {
+                handler.removeCallbacks(noSignalRunnable);
                 handler.post(() -> {
                     playScanFeedback(0);
                     updateSignalBars(rssi);
+                    // Jadwal ulang timer — jika hilang lagi setelah 8 detik, warning muncul
+                    handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
                 });
             }
         }
@@ -130,14 +147,33 @@ public class SearchSignalActivity extends BaseScannerActivity implements RFIDDat
         else if (rssi > -90) level = 1;
         else                 level = 0;
 
+        final int finalLevel = level;
         handler.post(() -> {
             tvRssiValue.setText(String.format("%.1f dBm", rssi));
+            int activeColor = (finalLevel >= 8)
+                    ? Color.parseColor("#4CAF50")
+                    : Color.parseColor("#03A9F4");
             for (int i = 0; i < containerSignalBars.getChildCount(); i++) {
                 containerSignalBars.getChildAt(i).setBackgroundColor(
-                        i < level ? Color.parseColor("#03A9F4")
-                                : Color.parseColor("#E0E0E0"));
+                        i < finalLevel ? activeColor : Color.parseColor("#E0E0E0"));
+            }
+            if (finalLevel >= 9 && !tagFoundNotified) {
+                tagFoundNotified = true;
+                showSuccess("Tag sudah ditemukan! Alat sangat dekat dengan tag.");
+                playScanFeedback(0);
+            } else if (finalLevel < 7) {
+                // Reset flag saat menjauh, agar notif bisa muncul lagi saat dekat lagi
+                tagFoundNotified = false;
             }
         });
+    }
+    private void resetSignalDisplay() {
+        if (tvRssiValue != null) tvRssiValue.setText("-- dBm");
+        if (containerSignalBars != null) {
+            for (int i = 0; i < containerSignalBars.getChildCount(); i++) {
+                containerSignalBars.getChildAt(i).setBackgroundColor(Color.parseColor("#E0E0E0"));
+            }
+        }
     }
 
     // ── Bottom Sheet Detail ───────────────────────────────────────
@@ -179,11 +215,16 @@ public class SearchSignalActivity extends BaseScannerActivity implements RFIDDat
         CommScanner scanner = getScannerInstance();
         updateReaderBattery(findViewById(R.id.ivReaderBattery));
 
+        tagFoundNotified = false;
+        resetSignalDisplay();
+
         // Activity ini RFID only — langsung openInventory saat resume
         if (scanner != null) {
             int power = parsePower(tvPowerLevel.getText().toString(), 20);
             RfidBulkHelper.closeBarcode(scanner);
             RfidBulkHelper.openInventory(scanner, this, power);
+            handler.removeCallbacks(noSignalRunnable);
+            handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
         } else {
             showWarning("SP1 Reader not connected!");
         }
@@ -197,6 +238,7 @@ public class SearchSignalActivity extends BaseScannerActivity implements RFIDDat
     @Override
     protected void onPause() {
         super.onPause();
+        handler.removeCallbacks(noSignalRunnable);
         CommScanner scanner = getScannerInstance();
         RfidBulkHelper.closeInventory(scanner);
         if (currentDialog != null && currentDialog.isShowing()) currentDialog.dismiss();

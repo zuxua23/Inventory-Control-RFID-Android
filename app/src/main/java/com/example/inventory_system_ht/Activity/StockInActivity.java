@@ -130,7 +130,7 @@ public class StockInActivity extends BaseScannerActivity
         super.onResume();
         CommScanner scanner = getScannerInstance();
 
-        updateReaderBattery(findViewById(R.id.ivReaderBattery));
+        updateReaderBattery(findViewById(R.id.ivReaderBattery), switchRfid.isChecked());
 
         // Buka barcode by default saat masuk (jika RFID switch OFF)
         if (!switchRfid.isChecked() && scanner != null) {
@@ -182,13 +182,13 @@ public class StockInActivity extends BaseScannerActivity
             CommScanner scanner = getScannerInstance();
 
             // Update icon battery tiap toggle
-            updateReaderBattery(findViewById(R.id.ivReaderBattery));
+            updateReaderBattery(findViewById(R.id.ivReaderBattery), isChecked);
 
             if (isChecked) {
                 if (scanner == null) {
                     showError("SP1 Reader not connected!");
                     switchRfid.setChecked(false);
-                    updateReaderBattery(findViewById(R.id.ivReaderBattery));
+                    updateReaderBattery(findViewById(R.id.ivReaderBattery), false);
                     return;
                 }
                 RfidBulkHelper.closeBarcode(scanner);

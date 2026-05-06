@@ -39,11 +39,10 @@ import com.example.inventory_system_ht.R;
 
 public abstract class BaseScannerActivity extends AppCompatActivity {
 
-    private Dialog       loadingDialog;
+    private Dialog loadingDialog;
     private ToneGenerator toneGen;
-    private Vibrator     vibrator;
-    private PopupWindow  activePowerPopup = null;
-
+    private Vibrator vibrator;
+    private PopupWindow activePowerPopup = null;
     protected abstract CommScanner getScannerInstance();
 
     // ── Network ───────────────────────────────────────────────────
@@ -314,6 +313,14 @@ public abstract class BaseScannerActivity extends AppCompatActivity {
         } catch (Exception e) {
             ivBattery.setVisibility(View.GONE);
         }
+    }
+    public void updateReaderBattery(ImageView ivBattery, boolean switchOn) {
+        if (ivBattery == null) return;
+        if (!switchOn) {
+            ivBattery.setVisibility(View.GONE);
+            return;
+        }
+        updateReaderBattery(ivBattery);
     }
 
     // ── Power Popup ───────────────────────────────────────────────

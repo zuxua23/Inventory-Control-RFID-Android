@@ -13,8 +13,8 @@
         android:id="@+id/btnBack"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
         android:padding="12dp"
         android:src="@drawable/baseline_arrow_back_24"
         app:tint="@color/white"
@@ -160,7 +160,7 @@
         <androidx.cardview.widget.CardView
             android:id="@+id/cardScanned"
             android:layout_width="match_parent"
-            android:layout_height="45dp"
+            android:layout_height="wrap_content"
             android:layout_marginHorizontal="10dp"
             android:layout_marginTop="10dp"
             app:cardCornerRadius="22dp"
@@ -205,7 +205,7 @@
                 <androidx.cardview.widget.CardView
                     android:id="@+id/btnPowerDropdown"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
+                    android:layout_height="30dp"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?android:attr/selectableItemBackground"
@@ -282,7 +282,7 @@
                         android:paddingBottom="10dp"
                         android:verticalScrollbarPosition="left"
                         android:scrollbars="vertical"
-                        tools:listitem="@layout/item_product" />
+                        tools:listitem="@layout/item_product_stock_in" />
 
                 </androidx.cardview.widget.CardView>
 

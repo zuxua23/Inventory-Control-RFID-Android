@@ -199,14 +199,13 @@ public class StockPrepProductActivity extends BaseScannerActivity
         switchRfid.setOnCheckedChangeListener((btn, isChecked) -> {
             CommScanner scanner = getScannerInstance();
 
-            // Update icon battery tiap toggle
-            updateReaderBattery(findViewById(R.id.ivReaderBattery));
+            updateReaderBattery(findViewById(R.id.ivReaderBattery), isChecked);
 
             if (isChecked) {
                 if (scanner == null) {
                     showError("SP1 Reader not connected!");
                     switchRfid.setChecked(false);
-                    updateReaderBattery(findViewById(R.id.ivReaderBattery));
+                    updateReaderBattery(findViewById(R.id.ivReaderBattery), false);
                     return;
                 }
                 RfidBulkHelper.closeBarcode(scanner);
@@ -821,7 +820,7 @@ public class StockPrepProductActivity extends BaseScannerActivity
     protected void onResume() {
         super.onResume();
         CommScanner scanner = getScannerInstance();
-        updateReaderBattery(findViewById(R.id.ivReaderBattery));
+        updateReaderBattery(findViewById(R.id.ivReaderBattery), switchRfid.isChecked());
 
         if (!switchRfid.isChecked() && scanner != null)
             RfidBulkHelper.openBarcode(scanner, this);

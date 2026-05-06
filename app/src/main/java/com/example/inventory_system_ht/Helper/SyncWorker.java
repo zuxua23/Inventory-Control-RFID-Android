@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import com.example.inventory_system_ht.Models.AuthModels;
 import com.example.inventory_system_ht.Models.GeneralResponse;
 import com.example.inventory_system_ht.Models.PendingSubmitEntity;
 import com.example.inventory_system_ht.Models.StockPrepBulkRequest;
@@ -48,10 +49,16 @@ public class SyncWorker extends Worker {
         for (PendingSubmitEntity pending : pendingList) {
             try {
                 List<String> codes = gson.fromJson(pending.scannedCodes, listType);
-                StockPrepBulkRequest request = new StockPrepBulkRequest(
-                        pending.doId, codes, pending.scannerType, pending.locId);
+                Response<GeneralResponse> response;
 
-                Response<GeneralResponse> response = api.submitStockPrep(token, request).execute();
+                if ("TAG_REGISTRATION".equals(pending.doId)) {
+                    AuthModels.RegisterRequest regReq = new AuthModels.RegisterRequest(codes);
+                    response = api.registerTags(token, regReq).execute();
+                } else {
+                    StockPrepBulkRequest request = new StockPrepBulkRequest(
+                            pending.doId, codes, pending.scannerType, pending.locId);
+                    response = api.submitStockPrep(token, request).execute();
+                }
 
                 if (response.isSuccessful()) {
                     appDao.deletePendingSubmitById(pending.id);

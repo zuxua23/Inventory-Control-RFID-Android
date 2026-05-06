@@ -1,5 +1,14 @@
 package com.example.inventory_system_ht.Activity;
 
+import androidx.work.Constraints;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import com.example.inventory_system_ht.Helper.AppDatabase;
+import com.example.inventory_system_ht.Helper.SyncWorker;
+import com.example.inventory_system_ht.Models.PendingSubmitEntity;
+import com.google.gson.Gson;
+
 import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -48,16 +57,17 @@ import retrofit2.Call;
 public class TagRegisActivity extends BaseScannerActivity
         implements RFIDDataDelegate, BarcodeDataDelegate {
 
-    private EditText     resultScan;
-    private TextView     tvScanned;
-    private Switch       switchRfid;
-    private Button       btnClear, btnSubmitRegis;
+    private EditText resultScan;
+    private TextView tvScanned;
+    private Switch switchRfid;
+    private Button btnClear, btnSubmitRegis;
     private RecyclerView rvTags;
-    private CardView     btnPowerDropdown;
-    private TextView     tvPowerLevel;
+    private CardView btnPowerDropdown;
+    private TextView tvPowerLevel;
     private TagRegisAdapter adapter;
     private List<TagModels.TagModel> registeredTagList;
     private final Handler handler = new Handler();
+    private AppDatabase db;
 
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
             "10 dBm", "15 dBm", "20 dBm", "25 dBm", "27 dBm"
@@ -72,6 +82,8 @@ public class TagRegisActivity extends BaseScannerActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_regist);
+
+        db = AppDatabase.getDatabase(this);
 
         // ── findViewById ──────────────────────────────────────────────
         resultScan       = findViewById(R.id.resultScan);
@@ -102,13 +114,13 @@ public class TagRegisActivity extends BaseScannerActivity
             CommScanner scanner = getScannerInstance();
 
             // Update icon battery tiap toggle
-            updateReaderBattery(findViewById(R.id.ivReaderBattery));
+            updateReaderBattery(findViewById(R.id.ivReaderBattery), isChecked);
 
             if (isChecked) {
                 if (scanner == null) {
                     showError("SP1 Reader not connected!");
                     switchRfid.setChecked(false);
-                    updateReaderBattery(findViewById(R.id.ivReaderBattery));
+                    updateReaderBattery(findViewById(R.id.ivReaderBattery), false);
                     return;
                 }
 
@@ -229,9 +241,7 @@ public class TagRegisActivity extends BaseScannerActivity
         super.onResume();
         CommScanner scanner = getScannerInstance();
 
-        updateReaderBattery(findViewById(R.id.ivReaderBattery));
-
-        // Default buka barcode saat masuk activity (jika RFID switch OFF)
+        updateReaderBattery(findViewById(R.id.ivReaderBattery), switchRfid.isChecked());
         if (!switchRfid.isChecked() && scanner != null) {
             RfidBulkHelper.openBarcode(scanner, this);
         }
@@ -300,11 +310,28 @@ public class TagRegisActivity extends BaseScannerActivity
     // ── API Register Tags ─────────────────────────────────────────────
     private void hitApiRegisterTags(List<String> tagIds) {
         if (!isNetworkConnected()) {
-            showWarning("No internet, saved locally");
-            // TODO: save to Room DB
-            registeredTagList.clear();
-            adapter.notifyDataSetChanged();
-            updateCount();
+            new Thread(() -> {
+                PendingSubmitEntity pending = new PendingSubmitEntity();
+                pending.doId         = "TAG_REGISTRATION";
+                pending.scannedCodes = new Gson().toJson(tagIds);
+                pending.scannerType  = switchRfid.isChecked() ? "RFID" : "QR";
+                pending.locId        = "";
+                pending.createdAt    = System.currentTimeMillis();
+                db.appDao().insertPendingSubmit(pending);
+
+                WorkManager.getInstance(getApplicationContext()).enqueue(
+                        new OneTimeWorkRequest.Builder(SyncWorker.class)
+                                .setConstraints(new Constraints.Builder()
+                                        .setRequiredNetworkType(NetworkType.CONNECTED).build())
+                                .build());
+
+                runOnUiThread(() -> {
+                    showWarning("Offline – " + tagIds.size() + " tag tersimpan lokal, akan dikirim saat online");
+                    registeredTagList.clear();
+                    adapter.notifyDataSetChanged();
+                    updateCount();
+                });
+            }).start();
             return;
         }
 
