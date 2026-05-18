@@ -747,18 +747,10 @@ public class StockInActivity extends BaseScannerActivity
     private void handleApiErrorFriendly(Response<?> response) {
         if (response.code() == 401) { handleApiError(response); return; }
         hideLoading();
-        showError(humanizeError(ErrorParser.getMessage(response), response.code()));
+        showError(ErrorParser.getMessage(response));
     }
 
-    private String humanizeError(String rawMsg, int code) {
-        if (code == 403) return "Access denied";
-        if (code >= 500) return "Server error, try again";
-        if (rawMsg != null && !rawMsg.isEmpty()
-                && !rawMsg.toLowerCase().contains("exception")
-                && !rawMsg.toLowerCase().contains("null")) return rawMsg;
-        return "Request failed";
-    }
-    private void updateEmptyState() {
+     void updateEmptyState() {
         tvEmpty.setVisibility(scannedItemsList.isEmpty() ? View.VISIBLE : View.GONE);
     }
 }

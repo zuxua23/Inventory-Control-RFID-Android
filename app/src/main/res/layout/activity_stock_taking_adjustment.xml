@@ -257,7 +257,7 @@
                         android:paddingBottom="10dp"
                         android:verticalScrollbarPosition="left"
                         android:scrollbars="vertical"
-                        tools:listitem="@layout/item_product_stock_in" />
+                        tools:listitem="@layout/item_product" />
 
                 </androidx.cardview.widget.CardView>
 

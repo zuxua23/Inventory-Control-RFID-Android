@@ -868,19 +868,9 @@ public class StockPrepProductActivity extends BaseScannerActivity
     private void handleApiErrorFriendly(Response<?> response) {
         if (response.code() == 401) { handleApiError(response); return; }
         hideLoading();
-        showError(humanizeError(ErrorParser.getMessage(response), response.code()));
+        showError(ErrorParser.getMessage(response));
     }
 
-    private String humanizeError(String rawMsg, int code) {
-        if (code == 403) return "Access denied";
-        if (code == 404) return "Data not found";
-        if (code >= 500) return "Server error, try again";
-        if (rawMsg != null && !rawMsg.isEmpty()
-                && !rawMsg.toLowerCase().contains("exception")
-                && !rawMsg.toLowerCase().contains("null")
-                && rawMsg.length() < 100) return rawMsg;
-        return "Request failed";
-    }
 
     private String formatToEnglishDate(String rawDate) {
         try {
