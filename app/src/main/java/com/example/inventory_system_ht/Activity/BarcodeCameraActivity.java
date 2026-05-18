@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Size;
+import android.view.OrientationEventListener;
+import android.view.Surface;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -49,6 +51,10 @@ public class BarcodeCameraActivity extends AppCompatActivity {
     private androidx.camera.core.Camera camera;
     private final AtomicBoolean handled = new AtomicBoolean(false);
 
+    private Preview preview;
+    private ImageAnalysis imageAnalysis;
+    private OrientationEventListener orientationEventListener;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,7 +72,7 @@ public class BarcodeCameraActivity extends AppCompatActivity {
         });
         btnTorch.setOnClickListener(v -> toggleTorch());
 
-                BarcodeScannerOptions opts = new BarcodeScannerOptions.Builder()
+        BarcodeScannerOptions opts = new BarcodeScannerOptions.Builder()
                 .setBarcodeFormats(
                         Barcode.FORMAT_CODE_128,
                         Barcode.FORMAT_CODE_39,
@@ -80,6 +86,25 @@ public class BarcodeCameraActivity extends AppCompatActivity {
 
         cameraExecutor = Executors.newSingleThreadExecutor();
 
+        orientationEventListener = new OrientationEventListener(this) {
+            @Override
+            public void onOrientationChanged(int orientation) {
+                if (orientation == ORIENTATION_UNKNOWN) return;
+                int rotation;
+                if (orientation >= 315 || orientation < 45) {
+                    rotation = Surface.ROTATION_0;
+                } else if (orientation < 135) {
+                    rotation = Surface.ROTATION_270;
+                } else if (orientation < 225) {
+                    rotation = Surface.ROTATION_180;
+                } else {
+                    rotation = Surface.ROTATION_90;
+                }
+                if (preview != null) preview.setTargetRotation(rotation);
+                if (imageAnalysis != null) imageAnalysis.setTargetRotation(rotation);
+            }
+        };
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
             startCamera();
@@ -87,6 +112,18 @@ public class BarcodeCameraActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.CAMERA}, REQ_CAMERA);
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        orientationEventListener.enable();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        orientationEventListener.disable();
     }
 
     @Override
@@ -108,27 +145,39 @@ public class BarcodeCameraActivity extends AppCompatActivity {
             try {
                 ProcessCameraProvider provider = future.get();
 
-                Preview preview = new Preview.Builder().build();
+                int initialRotation = getInitialRotation();
+
+                preview = new Preview.Builder()
+                        .setTargetRotation(initialRotation)
+                        .build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-                ImageAnalysis analysis = new ImageAnalysis.Builder()
+                imageAnalysis = new ImageAnalysis.Builder()
                         .setTargetResolution(new Size(1280, 720))
+                        .setTargetRotation(initialRotation)
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
-                analysis.setAnalyzer(cameraExecutor, this::analyze);
+                imageAnalysis.setAnalyzer(cameraExecutor, this::analyze);
 
                 provider.unbindAll();
                 camera = provider.bindToLifecycle(
                         this,
                         CameraSelector.DEFAULT_BACK_CAMERA,
                         preview,
-                        analysis
+                        imageAnalysis
                 );
             } catch (Exception e) {
                 e.printStackTrace();
                 finish();
             }
         }, ContextCompat.getMainExecutor(this));
+    }
+
+    private int getInitialRotation() {
+        if (previewView.getDisplay() != null) {
+            return previewView.getDisplay().getRotation();
+        }
+        return getWindowManager().getDefaultDisplay().getRotation();
     }
 
     @OptIn(markerClass = ExperimentalGetImage.class)
@@ -160,10 +209,10 @@ public class BarcodeCameraActivity extends AppCompatActivity {
                 cornerOverlay.setSelected(true);
             }
 
-                    android.content.Intent out = new android.content.Intent();
+            android.content.Intent out = new android.content.Intent();
             out.putExtra(EXTRA_BARCODE, raw);
             setResult(RESULT_OK, out);
-                    previewView.postDelayed(this::finish, 250);
+            previewView.postDelayed(this::finish, 250);
         });
     }
 
