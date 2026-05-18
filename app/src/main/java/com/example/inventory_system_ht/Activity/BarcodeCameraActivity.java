@@ -111,9 +111,6 @@ public class BarcodeCameraActivity extends AppCompatActivity {
         future.addListener(() -> {
             try {
                 ProcessCameraProvider provider = future.get();
-
-                // Handy terminal camera sensor is mounted 180° from Android's
-                // assumed portrait orientation (screen is physically at the bottom).
                 int targetRotation = Surface.ROTATION_180;
 
                 preview = new Preview.Builder()

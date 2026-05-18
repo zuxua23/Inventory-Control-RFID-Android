@@ -46,9 +46,13 @@ public class TagAdapter extends RecyclerView.Adapter<TagAdapter.TagVH> {
     @Override
     public void onBindViewHolder(@NonNull TagVH h, int position) {
         TagModels.TagModel item = list.get(position);
+        h.tvTagId.setText(item.getTagId() != null ? item.getTagId() : item.getEpcTag());
+
         String name = item.getProductName();
+        boolean isPending = "PENDING".equals(item.getItmId());
+
         if (name == null || name.isEmpty() || "Validating...".equals(name)) {
-            h.tvProductName.setText("Validating...");
+            h.tvProductName.setText(isPending ? "Validating..." : item.getItmId());
         } else {
             h.tvProductName.setText(name);
         }
@@ -64,9 +68,10 @@ public class TagAdapter extends RecyclerView.Adapter<TagAdapter.TagVH> {
     }
 
     static class TagVH extends RecyclerView.ViewHolder {
-        TextView tvProductName;
+        TextView tvProductName, tvTagId;
         TagVH(@NonNull View itemView) {
             super(itemView);
+            tvTagId = itemView.findViewById(R.id.tvTagId);
             tvProductName = itemView.findViewById(R.id.tvProductName);
         }
     }

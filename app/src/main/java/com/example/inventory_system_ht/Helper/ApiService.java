@@ -67,6 +67,10 @@ public interface ApiService {
     @GET("api/do")
     Call<List<DOModels.DOModel>> getAllDO(@Header("Authorization") String token);
 
+    @GET("api/preparation/do/{id}")
+    Call<DOModels.DOResponseDto> getDoDetailForPrep(@Header("Authorization") String token,
+                                                    @Path("id") String id);
+
     // ── Stock Taking ──────────────────────────────────────────────
     @GET("api/stock-taking/active")
     Call<StockTakingModels.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);

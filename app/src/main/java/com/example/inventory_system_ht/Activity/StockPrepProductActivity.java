@@ -436,7 +436,7 @@ public class StockPrepProductActivity extends BaseScannerActivity
 
     private void fetchDoDetail() {
         if (currentDoId == null || currentDoId.isEmpty() || !isNetworkConnected()) return;
-        api.getPickingListById(token, currentDoId).enqueue(new Callback<DOModels.DOResponseDto>() {
+        api.getDoDetailForPrep(token, currentDoId).enqueue(new Callback<DOModels.DOResponseDto>() {
             @Override
             public void onResponse(Call<DOModels.DOResponseDto> call,
                                    Response<DOModels.DOResponseDto> response) {
@@ -447,15 +447,21 @@ public class StockPrepProductActivity extends BaseScannerActivity
                     if (body.getDetails() != null) {
                         for (DOModels.DODetailResponseDto d : body.getDetails()) {
                             requiredQtyMap.put(d.getItemId(), d.getQtyRequired());
-                            itemNameMap.put(d.getItemId(), d.getItemName());
+                            if (d.getItemName() != null && !d.getItemName().isEmpty()) {
+                                itemNameMap.put(d.getItemId(), d.getItemName());
+                            }
                         }
                     } else {
                         showWarning("DO has no items");
                     }
-                    runOnUiThread(() -> {
-                        if (isListProductTab) adapter.notifyDataSetChanged();
-                        else { buildSumProductList(); if (sumAdapter != null) sumAdapter.updateData(sumProductList); }
-                    });
+                    if (itemNameMap.size() < requiredQtyMap.size()) {
+                        fetchItemNamesForDo();
+                    } else {
+                        runOnUiThread(() -> {
+                            if (isListProductTab) adapter.notifyDataSetChanged();
+                            else { buildSumProductList(); if (sumAdapter != null) sumAdapter.updateData(sumProductList); }
+                        });
+                    }
                 } else {
                     handleApiErrorFriendly(response);
                 }
@@ -465,6 +471,7 @@ public class StockPrepProductActivity extends BaseScannerActivity
             public void onFailure(Call<DOModels.DOResponseDto> call, Throwable t) { handleFailure(t); }
         });
     }
+
 
     private void fetchLocations() {
         if (!isNetworkConnected()) return;
@@ -502,7 +509,35 @@ public class StockPrepProductActivity extends BaseScannerActivity
             public void onFailure(Call<List<LocationModels.LocationModel>> call, Throwable t) {}
         });
     }
+    private void fetchItemNamesForDo() {
+        if (!isNetworkConnected()) return;
+        api.getAllItems(token).enqueue(new Callback<List<ItemModels.ItemResponseDto>>() {
+            @Override
+            public void onResponse(Call<List<ItemModels.ItemResponseDto>> call,
+                                   Response<List<ItemModels.ItemResponseDto>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    for (ItemModels.ItemResponseDto item : response.body()) {
+                        if (requiredQtyMap.containsKey(item.getItemId())
+                                && !itemNameMap.containsKey(item.getItemId())) {
+                            itemNameMap.put(item.getItemId(), item.getItemName());
+                        }
+                    }
+                }
+                runOnUiThread(() -> {
+                    if (isListProductTab) adapter.notifyDataSetChanged();
+                    else { buildSumProductList(); if (sumAdapter != null) sumAdapter.updateData(sumProductList); }
+                });
+            }
 
+            @Override
+            public void onFailure(Call<List<ItemModels.ItemResponseDto>> call, Throwable t) {
+                runOnUiThread(() -> {
+                    if (isListProductTab) adapter.notifyDataSetChanged();
+                    else { buildSumProductList(); if (sumAdapter != null) sumAdapter.updateData(sumProductList); }
+                });
+            }
+        });
+    }
     private void restoreScannedTagsFromRoom() {
         new Thread(() -> {
             try {
@@ -783,32 +818,37 @@ public class StockPrepProductActivity extends BaseScannerActivity
     }
 
     private void buildSumProductList() {
+        Map<String, String> tagDerivedNames = new HashMap<>();
+        for (TagModels.TagModel item : scannedList) {
+            String pName = item.getProductName();
+            if (pName != null && !pName.trim().isEmpty() && !pName.equals("Validating...")) {
+                tagDerivedNames.put(item.getItmId(), pName);
+            }
+        }
+
         Map<String, ItemModels.SumProductModel> map = new LinkedHashMap<>();
 
         for (Map.Entry<String, Integer> e : requiredQtyMap.entrySet()) {
             String itemId = e.getKey();
             String name = itemNameMap.get(itemId);
 
-            if (name == null || name.trim().isEmpty()) {
-                name = itemId;
-            }
+            if (name == null || name.trim().isEmpty()) name = tagDerivedNames.get(itemId);
+            if (name == null || name.trim().isEmpty()) name = itemId;
+
             map.put(itemId, new ItemModels.SumProductModel(itemId, name, 0, e.getValue()));
         }
 
         for (TagModels.TagModel item : scannedList) {
             String itemId = item.getItmId();
+            if ("PENDING".equals(itemId)) continue;
             if (map.containsKey(itemId)) {
-                ItemModels.SumProductModel sumItem = map.get(itemId);
-                sumItem.addCount(1);
-
-                String scannedName = item.getProductName();
-                if (scannedName != null && !scannedName.trim().isEmpty() && !scannedName.equals("Validating...")) {
-                    if (sumItem.getItemName() == null || sumItem.getItemName().equals(itemId) || sumItem.getItemName().trim().isEmpty()) {
-                        sumItem.setItemName(scannedName);
-                    }
-                }
+                map.get(itemId).addCount(1);
             } else {
-                map.put(itemId, new ItemModels.SumProductModel(itemId, item.getProductName(), 1, 0));
+                String name = item.getProductName();
+                if (name == null || name.trim().isEmpty() || name.equals("Validating...")) {
+                    name = itemId;
+                }
+                map.put(itemId, new ItemModels.SumProductModel(itemId, name, 1, 0));
             }
         }
 
