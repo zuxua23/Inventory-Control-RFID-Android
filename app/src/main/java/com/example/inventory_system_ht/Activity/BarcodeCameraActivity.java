@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Size;
+import android.view.Surface;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -49,6 +50,9 @@ public class BarcodeCameraActivity extends AppCompatActivity {
     private androidx.camera.core.Camera camera;
     private final AtomicBoolean handled = new AtomicBoolean(false);
 
+    private Preview preview;
+    private ImageAnalysis imageAnalysis;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,7 +70,7 @@ public class BarcodeCameraActivity extends AppCompatActivity {
         });
         btnTorch.setOnClickListener(v -> toggleTorch());
 
-                BarcodeScannerOptions opts = new BarcodeScannerOptions.Builder()
+        BarcodeScannerOptions opts = new BarcodeScannerOptions.Builder()
                 .setBarcodeFormats(
                         Barcode.FORMAT_CODE_128,
                         Barcode.FORMAT_CODE_39,
@@ -108,21 +112,28 @@ public class BarcodeCameraActivity extends AppCompatActivity {
             try {
                 ProcessCameraProvider provider = future.get();
 
-                Preview preview = new Preview.Builder().build();
+                // Handy terminal camera sensor is mounted 180° from Android's
+                // assumed portrait orientation (screen is physically at the bottom).
+                int targetRotation = Surface.ROTATION_180;
+
+                preview = new Preview.Builder()
+                        .setTargetRotation(targetRotation)
+                        .build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-                ImageAnalysis analysis = new ImageAnalysis.Builder()
+                imageAnalysis = new ImageAnalysis.Builder()
                         .setTargetResolution(new Size(1280, 720))
+                        .setTargetRotation(targetRotation)
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
-                analysis.setAnalyzer(cameraExecutor, this::analyze);
+                imageAnalysis.setAnalyzer(cameraExecutor, this::analyze);
 
                 provider.unbindAll();
                 camera = provider.bindToLifecycle(
                         this,
                         CameraSelector.DEFAULT_BACK_CAMERA,
                         preview,
-                        analysis
+                        imageAnalysis
                 );
             } catch (Exception e) {
                 e.printStackTrace();
@@ -160,10 +171,10 @@ public class BarcodeCameraActivity extends AppCompatActivity {
                 cornerOverlay.setSelected(true);
             }
 
-                    android.content.Intent out = new android.content.Intent();
+            android.content.Intent out = new android.content.Intent();
             out.putExtra(EXTRA_BARCODE, raw);
             setResult(RESULT_OK, out);
-                    previewView.postDelayed(this::finish, 250);
+            previewView.postDelayed(this::finish, 250);
         });
     }
 

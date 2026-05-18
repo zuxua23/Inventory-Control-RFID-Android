@@ -784,16 +784,34 @@ public class StockPrepProductActivity extends BaseScannerActivity
 
     private void buildSumProductList() {
         Map<String, ItemModels.SumProductModel> map = new LinkedHashMap<>();
+
         for (Map.Entry<String, Integer> e : requiredQtyMap.entrySet()) {
             String itemId = e.getKey();
-            String name = itemNameMap.containsKey(itemId) ? itemNameMap.get(itemId) : itemId;
+            String name = itemNameMap.get(itemId);
+
+            if (name == null || name.trim().isEmpty()) {
+                name = itemId;
+            }
             map.put(itemId, new ItemModels.SumProductModel(itemId, name, 0, e.getValue()));
         }
+
         for (TagModels.TagModel item : scannedList) {
             String itemId = item.getItmId();
-            if (map.containsKey(itemId)) map.get(itemId).addCount(1);
-            else map.put(itemId, new ItemModels.SumProductModel(itemId, item.getProductName(), 1, 0));
+            if (map.containsKey(itemId)) {
+                ItemModels.SumProductModel sumItem = map.get(itemId);
+                sumItem.addCount(1);
+
+                String scannedName = item.getProductName();
+                if (scannedName != null && !scannedName.trim().isEmpty() && !scannedName.equals("Validating...")) {
+                    if (sumItem.getItemName() == null || sumItem.getItemName().equals(itemId) || sumItem.getItemName().trim().isEmpty()) {
+                        sumItem.setItemName(scannedName);
+                    }
+                }
+            } else {
+                map.put(itemId, new ItemModels.SumProductModel(itemId, item.getProductName(), 1, 0));
+            }
         }
+
         sumProductList.clear();
         sumProductList.addAll(map.values());
     }

@@ -151,6 +151,13 @@ public class StockInActivity extends BaseScannerActivity
         RfidBulkHelper.closeBarcode(scanner);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (isFinishing()) {
+            new Thread(() -> db.appDao().clearAllStockInScans()).start();
+        }
+    }
     // ─── Init ─────────────────────────────────────────────────────────────────
     private void bindViews() {
         btnBack = findViewById(R.id.btnBack);

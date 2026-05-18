@@ -60,7 +60,7 @@ public class ItemModels {
         public String getItemName() { return itemName; }
         public int getCount() { return count; }
         public int getRequired() { return required; }
-
+        public void setItemName(String itemName) { this.itemName = itemName; }
         public void setRequired(int required) { this.required = required; }
         public void addCount(int n) { this.count += n; }
     }

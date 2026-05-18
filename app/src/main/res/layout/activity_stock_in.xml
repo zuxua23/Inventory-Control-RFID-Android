@@ -155,11 +155,11 @@
                 android:id="@+id/tvScanned"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
                 android:text="@string/label_scanned_count"
                 android:textColor="@color/white"
                 android:layout_margin="4dp"
                 android:textSize="14sp"
+                android:paddingStart="10dp"
                 android:fontFamily="@font/raleway_bold"
                 tools:ignore="TextContrastCheck" />
         </androidx.cardview.widget.CardView>
