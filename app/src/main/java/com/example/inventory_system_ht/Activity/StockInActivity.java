@@ -218,7 +218,7 @@ public class StockInActivity extends BaseScannerActivity
                 TextView tv = view.findViewById(R.id.tvSpinnerSelected);
                 if (tv != null) {
                     tv.setTextColor(position == 0
-                            ? getColor(R.color.text_grey)  // hint color
+                            ? getColor(R.color.text_grey)
                             : getColor(R.color.black));
                 }
                 return view;
@@ -243,12 +243,11 @@ public class StockInActivity extends BaseScannerActivity
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (position == 0) {
-                    // Hint dipilih, reset selection
                     selectedLocation = "";
                     selectedLocationId = "";
                     return;
                 }
-                int realPos = position - 1; // offset karena hint di posisi 0
+                int realPos = position - 1;
                 if (realPos >= masterLocationList.size()) return;
                 selectedLocation   = masterLocationList.get(realPos).getName();
                 selectedLocationId = masterLocationList.get(realPos).getId();

@@ -16,14 +16,14 @@ public class TagModels {
     @Entity(tableName = "tb_search_item")
     public static class SearchItemEntity {
         @PrimaryKey @NonNull @ColumnInfo(name = "tag_id") public String tagId;
-        @ColumnInfo(name = "epc_tag")  public String epcTag;
+        @ColumnInfo(name = "epc_tag") public String epcTag;
         @ColumnInfo(name = "item_name") public String itemName;
         @ColumnInfo(name = "location") public String location;
     }
 
     @Entity(tableName = "tb_tag_cache", indices = {@Index(value = "tag_id")})
     public static class TagCacheEntity {
-        @PrimaryKey @NonNull @ColumnInfo(name = "epc_tag")  public String epcTag;
+        @PrimaryKey @NonNull @ColumnInfo(name = "epc_tag") public String epcTag;
         @ColumnInfo(name = "tag_id") public String tagId;
         @ColumnInfo(name = "item_id") public String itemId;
         @ColumnInfo(name = "item_name") public String itemName;
@@ -107,7 +107,7 @@ public class TagModels {
         public String getProductName() { return productName; }
         public String getItemName() { return productName; }
         public String getDoIdRef() { return doIdRef; }
-        public int    getSyncStatus() { return syncStatus; }
+        public int getSyncStatus() { return syncStatus; }
         public boolean isScanned() { return isScanned; }
         public void setScanned(boolean scanned) { isScanned = scanned; }
     }

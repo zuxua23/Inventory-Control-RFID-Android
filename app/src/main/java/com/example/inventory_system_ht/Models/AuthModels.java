@@ -65,16 +65,14 @@ public class AuthModels {
         @SerializedName("permissions")
         private List<String> permissions;
 
-        // No-arg constructor penting buat Gson
         public UserModel() {}
 
-        public String getUsrId()        { return usrId; }
-        public String getUsrName()      { return usrName; }
-        public String getUsrFullname()  { return usrFullname; }
-        public List<String> getRoles()  { return roles; }
+        public String getUsrId() { return usrId; }
+        public String getUsrName() { return usrName; }
+        public String getUsrFullname() { return usrFullname; }
+        public List<String> getRoles() { return roles; }
         public List<String> getPermissions() { return permissions; }
 
-        // Helper: ambil role pertama buat display
         public String getPrimaryRole() {
             if (roles != null && !roles.isEmpty()) return roles.get(0);
             return "Unknown";

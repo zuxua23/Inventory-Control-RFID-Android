@@ -84,7 +84,7 @@ public class StockPrepProductActivity extends BaseScannerActivity
     private TextView tvScanned, tvNoDo, tvDateDo;
     private Switch switchRfid;
     private RecyclerView rvTags;
-    private Spinner spinnerLocation, spinnerPower;          // ← ganti dari CardView dropdown
+    private Spinner spinnerLocation, spinnerPower;
     private Button btnListProduct, btnSumProduct;
 
     private TagAdapter adapter;
@@ -179,16 +179,16 @@ public class StockPrepProductActivity extends BaseScannerActivity
 
     // ─── Init ─────────────────────────────────────────────────────────────────
     private void initUI() {
-        tvScanned       = findViewById(R.id.tvScanned);
-        tvNoDo          = findViewById(R.id.tvNoDo);
-        tvDateDo        = findViewById(R.id.tvDateDo);
-        resultScan      = findViewById(R.id.resultScan);
-        switchRfid      = findViewById(R.id.switchRfid);
-        rvTags          = findViewById(R.id.rvTags);
+        tvScanned = findViewById(R.id.tvScanned);
+        tvNoDo = findViewById(R.id.tvNoDo);
+        tvDateDo = findViewById(R.id.tvDateDo);
+        resultScan = findViewById(R.id.resultScan);
+        switchRfid = findViewById(R.id.switchRfid);
+        rvTags = findViewById(R.id.rvTags);
         spinnerLocation = findViewById(R.id.spinnerLocation);
-        spinnerPower    = findViewById(R.id.spinnerPower);
-        btnListProduct  = findViewById(R.id.btnListProduct);
-        btnSumProduct   = findViewById(R.id.btnSumProduct);
+        spinnerPower = findViewById(R.id.spinnerPower);
+        btnListProduct = findViewById(R.id.btnListProduct);
+        btnSumProduct = findViewById(R.id.btnSumProduct);
 
         spinnerPower.setVisibility(View.GONE);
         switchRfid.setChecked(false);
@@ -265,7 +265,7 @@ public class StockPrepProductActivity extends BaseScannerActivity
             }
         };
         spinnerPower.setAdapter(powerAdapter);
-        spinnerPower.setSelection(4); // default: 21 dBm
+        spinnerPower.setSelection(4);
 
         spinnerPower.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -301,7 +301,6 @@ public class StockPrepProductActivity extends BaseScannerActivity
                                 ? spinnerPower.getSelectedItem().toString() : "21 dBm", 21);
                 boolean ok = RfidBulkHelper.openInventory(scanner, this, power);
                 if (ok) {
-                    // ✂️ Removed: showSuccess("RFID ON")
                     resultScan.setEnabled(false);
                     spinnerPower.setVisibility(View.VISIBLE);
                 } else {
@@ -311,7 +310,6 @@ public class StockPrepProductActivity extends BaseScannerActivity
             } else {
                 RfidBulkHelper.closeInventory(scanner);
                 if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
-                // ✂️ Removed: showSagaFeedback("RFID OFF")
                 resultScan.setEnabled(true);
                 resultScan.requestFocus();
                 spinnerPower.setVisibility(View.GONE);
@@ -386,7 +384,6 @@ public class StockPrepProductActivity extends BaseScannerActivity
                     else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
                     scanCount = 0;
                     tvScanned.setText("Scanned : 0");
-                    // ✂️ Removed: showSuccess("List cleared") — list kosong sudah cukup
                 });
             }).start();
         });
@@ -565,7 +562,6 @@ public class StockPrepProductActivity extends BaseScannerActivity
                             else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
                             new Thread(() -> appDao.insertScannedTag(real)).start();
                         }
-                        // ✂️ Removed: showSuccess("Validated from cache") — scan feedback cukup
                     } else {
                         new Thread(() -> appDao.insertScannedTag(placeholder)).start();
                         if (!isRfid) showWarning("Saved offline");
@@ -584,11 +580,11 @@ public class StockPrepProductActivity extends BaseScannerActivity
 
                     new Thread(() -> {
                         TagModels.TagCacheEntity cache = new TagModels.TagCacheEntity();
-                        cache.epcTag   = info.getEpcTag();
-                        cache.tagId    = info.getTagId();
-                        cache.itemId   = info.getItemId();
+                        cache.epcTag = info.getEpcTag();
+                        cache.tagId = info.getTagId();
+                        cache.itemId = info.getItemId();
                         cache.itemName = info.getItemName();
-                        cache.status   = info.getStatus();
+                        cache.status = info.getStatus();
                         cache.cachedAt = System.currentTimeMillis();
                         appDao.insertTagCache(cache);
                     }).start();
@@ -647,7 +643,6 @@ public class StockPrepProductActivity extends BaseScannerActivity
     }
 
     // ─── Submit ───────────────────────────────────────────────────────────────
-
     private void confirmSubmit() {
         if (scannedList.isEmpty()) { showWarning("No items scanned"); return; }
         if (selectedLocationId == null || selectedLocationId.isEmpty()) {
@@ -690,11 +685,11 @@ public class StockPrepProductActivity extends BaseScannerActivity
         if (!isNetworkConnected()) {
             new Thread(() -> {
                 PendingSubmitEntity pending = new PendingSubmitEntity();
-                pending.doId        = currentDoId;
+                pending.doId = currentDoId;
                 pending.scannedCodes = new Gson().toJson(codes);
                 pending.scannerType = scannerType;
-                pending.locId       = selectedLocationId;
-                pending.createdAt   = System.currentTimeMillis();
+                pending.locId = selectedLocationId;
+                pending.createdAt = System.currentTimeMillis();
                 appDao.insertPendingSubmit(pending);
 
                 WorkManager.getInstance(getApplicationContext()).enqueue(
@@ -816,7 +811,6 @@ public class StockPrepProductActivity extends BaseScannerActivity
                         if (sumAdapter != null) sumAdapter.updateData(sumProductList);
                     }
                     tvScanned.setText("Scanned : " + scanCount);
-                    // ✂️ Removed: showSuccess("Item removed") — item hilang dari list sudah cukup
                 });
             }).start();
         });

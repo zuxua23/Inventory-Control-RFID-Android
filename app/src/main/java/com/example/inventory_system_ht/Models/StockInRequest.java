@@ -4,13 +4,10 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public class StockInRequest {
-    @SerializedName("scannerType")
-    private final String scannerType;
+    @SerializedName("scannerType") private final String scannerType;
 
-    @SerializedName("scannedCodes")
-    private final List<String> scannedCodes;
-    @SerializedName("LocId")
-    private String locationId;
+    @SerializedName("scannedCodes") private final List<String> scannedCodes;
+    @SerializedName("LocId") private String locationId;
 
     public StockInRequest(String scannerType, List<String> scannedCodes, String locationId) {
         this.scannerType = scannerType;

@@ -48,7 +48,7 @@ public class DOAdapter extends RecyclerView.Adapter<DOAdapter.DOViewHolder> {
 
     private String formatDate(String raw) {
         try {
-            java.text.SimpleDateFormat in  = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
             java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.ENGLISH);
             return out.format(in.parse(raw));
         } catch (Exception e) { return raw; }

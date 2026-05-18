@@ -5,17 +5,10 @@ import java.util.List;
 
 public class StockPrepBulkRequest {
 
-    @SerializedName("doId")
-    private final String doId;
-
-    @SerializedName("scannerType")
-    private final String scannerType;
-
-    @SerializedName("scannedCodes")
-    private final List<String> scannedCodes;
-
-    @SerializedName("locId")
-    private final String locId;
+    @SerializedName("doId") private final String doId;
+    @SerializedName("scannerType") private final String scannerType;
+    @SerializedName("scannedCodes") private final List<String> scannedCodes;
+    @SerializedName("locId") private final String locId;
 
     public StockPrepBulkRequest(String doId, List<String> scannedCodes, String scannerType, String locId) {
         this.doId = doId;

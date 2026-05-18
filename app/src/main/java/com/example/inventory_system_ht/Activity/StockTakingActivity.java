@@ -62,7 +62,7 @@ public class StockTakingActivity extends BaseScannerActivity
     private EditText resultScan;
     private RecyclerView rvTags;
     private TextView tvRemark, tvLocation, tvQty, tvSyncStatus;
-    private Spinner spinnerPower;                               // ← ganti dari CardView + TextView
+    private Spinner spinnerPower;
 
     private ApiService api;
     private AppDatabase db;
@@ -171,7 +171,7 @@ public class StockTakingActivity extends BaseScannerActivity
             }
         };
         spinnerPower.setAdapter(powerAdapter);
-        spinnerPower.setSelection(6); // default: 27 dBm
+        spinnerPower.setSelection(6);
 
         spinnerPower.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -444,7 +444,6 @@ public class StockTakingActivity extends BaseScannerActivity
                         db.appDao().markBulkSynced(sttId, foundEpcs);
                         handler.post(() -> {
                             updateSyncStatus();
-                            // ✂️ Removed: showSuccess("Synced X scans") — background process, tidak perlu ganggu user
                         });
                     }
                 } catch (Exception ignored) {}
@@ -631,7 +630,6 @@ public class StockTakingActivity extends BaseScannerActivity
             adapter.notifyItemRangeChanged(position, sessionItems.size());
             hasChanges = true;
             updateInfo();
-            // ✂️ Removed: showSuccess("Item removed") — item hilang dari list sudah cukup
         });
     }
 

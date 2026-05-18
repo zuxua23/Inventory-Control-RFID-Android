@@ -74,9 +74,9 @@ public class SearchItemAdapter extends RecyclerView.Adapter<SearchItemAdapter.VH
         VH(@NonNull View v) {
             super(v);
             tvItemName = v.findViewById(R.id.tvItemName);
-            tvTagId    = v.findViewById(R.id.tvTagId);
+            tvTagId = v.findViewById(R.id.tvTagId);
             tvLocation = v.findViewById(R.id.tvLocation);
-            cardView   = (CardView) v;
+            cardView = (CardView) v;
         }
     }
 }

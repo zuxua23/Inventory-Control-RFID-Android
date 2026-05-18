@@ -20,7 +20,7 @@ public class ErrorParser {
             try {
                 JsonObject json = JsonParser.parseString(bodyStr).getAsJsonObject();
                 if (json.has("message")) return json.get("message").getAsString();
-                if (json.has("error"))   return json.get("error").getAsString();
+                if (json.has("error")) return json.get("error").getAsString();
             } catch (Exception ignore) {
                 if (bodyStr.length() < 200) return bodyStr;
             }

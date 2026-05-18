@@ -43,7 +43,7 @@ public class SumProductInAdapter extends RecyclerView.Adapter<SumProductInAdapte
 
         String name = item.getItemName();
         if (name == null || name.trim().isEmpty())
-            name = item.getItemId() != null ? item.getItemId() : "Item tidak diketahui";
+            name = item.getItemId() != null ? item.getItemId() : "Unknown item";
 
         h.tvProductName.setText(name);
         h.tvQty.setText("Qty: " + item.getCount());

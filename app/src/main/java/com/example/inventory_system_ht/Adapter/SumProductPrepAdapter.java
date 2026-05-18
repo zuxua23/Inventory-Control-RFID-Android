@@ -45,7 +45,7 @@ public class SumProductPrepAdapter extends RecyclerView.Adapter<SumProductPrepAd
 
         String name = item.getItemName();
         if (name == null || name.trim().isEmpty())
-            name = item.getItemId() != null ? item.getItemId() : "Item tidak diketahui";
+            name = item.getItemId() != null ? item.getItemId() : "Unknown item";
 
         h.tvProductName.setText(name);
         h.tvQty.setText(item.getCount() + "/" + item.getRequired());

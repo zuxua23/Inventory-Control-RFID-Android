@@ -232,7 +232,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/title_list_product"
                     android:textColor="@color/blue_theme"
-                    android:textSize="18sp"
+                    android:textSize="16sp"
                     android:layout_margin="10dp"
                     android:fontFamily="@font/raleway_extra_bold"
                     android:textAlignment="center"

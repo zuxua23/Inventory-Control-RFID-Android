@@ -22,8 +22,7 @@ import retrofit2.http.Query;
 
 public interface ApiService {
 
-    // ── Ping & Auth ───────────────────────────────────────────────
-
+    // ── Auth ───────────────────────────────────────────────
     @GET("api/ping")
     Call<GeneralResponse> ping();
 
@@ -31,7 +30,6 @@ public interface ApiService {
     Call<AuthModels.LoginResponse> login(@Body AuthModels.LoginRequest loginRequest);
 
     // ── Tag ───────────────────────────────────────────────────────
-
     @POST("api/tag/register")
     Call<GeneralResponse> registerTags(@Header("Authorization") String token,
                                        @Body AuthModels.RegisterRequest request);
@@ -50,13 +48,11 @@ public interface ApiService {
                                           @Path("code") String code);
 
     // ── Stock In ──────────────────────────────────────────────────
-
     @POST("api/stockin")
     Call<GeneralResponse> stockIn(@Header("Authorization") String token,
                                   @Body StockInRequest request);
 
     // ── Stock Preparation ─────────────────────────────────────────
-
     @POST("api/preparation/bulk")
     Call<GeneralResponse> submitStockPrep(@Header("Authorization") String token,
                                           @Body StockPrepBulkRequest request);
@@ -72,7 +68,6 @@ public interface ApiService {
     Call<List<DOModels.DOModel>> getAllDO(@Header("Authorization") String token);
 
     // ── Stock Taking ──────────────────────────────────────────────
-
     @GET("api/stock-taking/active")
     Call<StockTakingModels.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);
 
@@ -101,7 +96,6 @@ public interface ApiService {
                                           @Body StockTakingModels.FinalizeReq request);
 
     // ── Location & Item ───────────────────────────────────────────
-
     @GET("api/location")
     Call<List<LocationModels.LocationModel>> getLocations(@Header("Authorization") String token);
 
@@ -109,11 +103,10 @@ public interface ApiService {
     Call<List<ItemModels.ItemResponseDto>> getAllItems(@Header("Authorization") String token);
 
     // ── Search Item ───────────────────────────────────────────────
-
-    @GET("/api/search-item")
+    @GET("api/search-item")
     Call<List<TagModels.SearchItemListDto>> getSearchItems(@Header("Authorization") String token);
 
-    @GET("/api/search-item/{code}")
+    @GET("api/search-item/{code}")
     Call<TagModels.TagDetailDto> getTagDetailSearchItem(@Header("Authorization") String token,
                                                         @Path("code") String code);
 }

@@ -65,7 +65,7 @@ public class TagRegisActivity extends BaseScannerActivity
     private Switch switchRfid;
     private Button btnClear, btnSubmitRegis;
     private RecyclerView rvTags;
-    private Spinner spinnerPower;                           // ← ganti dari CardView + TextView
+    private Spinner spinnerPower;
 
     private TagRegisAdapter adapter;
     private List<TagModels.TagModel> registeredTagList;
@@ -147,7 +147,7 @@ public class TagRegisActivity extends BaseScannerActivity
             }
         };
         spinnerPower.setAdapter(powerAdapter);
-        spinnerPower.setSelection(6); // default: 27 dBm
+        spinnerPower.setSelection(6);
 
         spinnerPower.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -194,7 +194,6 @@ public class TagRegisActivity extends BaseScannerActivity
                                 ? spinnerPower.getSelectedItem().toString() : "27 dBm", 27);
                 boolean ok = RfidBulkHelper.openInventory(scanner, this, power);
                 if (ok) {
-                    // ✂️ Removed: showSuccess("RFID ON")
                     resultScan.setEnabled(false);
                     spinnerPower.setVisibility(View.VISIBLE);
                 } else {
@@ -204,7 +203,6 @@ public class TagRegisActivity extends BaseScannerActivity
             } else {
                 RfidBulkHelper.closeInventory(scanner);
                 if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
-                // ✂️ Removed: showSagaFeedback("RFID OFF", true)
                 resultScan.setEnabled(true);
                 resultScan.requestFocus();
                 spinnerPower.setVisibility(View.GONE);
@@ -238,7 +236,6 @@ public class TagRegisActivity extends BaseScannerActivity
             registeredTagList.clear();
             adapter.notifyDataSetChanged();
             updateCount();
-            // ✂️ Removed: showSuccess("List cleared") — list kosong sudah cukup
         });
 
         btnSubmitRegis.setOnClickListener(v -> {
@@ -276,11 +273,11 @@ public class TagRegisActivity extends BaseScannerActivity
         if (!isNetworkConnected()) {
             new Thread(() -> {
                 PendingSubmitEntity pending = new PendingSubmitEntity();
-                pending.doId        = "TAG_REGISTRATION";
+                pending.doId = "TAG_REGISTRATION";
                 pending.scannedCodes = new Gson().toJson(tagIds);
                 pending.scannerType = switchRfid.isChecked() ? "RFID" : "QR";
-                pending.locId       = "";
-                pending.createdAt   = System.currentTimeMillis();
+                pending.locId = "";
+                pending.createdAt = System.currentTimeMillis();
                 db.appDao().insertPendingSubmit(pending);
 
                 WorkManager.getInstance(getApplicationContext()).enqueue(
@@ -373,7 +370,6 @@ public class TagRegisActivity extends BaseScannerActivity
             adapter.notifyItemRemoved(position);
             adapter.notifyItemRangeChanged(position, registeredTagList.size());
             updateCount();
-            // ✂️ Removed: showSuccess("Tag removed") — item hilang dari list sudah cukup
         });
         dialog.show();
     }

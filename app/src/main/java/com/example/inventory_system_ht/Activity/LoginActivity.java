@@ -156,7 +156,7 @@ public class LoginActivity extends BaseScannerActivity {
         btnCekIp.setOnClickListener(v -> {
             String ip = etIpAPI.getText().toString().trim();
             if (ip.isEmpty()) { dWarn.accept("Server IP is empty"); return; }
-            if (!ip.startsWith("http://") && !ip.startsWith("https://")) {
+            if (!ip.startsWith("http://")) {
                 dError.accept("Wrong format, must start with http://"); return;
             }
             showLoading();
