@@ -13,9 +13,7 @@
     <color name="success_bg">#E8F5E9</color>
     <color name="warning_orange">#F57C00</color>
     <color name="warning_bg">#FFF3E0</color>
-    <color name="bg">#F4F7F9</color>
     <color name="blue_theme">#0181CC</color>
     <color name="green_button">#01C470</color>
     <color name="bg_white">#F4F7F9</color>
-
 </resources>

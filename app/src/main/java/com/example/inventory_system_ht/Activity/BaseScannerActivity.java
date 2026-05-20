@@ -40,7 +40,7 @@ public abstract class BaseScannerActivity extends AppCompatActivity {
     private Dialog loadingDialog;
     private ToneGenerator toneGen;
     private Vibrator vibrator;
-    private PopupWindow activePowerPopup = null;
+    private PopupWindow activePowerPopup;
 
     // ─── Abstract ─────────────────────────────────────────────────────────────
     protected abstract CommScanner getScannerInstance();

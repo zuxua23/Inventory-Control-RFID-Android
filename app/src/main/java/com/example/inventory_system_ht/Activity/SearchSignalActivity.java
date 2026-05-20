@@ -61,7 +61,6 @@ public class SearchSignalActivity extends BaseScannerActivity implements RFIDDat
         }
     };
 
-    // ─── Abstract Override ────────────────────────────────────────────────────
     @Override
     protected CommScanner getScannerInstance() {
         return ScannerManager.getInstance().getScanner();

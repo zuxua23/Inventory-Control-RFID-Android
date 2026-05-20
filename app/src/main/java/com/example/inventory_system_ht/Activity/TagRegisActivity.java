@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -74,7 +75,7 @@ public class TagRegisActivity extends BaseScannerActivity
 
     private TagRegisAdapter adapter;
     private List<TagModels.TagModel> registeredTagList;
-    private final Handler handler = new Handler();
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private AppDatabase db;
 
     private final List<String> powerList = new ArrayList<>(Arrays.asList(

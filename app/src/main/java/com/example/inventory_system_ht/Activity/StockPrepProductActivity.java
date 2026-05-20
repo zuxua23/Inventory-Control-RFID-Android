@@ -74,6 +74,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import android.util.Log;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -84,6 +85,7 @@ public class StockPrepProductActivity extends BaseScannerActivity
         implements BarcodeDataDelegate, RFIDDataDelegate {
 
     // ─── Fields ───────────────────────────────────────────────────────────────
+    private static final String TAG = "StockPrepProduct";
     private EditText resultScan;
     private TextView tvScanned, tvNoDo, tvDateDo;
     private Switch switchRfid;
@@ -560,7 +562,7 @@ public class StockPrepProductActivity extends BaseScannerActivity
                     if (!forThis.isEmpty())
                         showWarning("Restored " + forThis.size() + " item(s)");
                 });
-            } catch (Exception e) { e.printStackTrace(); }
+            } catch (Exception e) { Log.e(TAG, "Failed to restore scan session", e); }
         }).start();
     }
 

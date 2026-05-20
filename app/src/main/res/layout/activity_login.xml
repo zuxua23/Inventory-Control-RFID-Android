@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg">
+    android:background="@color/bg_white">
 
     <LinearLayout
         android:id="@+id/layout_header"
@@ -101,7 +101,7 @@
                             android:layout_marginBottom="8dp"
                             android:text="@string/title_welcome_back"
                             android:fontFamily="@font/raleway_semi_bold"
-                            android:textColor="@color/bg"
+                            android:textColor="@color/bg_white"
                             android:textSize="20sp"
                             android:textStyle="bold" />
 
@@ -110,7 +110,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="24dp"
                             android:text="@string/subtitle_sign_in"
-                            android:textColor="@color/bg"
+                            android:textColor="@color/bg_white"
                             android:fontFamily="@font/raleway_light"
                             android:textSize="14sp"
                             tools:ignore="TextContrastCheck"/>
@@ -121,7 +121,7 @@
                             android:layout_marginBottom="8dp"
                             android:text="@string/label_username"
                             android:fontFamily="@font/raleway_bold"
-                            android:textColor="@color/bg"
+                            android:textColor="@color/bg_white"
                             android:textSize="12sp"
                             tools:ignore="TextContrastCheck"/>
 
@@ -149,7 +149,7 @@
                             android:layout_marginBottom="8dp"
                             android:text="@string/label_password"
                             android:fontFamily="@font/raleway_bold"
-                            android:textColor="@color/bg"
+                            android:textColor="@color/bg_white"
                             android:textSize="12sp"
                             android:textStyle="bold"
                             tools:ignore="TextContrastCheck"/>

@@ -10,10 +10,6 @@
         app:fontStyle="normal"
         app:fontWeight="400" />
     <font
-        app:font="@font/raleway_medium"
-        app:fontStyle="normal"
-        app:fontWeight="400" />
-    <font
         app:font="@font/raleway_semi_bold"
         app:fontStyle="normal"
         app:fontWeight="400" />

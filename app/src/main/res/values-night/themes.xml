@@ -5,9 +5,9 @@
         <item name="colorOnPrimary">@color/white</item>
         <item name="android:statusBarColor">@color/blue_theme</item>
 
-        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:windowBackground">@color/bg_white</item>
 
-        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/bg</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/bg_white</item>
         <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@android:color/transparent</item>
     </style>
 

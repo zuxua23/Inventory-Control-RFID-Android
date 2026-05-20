@@ -322,7 +322,6 @@ public class StockTakingActivity extends BaseScannerActivity
                             updateInfo();
                             updateSyncStatus();
                             saveSessionItemsToCache(body);
-                            // ✂️ Removed: showSuccess("Loaded X items") — hideLoading sudah cukup
                         } else {
                             showError("Load failed, using cache");
                             loadSessionTagsFromCache();

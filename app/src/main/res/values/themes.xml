@@ -10,7 +10,7 @@
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
 
-        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/bg</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/bg_white</item>
         <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@android:color/transparent</item>
     </style>
 

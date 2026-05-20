@@ -9,7 +9,7 @@
     <string name="hint_password">••••••••</string>
     <string name="action_sign_in">Sign In</string>
     <string name="desc_settings_button">Settings</string>
-    <string name="greeting_welcome">Selama Datang Jhon Doe</string>
+    <string name="greeting_welcome">Welcome Jhon Doe</string>
     <string name="geeting_role">Operator</string>
     <string name="label_menu">Menu:</string>
     <string name="menu_stock_in">Stock In</string>

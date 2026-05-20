@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Size;
+import android.util.Log;
 import android.view.Surface;
 import android.view.View;
 import android.widget.ImageView;
@@ -35,7 +36,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BarcodeCameraActivity extends AppCompatActivity {
-
+    private static final String TAG = "BarcodeCamera";
     public static final String EXTRA_BARCODE = "barcode";
     public static final int RESULT_PERMISSION_DENIED = 1001;
     private static final int REQ_CAMERA = 42;
@@ -133,7 +134,7 @@ public class BarcodeCameraActivity extends AppCompatActivity {
                         imageAnalysis
                 );
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "Failed to bind camera", e);
                 finish();
             }
         }, ContextCompat.getMainExecutor(this));
