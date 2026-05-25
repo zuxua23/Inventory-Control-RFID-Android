@@ -442,11 +442,18 @@ public class StockPrepProductActivity extends ScannerActivity
 
     private void fetchDoDetail() {
         if (currentDoId == null || currentDoId.isEmpty() || !isNetworkConnected()) return;
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"doId\":\"" + currentDoId + "\"}";
         api.getDoDetailForPrep(token, currentDoId).enqueue(new Callback<DOModel.DOResponse>() {
             @Override
             public void onResponse(Call<DOModel.DOResponse> call,
                                    Response<DOModel.DOResponse> response) {
+                String resJson = "{\"http_code\":" + response.code() + ",\"hasDetails\":"
+                        + (response.body() != null && response.body().getDetails() != null) + "}";
                 if (response.isSuccessful() && response.body() != null) {
+                    LogManager.get(StockPrepProductActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                            "Stock Preparation", currentDoId, "Fetch DO detail success: " + currentDoNo,
+                            userId, reqJson, resJson);
                     requiredQtyMap.clear();
                     itemNameMap.clear();
                     DOModel.DOResponse body = response.body();
@@ -469,22 +476,39 @@ public class StockPrepProductActivity extends ScannerActivity
                         });
                     }
                 } else {
+                    LogManager.get(StockPrepProductActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                            "Stock Preparation", currentDoId, "Fetch DO detail failed: HTTP " + response.code(),
+                            userId, reqJson, resJson);
                     handleApiErrorFriendly(response);
                 }
             }
 
             @Override
-            public void onFailure(Call<DOModel.DOResponse> call, Throwable t) { handleFailure(t); }
+            public void onFailure(Call<DOModel.DOResponse> call, Throwable t) {
+                String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                        "Stock Preparation", currentDoId, "Fetch DO detail error: " + t.getMessage(),
+                        userId, reqJson, resJson);
+                handleFailure(t);
+            }
         });
     }
 
     private void fetchLocations() {
         if (!isNetworkConnected()) return;
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"endpoint\":\"getLocations\"}";
         api.getLocations(token).enqueue(new Callback<List<LocationModel>>() {
             @Override
             public void onResponse(Call<List<LocationModel>> call,
                                    Response<List<LocationModel>> response) {
+                String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
+                        + (response.body() != null ? response.body().size() : 0) + "}";
                 if (response.isSuccessful() && response.body() != null) {
+                    LogManager.get(StockPrepProductActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                            "Stock Preparation", "Location",
+                            "Fetch locations success: " + response.body().size() + " items",
+                            userId, reqJson, resJson);
                     masterLocationList = response.body();
                     locationList.clear();
                     for (LocationModel loc : masterLocationList)
@@ -508,26 +532,50 @@ public class StockPrepProductActivity extends ScannerActivity
                             }
                         }
                     });
+                } else {
+                    LogManager.get(StockPrepProductActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                            "Stock Preparation", "Location",
+                            "Fetch locations failed: HTTP " + response.code(),
+                            userId, reqJson, resJson);
                 }
             }
             @Override
-            public void onFailure(Call<List<LocationModel>> call, Throwable t) {}
+            public void onFailure(Call<List<LocationModel>> call, Throwable t) {
+                String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                        "Stock Preparation", "Location",
+                        "Fetch locations error: " + t.getMessage(),
+                        userId, reqJson, resJson);
+            }
         });
     }
 
     private void fetchItemNamesForDo() {
         if (!isNetworkConnected()) return;
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"endpoint\":\"getAllItems\"}";
         api.getAllItems(token).enqueue(new Callback<List<ItemModel.ItemResponse>>() {
             @Override
             public void onResponse(Call<List<ItemModel.ItemResponse>> call,
                                    Response<List<ItemModel.ItemResponse>> response) {
+                String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
+                        + (response.body() != null ? response.body().size() : 0) + "}";
                 if (response.isSuccessful() && response.body() != null) {
+                    LogManager.get(StockPrepProductActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                            "Stock Preparation", "Item Names",
+                            "Fetch all items success: " + response.body().size() + " items",
+                            userId, reqJson, resJson);
                     for (ItemModel.ItemResponse item : response.body()) {
                         if (requiredQtyMap.containsKey(item.getItemId())
                                 && !itemNameMap.containsKey(item.getItemId())) {
                             itemNameMap.put(item.getItemId(), item.getItemName());
                         }
                     }
+                } else {
+                    LogManager.get(StockPrepProductActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                            "Stock Preparation", "Item Names",
+                            "Fetch all items failed: HTTP " + response.code(),
+                            userId, reqJson, resJson);
                 }
                 runOnUiThread(() -> {
                     if (isListProductTab) adapter.notifyDataSetChanged();
@@ -537,6 +585,11 @@ public class StockPrepProductActivity extends ScannerActivity
 
             @Override
             public void onFailure(Call<List<ItemModel.ItemResponse>> call, Throwable t) {
+                String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                        "Stock Preparation", "Item Names",
+                        "Fetch all items error: " + t.getMessage(),
+                        userId, reqJson, resJson);
                 runOnUiThread(() -> {
                     if (isListProductTab) adapter.notifyDataSetChanged();
                     else { buildSumProductList(); if (sumAdapter != null) sumAdapter.updateData(sumProductList); }
@@ -636,12 +689,20 @@ public class StockPrepProductActivity extends ScannerActivity
             return;
         }
 
+        String userId = new PrefManager(this).getUserId();
+        String tagReqJson = "{\"code\":\"" + scannedData + "\"}";
         api.getTagInfo(token, scannedData).enqueue(new Callback<TagModel.TagInfoDto>() {
             @Override
             public void onResponse(Call<TagModel.TagInfoDto> call,
                                    Response<TagModel.TagInfoDto> response) {
+                String tagResJson = "{\"http_code\":" + response.code() + ",\"found\":"
+                        + (response.body() != null) + "}";
                 if (response.isSuccessful() && response.body() != null) {
                     TagModel.TagInfoDto info = response.body();
+                    LogManager.get(StockPrepProductActivity.this).log(LogManager.INFO, LogManager.ACTION_SCAN,
+                            "Stock Preparation", scannedData,
+                            "Tag info resolved: " + info.getItemName() + " | status: " + info.getStatus(),
+                            userId, tagReqJson, tagResJson);
 
                     new Thread(() -> {
                         TagCacheEntity cache = new TagCacheEntity();
@@ -680,6 +741,10 @@ public class StockPrepProductActivity extends ScannerActivity
                         new Thread(() -> appDao.insertScannedTag(real)).start();
                     }
                 } else {
+                    LogManager.get(StockPrepProductActivity.this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
+                            "Stock Preparation", scannedData,
+                            "Tag info failed: HTTP " + response.code(),
+                            userId, tagReqJson, tagResJson);
                     rollbackScan(placeholder, key, null, isRfid);
                     if (!isRfid) { handleApiErrorFriendly(response); playScanFeedback(2); }
                 }
@@ -687,6 +752,11 @@ public class StockPrepProductActivity extends ScannerActivity
 
             @Override
             public void onFailure(Call<TagModel.TagInfoDto> call, Throwable t) {
+                String tagResJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
+                        "Stock Preparation", scannedData,
+                        "Tag info error: " + t.getMessage(),
+                        userId, tagReqJson, tagResJson);
                 rollbackScan(placeholder, key, null, isRfid);
                 if (!isRfid) { handleFailure(t); playScanFeedback(2); }
             }
@@ -780,6 +850,9 @@ public class StockPrepProductActivity extends ScannerActivity
         }
 
         showLoading();
+        String userId = new PrefManager(this).getUserId();
+        String submitReqJson = "{\"doId\":\"" + currentDoId + "\",\"scannerType\":\"" + scannerType
+                + "\",\"locationId\":\"" + selectedLocationId + "\",\"count\":" + codes.size() + "}";
         api.submitStockPrep(token, new StockPrepBulkRequest(
                         currentDoId, codes, scannerType, selectedLocationId))
                 .enqueue(new Callback<GeneralResponse>() {
@@ -787,7 +860,13 @@ public class StockPrepProductActivity extends ScannerActivity
                     public void onResponse(Call<GeneralResponse> call,
                                            Response<GeneralResponse> response) {
                         hideLoading();
+                        String submitResJson = "{\"http_code\":" + response.code() + ",\"success\":"
+                                + response.isSuccessful() + "}";
                         if (response.isSuccessful()) {
+                            LogManager.get(StockPrepProductActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT,
+                                    "Stock Preparation", currentDoId,
+                                    "Submitted " + codes.size() + " items for DO: " + currentDoNo,
+                                    userId, submitReqJson, submitResJson);
                             new Thread(() -> {
                                 for (TagLocalEntity t : new ArrayList<>(scannedList)) {
                                     try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception ignored) {}
@@ -795,12 +874,15 @@ public class StockPrepProductActivity extends ScannerActivity
                                 runOnUiThread(() -> {
                                     showSuccess("Items saved");
                                     playScanFeedback(0);
-                                    LogManager.get(StockPrepProductActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock Preparation", "", "Submitted " + codes.size() + " items", new PrefManager(StockPrepProductActivity.this).getUserId());
                                     clearScannedData();
                                     finish();
                                 });
                             }).start();
                         } else {
+                            LogManager.get(StockPrepProductActivity.this).log(LogManager.WARNING, LogManager.ACTION_SUBMIT,
+                                    "Stock Preparation", currentDoId,
+                                    "Submit failed: HTTP " + response.code(),
+                                    userId, submitReqJson, submitResJson);
                             handleApiErrorFriendly(response);
                             playScanFeedback(2);
                         }
@@ -808,7 +890,14 @@ public class StockPrepProductActivity extends ScannerActivity
 
                     @Override
                     public void onFailure(Call<GeneralResponse> call, Throwable t) {
-                        hideLoading(); handleFailure(t); playScanFeedback(2);
+                        hideLoading();
+                        String submitResJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                                "Stock Preparation", currentDoId,
+                                "Submit error: " + t.getMessage(),
+                                userId, submitReqJson, submitResJson);
+                        handleFailure(t);
+                        playScanFeedback(2);
                     }
                 });
     }

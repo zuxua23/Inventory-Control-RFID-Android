@@ -134,6 +134,8 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
 
         showLoading();
         String token = "Bearer " + new PrefManager(this).getToken();
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"endpoint\":\"getDo\"}";
 
         ApiClient.getClient(this).create(ApiService.class)
                 .getDo(token)
@@ -141,7 +143,13 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
                     @Override
                     public void onResponse(Call<List<DOModel.DOResponse>> call,
                                            retrofit2.Response<List<DOModel.DOResponse>> response) {
+                        String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
+                                + (response.body() != null ? response.body().size() : 0) + "}";
                         if (response.isSuccessful() && response.body() != null) {
+                            LogManager.get(StockPrepActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                                    "Stock Preparation", "DO List",
+                                    "Fetch DO success: " + response.body().size() + " items",
+                                    userId, reqJson, resJson);
                             List<DOModel.DOResponse> remoteList = response.body();
                             List<DeliveryOrderEntity> entities = new ArrayList<>();
                             for (DOModel.DOResponse r : remoteList) {
@@ -158,6 +166,10 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
                                 });
                             }).start();
                         } else {
+                            LogManager.get(StockPrepActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                                    "Stock Preparation", "DO List",
+                                    "Fetch DO failed: HTTP " + response.code(),
+                                    userId, reqJson, resJson);
                             hideLoading();
                             handleApiError(response);
                             playScanFeedback(2);
@@ -166,6 +178,11 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
 
                     @Override
                     public void onFailure(Call<List<DOModel.DOResponse>> call, Throwable t) {
+                        String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(StockPrepActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                                "Stock Preparation", "DO List",
+                                "Fetch DO error: " + t.getMessage(),
+                                userId, reqJson, resJson);
                         hideLoading();
                         handleFailure(t);
                         playScanFeedback(2);
