@@ -4,8 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="32dp"
     android:gravity="center_vertical"
-    android:paddingHorizontal="8dp"
-    android:textSize="12sp"
+    android:paddingHorizontal="4dp"
+    android:textSize="10sp"
     android:textColor="@color/black"
     android:fontFamily="@font/raleway_bold"
     android:id="@+id/tvSpinnerSelected"/>
