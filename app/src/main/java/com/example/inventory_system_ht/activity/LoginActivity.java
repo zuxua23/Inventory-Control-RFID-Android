@@ -95,6 +95,8 @@ public class LoginActivity extends ScannerActivity {
 
         showLoading();
 
+        String reqJson = "{\"username\":\"" + username + "\",\"password\":\"***\"}";
+
         ApiService apiService = ApiClient.getClient(this).create(ApiService.class);
         apiService.login(new AuthModel.LoginRequest(username, password))
                 .enqueue(new Callback<AuthModel.LoginResponse>() {
@@ -102,12 +104,16 @@ public class LoginActivity extends ScannerActivity {
                     public void onResponse(Call<AuthModel.LoginResponse> call,
                                            Response<AuthModel.LoginResponse> response) {
                         hideLoading();
+                        String resJson = "{\"http_code\":" + response.code() + ",\"success\":"
+                                + (response.body() != null && response.body().isSuccess()) + "}";
                         if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
-                            LogManager.get(LoginActivity.this).log(LogManager.INFO, LogManager.ACTION_LOGIN, "Login", username, "Login success: " + username, "");
+                            LogManager.get(LoginActivity.this).log(LogManager.INFO, LogManager.ACTION_LOGIN,
+                                    "Login", username, "Login success: " + username, "", reqJson, resJson);
                             handleLoginSuccess(response.body());
                         } else {
                             String msg = response.code() == 401 ? "Invalid username or password" : "Login failed";
-                            LogManager.get(LoginActivity.this).log(LogManager.WARNING, LogManager.ACTION_LOGIN, "Login", username, "Login failed: " + msg, "");
+                            LogManager.get(LoginActivity.this).log(LogManager.WARNING, LogManager.ACTION_LOGIN,
+                                    "Login", username, "Login failed: " + msg, "", reqJson, resJson);
                             showError(msg);
                         }
                     }
@@ -115,7 +121,9 @@ public class LoginActivity extends ScannerActivity {
                     @Override
                     public void onFailure(Call<AuthModel.LoginResponse> call, Throwable t) {
                         hideLoading();
-                        LogManager.get(LoginActivity.this).log(LogManager.ERROR, LogManager.ACTION_LOGIN, "Login", username, "Login error: " + t.getMessage(), "");
+                        String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(LoginActivity.this).log(LogManager.ERROR, LogManager.ACTION_LOGIN,
+                                "Login", username, "Login error: " + t.getMessage(), "", reqJson, resJson);
                         handleFailure(t);
                     }
                 });
@@ -177,14 +185,20 @@ public class LoginActivity extends ScannerActivity {
 
             showLoading();
             prefManager.saveIp(ip);
+            String pingReq = "{\"url\":\"" + ip + "\"}";
             ApiClient.getClient(this).create(ApiService.class)
                     .ping().enqueue(new Callback<GeneralResponse>() {
                         @Override
                         public void onResponse(Call<GeneralResponse> call, Response<GeneralResponse> response) {
                             hideLoading();
+                            String pingRes = "{\"http_code\":" + response.code() + "}";
                             if (response.isSuccessful()) {
+                                LogManager.get(LoginActivity.this).log(LogManager.INFO, LogManager.ACTION_SETTING,
+                                        "Setting", "Ping", "Ping success: " + ip, "", pingReq, pingRes);
                                 dSuccess.accept("Server connected");
                             } else {
+                                LogManager.get(LoginActivity.this).log(LogManager.WARNING, LogManager.ACTION_SETTING,
+                                        "Setting", "Ping", "Ping failed: HTTP " + response.code(), "", pingReq, pingRes);
                                 dError.accept("Server error: " + response.code());
                             }
                         }
@@ -192,6 +206,9 @@ public class LoginActivity extends ScannerActivity {
                         @Override
                         public void onFailure(Call<GeneralResponse> call, Throwable t) {
                             hideLoading();
+                            String pingRes = "{\"error\":\"" + t.getMessage() + "\"}";
+                            LogManager.get(LoginActivity.this).log(LogManager.ERROR, LogManager.ACTION_SETTING,
+                                    "Setting", "Ping", "Ping error: " + t.getMessage(), "", pingReq, pingRes);
                             dError.accept("Cannot connect to server");
                         }
                     });
