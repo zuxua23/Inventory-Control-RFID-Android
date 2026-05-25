@@ -582,6 +582,7 @@ public class StockPrepProductActivity extends ScannerActivity
 
         if (scannedRawSet.contains(key) || scannedEpcSet.contains(key)) {
             if (!isRfid) { playScanFeedback(1); showWarning("Already scanned"); }
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Preparation", scannedData, "Duplicate scan: " + scannedData, new PrefManager(this).getUserId());
             return;
         }
 
@@ -595,6 +596,7 @@ public class StockPrepProductActivity extends ScannerActivity
         scanCount++;
         tvScanned.setText("Scanned : " + scanCount);
         playScanFeedback(0);
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock Preparation", scannedData, "Scanned: " + scannedData, new PrefManager(this).getUserId());
 
         if (!isNetworkConnected()) {
             new Thread(() -> {
@@ -790,6 +792,7 @@ public class StockPrepProductActivity extends ScannerActivity
                                 runOnUiThread(() -> {
                                     showSuccess("Items saved");
                                     playScanFeedback(0);
+                                    LogManager.get(StockPrepProductActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock Preparation", "", "Submitted " + codes.size() + " items", new PrefManager(StockPrepProductActivity.this).getUserId());
                                     clearScannedData();
                                     finish();
                                 });

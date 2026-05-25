@@ -404,6 +404,7 @@ public class StockTakingActivity extends ScannerActivity
         StockTakingModel.SessionItem item = sessionItems.get(idx);
         if (!"PENDING".equals(item.state)) {
             if (!switchRfid.isChecked()) showWarning("Already scanned");
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Duplicate scan: " + epcOrBarcode, new PrefManager(this).getUserId());
             return;
         }
 
@@ -413,6 +414,7 @@ public class StockTakingActivity extends ScannerActivity
         rvTags.scrollToPosition(idx);
         updateInfo();
         playScanFeedback(0);
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Scanned: " + epcOrBarcode, new PrefManager(this).getUserId());
 
         saveToQueue(item.epcTag, "FOUND", null, null);
         if (isNetworkConnected()) syncSingleScan(item.epcTag);
@@ -542,6 +544,7 @@ public class StockTakingActivity extends ScannerActivity
                             }).start();
                             showSuccess("Data submitted");
                             playScanFeedback(0);
+                            LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock Taking", "", "Stock taking submitted: " + sttId, new PrefManager(StockTakingActivity.this).getUserId());
                             hasChanges = false;
                             finish();
                         } else {

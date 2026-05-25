@@ -30,6 +30,7 @@ import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
 
 import com.example.inventory_system_ht.R;
+import com.example.inventory_system_ht.util.LogManager;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -164,6 +165,7 @@ public class BarcodeCameraActivity extends AppCompatActivity {
     }
 
     private void onBarcodeDetected(String raw) {
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Camera Scanner", raw, "Barcode scanned: " + raw, "");
         runOnUiThread(() -> {
             if (cornerOverlay != null) {
                 cornerOverlay.setSelected(true);

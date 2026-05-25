@@ -608,7 +608,8 @@ public class StockInActivity extends ScannerActivity
                             new Thread(() -> db.appDao().clearAllStockInScans()).start();
                             showSuccess(response.body().getMessage());
                             playScanFeedback(0);
-                            LogManager.get(StockInActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock In", "", "Stock In submitted: " + totalScanCount + " items", new PrefManager(StockInActivity.this).getUserId());                            clearAllData();
+                            LogManager.get(StockInActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock In", "", "Stock In submitted: " + totalScanCount + " items", new PrefManager(StockInActivity.this).getUserId());
+                            clearAllData();
                         } else {
                             handleApiErrorFriendly(response);
                             playScanFeedback(2);

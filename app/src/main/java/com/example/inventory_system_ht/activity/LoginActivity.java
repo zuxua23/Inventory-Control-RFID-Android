@@ -17,6 +17,7 @@ import com.example.inventory_system_ht.model.AuthModel;
 import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
+import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.R;
 
@@ -87,15 +88,19 @@ public class LoginActivity extends ScannerActivity {
                                            Response<AuthModel.LoginResponse> response) {
                         hideLoading();
                         if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                            LogManager.get(LoginActivity.this).log(LogManager.INFO, LogManager.ACTION_LOGIN, "Login", username, "Login success: " + username, "");
                             handleLoginSuccess(response.body());
                         } else {
-                            showError(response.code() == 401 ? "Invalid username or password" : "Login failed");
+                            String msg = response.code() == 401 ? "Invalid username or password" : "Login failed";
+                            LogManager.get(LoginActivity.this).log(LogManager.WARNING, LogManager.ACTION_LOGIN, "Login", username, "Login failed: " + msg, "");
+                            showError(msg);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<AuthModel.LoginResponse> call, Throwable t) {
                         hideLoading();
+                        LogManager.get(LoginActivity.this).log(LogManager.ERROR, LogManager.ACTION_LOGIN, "Login", username, "Login error: " + t.getMessage(), "");
                         handleFailure(t);
                     }
                 });

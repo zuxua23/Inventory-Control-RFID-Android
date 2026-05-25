@@ -268,6 +268,7 @@ public class TagRegistrationActivity extends ScannerActivity
         for (TagLocalEntity t : registeredTagList) {
             if (t.getEpcTag().equalsIgnoreCase(data)) {
                 playScanFeedback(1);
+                LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Tag Registration", data, "Duplicate scan: " + data, new PrefManager(this).getUserId());
                 return;
             }
         }
@@ -279,6 +280,7 @@ public class TagRegistrationActivity extends ScannerActivity
         rvTags.scrollToPosition(0);
         updateCount();
         playScanFeedback(0);
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Tag Registration", data, "Scanned: " + data, new PrefManager(this).getUserId());
     }
 
     private void updateCount() {
@@ -324,6 +326,7 @@ public class TagRegistrationActivity extends ScannerActivity
                         if (response.isSuccessful()) {
                             showSuccess(response.body().getMessage());
                             playScanFeedback(0);
+                            LogManager.get(TagRegistrationActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Tag Registration", "", "Registered " + tagIds.size() + " tags", new PrefManager(TagRegistrationActivity.this).getUserId());
                             registeredTagList.clear();
                             adapter.notifyDataSetChanged();
                             updateCount();
