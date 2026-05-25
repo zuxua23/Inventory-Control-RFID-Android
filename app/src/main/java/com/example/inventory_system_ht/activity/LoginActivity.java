@@ -11,12 +11,15 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import com.densowave.scannersdk.Common.CommScanner;
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.model.AuthModel;
 import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
+import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.R;
 
@@ -61,6 +64,15 @@ public class LoginActivity extends ScannerActivity {
     private void setupListeners() {
         btnLogin.setOnClickListener(v -> performLogin());
         btnSetting.setOnClickListener(v -> showSettingDialog());
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent i = new Intent(this, LogActivity.class);
+                i.putExtra(LogActivity.EXTRA_MENU, "Login");
+                startActivity(i);
+            });
+        }
     }
 
     private void performLogin() {
@@ -68,12 +80,16 @@ public class LoginActivity extends ScannerActivity {
         String password = etPassword.getText().toString().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
-            showWarning("Username & password required");
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_LOGIN,
+                    "Login", username, "Login attempt: username atau password kosong", "");
+            showSagaFeedback("Username & password required", 1);
             return;
         }
 
         if (!isNetworkConnected()) {
-            showWarning("No internet connection");
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_LOGIN,
+                    "Login", username, "Login attempt: tidak ada koneksi internet", "");
+            showSagaFeedback("No internet connection", 1);
             return;
         }
 
@@ -87,15 +103,19 @@ public class LoginActivity extends ScannerActivity {
                                            Response<AuthModel.LoginResponse> response) {
                         hideLoading();
                         if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                            LogManager.get(LoginActivity.this).log(LogManager.INFO, LogManager.ACTION_LOGIN, "Login", username, "Login success: " + username, "");
                             handleLoginSuccess(response.body());
                         } else {
-                            showError(response.code() == 401 ? "Invalid username or password" : "Login failed");
+                            String msg = response.code() == 401 ? "Invalid username or password" : "Login failed";
+                            LogManager.get(LoginActivity.this).log(LogManager.WARNING, LogManager.ACTION_LOGIN, "Login", username, "Login failed: " + msg, "");
+                            showError(msg);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<AuthModel.LoginResponse> call, Throwable t) {
                         hideLoading();
+                        LogManager.get(LoginActivity.this).log(LogManager.ERROR, LogManager.ACTION_LOGIN, "Login", username, "Login error: " + t.getMessage(), "");
                         handleFailure(t);
                     }
                 });
@@ -106,7 +126,9 @@ public class LoginActivity extends ScannerActivity {
         AuthModel.UserModel user = body.getUser();
 
         if (token == null || token.isEmpty() || user == null) {
-            showError("Invalid server response");
+            LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_LOGIN,
+                    "Login", "", "Server response tidak valid setelah login berhasil", "");
+            showSagaFeedback("Invalid server response", 2);
             return;
         }
 
@@ -151,9 +173,8 @@ public class LoginActivity extends ScannerActivity {
         btnCekIp.setOnClickListener(v -> {
             String ip = etIpAPI.getText().toString().trim();
             if (ip.isEmpty()) { dWarn.accept("Server IP is empty"); return; }
-            if (!ip.startsWith("http://")) {
-                dError.accept("Wrong format, must start with http://"); return;
-            }
+            if (!ip.startsWith("http://")) { dError.accept("Wrong format, must start with http://"); return; }
+
             showLoading();
             prefManager.saveIp(ip);
             ApiClient.getClient(this).create(ApiService.class)
@@ -161,9 +182,13 @@ public class LoginActivity extends ScannerActivity {
                         @Override
                         public void onResponse(Call<GeneralResponse> call, Response<GeneralResponse> response) {
                             hideLoading();
-                            if (response.isSuccessful()) dSuccess.accept("Server connected");
-                            else dError.accept("Server error: " + response.code());
+                            if (response.isSuccessful()) {
+                                dSuccess.accept("Server connected");
+                            } else {
+                                dError.accept("Server error: " + response.code());
+                            }
                         }
+
                         @Override
                         public void onFailure(Call<GeneralResponse> call, Throwable t) {
                             hideLoading();
@@ -175,7 +200,11 @@ public class LoginActivity extends ScannerActivity {
         btnApplyIp.setOnClickListener(v -> {
             String ip = etIpAPI.getText().toString().trim();
             if (ip.isEmpty()) { dWarn.accept("Server IP is empty"); return; }
+
             prefManager.saveIp(ip);
+            LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SETTING,
+                    "Setting", "API URL", "URL API disimpan: " + prefManager.getIp(), prefManager.getUserId());
+            dSuccess.accept("URL saved");
             dialog.dismiss();
         });
 

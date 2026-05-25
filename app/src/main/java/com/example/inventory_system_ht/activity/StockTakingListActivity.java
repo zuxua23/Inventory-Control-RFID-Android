@@ -19,9 +19,11 @@ import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.model.StockTakingModel;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
+import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,6 +84,16 @@ public class StockTakingListActivity extends ScannerActivity {
     private void setupListeners() {
         ((ImageView) findViewById(R.id.btnBack)).setOnClickListener(v -> finish());
         ((CardView) findViewById(R.id.btnRefresh)).setOnClickListener(v -> loadActiveSession());
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent i = new Intent(this, LogActivity.class);
+                i.putExtra(LogActivity.EXTRA_MENU, "Stock Taking");
+                startActivity(i);
+            });
+        }
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Taking", "", "Opened Stock Taking List", new PrefManager(this).getUserId());
     }
 
     private void loadActiveSession() {

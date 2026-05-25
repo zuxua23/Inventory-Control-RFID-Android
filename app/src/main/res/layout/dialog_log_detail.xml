@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="16dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp"
+            android:background="@color/blue_theme">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Log Detail"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:fontFamily="@font/raleway_bold" />
+
+            <TextView
+                android:id="@+id/tvDetailLevel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp"
+                android:textSize="11sp"
+                android:textColor="@color/white"
+                android:fontFamily="@font/raleway_bold"
+                android:background="#4CAF50"
+                android:text="INFO" />
+        </LinearLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxHeight="400dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="TIMESTAMP"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_grey"
+                    android:fontFamily="@font/raleway_bold"
+                    android:letterSpacing="0.1" />
+                <TextView
+                    android:id="@+id/tvDetailTimestamp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_dark"
+                    android:fontFamily="@font/raleway_regular"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="ACTION"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_grey"
+                    android:fontFamily="@font/raleway_bold"
+                    android:letterSpacing="0.1" />
+                <TextView
+                    android:id="@+id/tvDetailAction"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_dark"
+                    android:fontFamily="@font/raleway_regular"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="MENU"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_grey"
+                    android:fontFamily="@font/raleway_bold"
+                    android:letterSpacing="0.1" />
+                <TextView
+                    android:id="@+id/tvDetailMenu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_dark"
+                    android:fontFamily="@font/raleway_regular"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="ENTITY"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_grey"
+                    android:fontFamily="@font/raleway_bold"
+                    android:letterSpacing="0.1" />
+                <TextView
+                    android:id="@+id/tvDetailEntity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_dark"
+                    android:fontFamily="@font/raleway_regular"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="MESSAGE"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_grey"
+                    android:fontFamily="@font/raleway_bold"
+                    android:letterSpacing="0.1" />
+                <TextView
+                    android:id="@+id/tvDetailMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_dark"
+                    android:fontFamily="@font/raleway_regular"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="USER ID"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_grey"
+                    android:fontFamily="@font/raleway_bold"
+                    android:letterSpacing="0.1" />
+                <TextView
+                    android:id="@+id/tvDetailUserId"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_dark"
+                    android:fontFamily="@font/raleway_regular"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:id="@+id/labelRequest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="REQUEST API"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_grey"
+                    android:fontFamily="@font/raleway_bold"
+                    android:letterSpacing="0.1"
+                    android:visibility="gone" />
+                <TextView
+                    android:id="@+id/tvDetailRequest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_dark"
+                    android:fontFamily="@font/raleway_regular"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/labelResponse"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="RESPONSE API"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_grey"
+                    android:fontFamily="@font/raleway_bold"
+                    android:letterSpacing="0.1"
+                    android:visibility="gone" />
+                <TextView
+                    android:id="@+id/tvDetailResponse"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_dark"
+                    android:fontFamily="@font/raleway_regular"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+        </ScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="16dp"
+            android:layout_marginTop="4dp">
+
+            <Button
+                android:id="@+id/btnCopyLog"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Copy"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:fontFamily="@font/raleway_bold"
+                android:backgroundTint="@color/white"
+                android:textColor="@color/blue_theme"
+                android:stateListAnimator="@null"
+                app:strokeColor="@color/blue_theme"
+                app:strokeWidth="1.5dp"
+                app:cornerRadius="24dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+            <Button
+                android:id="@+id/btnClose"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Close"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:fontFamily="@font/raleway_bold"
+                android:backgroundTint="@color/blue_theme"
+                android:textColor="@color/white"
+                android:stateListAnimator="@null"
+                app:cornerRadius="24dp"
+                style="@style/Widget.MaterialComponents.Button" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

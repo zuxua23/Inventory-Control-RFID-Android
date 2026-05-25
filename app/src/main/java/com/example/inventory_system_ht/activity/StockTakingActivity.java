@@ -43,6 +43,7 @@ import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.model.StockTakingModel;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
+import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
@@ -117,6 +118,16 @@ public class StockTakingActivity extends ScannerActivity
 
         if (isNetworkConnected()) loadSessionTagsFromServer();
         else { loadSessionTagsFromCache(); showWarning("Offline, using cache"); }
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent intent = new Intent(this, LogActivity.class);
+                intent.putExtra(LogActivity.EXTRA_MENU, "Stock Taking");
+                startActivity(intent);
+            });
+        }
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Taking", "", "Opened Stock Taking", new PrefManager(this).getUserId());
     }
 
     @Override
@@ -387,12 +398,14 @@ public class StockTakingActivity extends ScannerActivity
         if (idx == null) {
             playScanFeedback(2);
             showWarning("Tag not found: " + epcOrBarcode);
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Tag not found in session: " + epcOrBarcode, new PrefManager(this).getUserId());
             return;
         }
 
         StockTakingModel.SessionItem item = sessionItems.get(idx);
         if (!"PENDING".equals(item.state)) {
             if (!switchRfid.isChecked()) showWarning("Already scanned");
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Duplicate scan: " + epcOrBarcode, new PrefManager(this).getUserId());
             return;
         }
 
@@ -402,6 +415,7 @@ public class StockTakingActivity extends ScannerActivity
         rvTags.scrollToPosition(idx);
         updateInfo();
         playScanFeedback(0);
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Scanned: " + epcOrBarcode, new PrefManager(this).getUserId());
 
         saveToQueue(item.epcTag, "FOUND", null, null);
         if (isNetworkConnected()) syncSingleScan(item.epcTag);
@@ -531,6 +545,7 @@ public class StockTakingActivity extends ScannerActivity
                             }).start();
                             showSuccess("Data submitted");
                             playScanFeedback(0);
+                            LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock Taking", "", "Stock taking submitted: " + sttId, new PrefManager(StockTakingActivity.this).getUserId());
                             hasChanges = false;
                             finish();
                         } else {

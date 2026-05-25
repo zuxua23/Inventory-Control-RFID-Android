@@ -31,6 +31,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Const.CommConst;
 import com.densowave.scannersdk.Dto.RFIDScannerSettings;
+import com.example.inventory_system_ht.activity.LoginActivity;
+import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.R;
 
@@ -88,7 +90,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
 
         switch (type) {
             case 1: dot.setImageResource(R.drawable.dot_warning); break;
-            case 2: dot.setImageResource(R.drawable.dot_error);   break;
+            case 2: dot.setImageResource(R.drawable.dot_error); break;
             default: dot.setImageResource(R.drawable.dot_success); break;
         }
         tvMessage.setText(pesan);
@@ -119,10 +121,14 @@ public abstract class ScannerActivity extends AppCompatActivity {
 
         switch (type) {
             case 1: dot.setImageResource(R.drawable.dot_warning); break;
-            case 2: dot.setImageResource(R.drawable.dot_error);   break;
+            case 2: dot.setImageResource(R.drawable.dot_error); break;
             default: dot.setImageResource(R.drawable.dot_success); break;
         }
         tvMessage.setText(pesan);
+
+        String level = (type == 2) ? LogManager.ERROR : (type == 1) ? LogManager.WARNING : LogManager.INFO;
+        LogManager.get(this).log(level, LogManager.ACTION_MESSAGE,
+                getClass().getSimpleName(), "", pesan, new PrefManager(this).getUserId());
 
         FrameLayout wrapper = new FrameLayout(this);
         int px = (int)(15 * getResources().getDisplayMetrics().density);
@@ -155,9 +161,41 @@ public abstract class ScannerActivity extends AppCompatActivity {
                         }).start(), 2000);
     }
 
-    public void showSuccess(String pesan) { showSagaFeedback(pesan, 0); }
-    public void showError(String pesan) { showSagaFeedback(pesan, 2); }
-    public void showWarning(String pesan) { showSagaFeedback(pesan, 1); }
+    public void showSuccess(String pesan) {
+        showSagaFeedback(pesan, 0);
+        LogManager.get(this).log(
+                LogManager.INFO,
+                LogManager.ACTION_MESSAGE,
+                getClass().getSimpleName(),
+                "",
+                pesan,
+                new PrefManager(this).getUserId()
+        );
+    }
+
+    public void showError(String pesan) {
+        showSagaFeedback(pesan, 2);
+        LogManager.get(this).log(
+                LogManager.ERROR,
+                LogManager.ACTION_MESSAGE,
+                getClass().getSimpleName(),
+                "",
+                pesan,
+                new PrefManager(this).getUserId()
+        );
+    }
+
+    public void showWarning(String pesan) {
+        showSagaFeedback(pesan, 1);
+        LogManager.get(this).log(
+                LogManager.WARNING,
+                LogManager.ACTION_MESSAGE,
+                getClass().getSimpleName(),
+                "",
+                pesan,
+                new PrefManager(this).getUserId()
+        );
+    }
 
     // ─── Loading Dialog ───────────────────────────────────────────────────────
 
@@ -188,7 +226,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         if (statusCode == 401) {
             showSagaFeedback("Session expired", false);
             new PrefManager(this).clearSession();
-            Intent intent = new Intent(this, com.example.inventory_system_ht.Activity.LoginActivity.class);
+            Intent intent = new Intent(this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             finish();
@@ -209,7 +247,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         if (statusCode == 401) {
             new PrefManager(this).clearSession();
             showSagaFeedback("Session expired", false);
-            Intent intent = new Intent(this, com.example.inventory_system_ht.Activity.LoginActivity.class);
+            Intent intent = new Intent(this, com.example.inventory_system_ht.activity.LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             finish();

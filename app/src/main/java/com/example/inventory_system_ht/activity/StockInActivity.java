@@ -27,7 +27,6 @@ import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -39,6 +38,7 @@ import com.densowave.scannersdk.RFID.RFIDData;
 import com.densowave.scannersdk.RFID.RFIDDataReceivedEvent;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
+import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.adapter.ItemAdapter;
 import com.example.inventory_system_ht.adapter.StockInProductAdapter;
 import com.example.inventory_system_ht.database.AppDatabase;
@@ -123,6 +123,21 @@ public class StockInActivity extends ScannerActivity
 
         resultScan.setShowSoftInputOnFocus(false);
         resultScan.postDelayed(() -> resultScan.requestFocus(), 100);
+
+        fabScanCamera.setOnClickListener(v -> {
+            if (switchRfid.isChecked()) switchRfid.setChecked(false);
+            cameraScanLauncher.launch(new Intent(this, BarcodeCameraActivity.class));
+        });
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent i = new Intent(this, LogActivity.class);
+                i.putExtra(LogActivity.EXTRA_MENU, "Stock In");
+                startActivity(i);
+            });
+        }
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock In", "", "Opened Stock In", new PrefManager(this).getUserId());
 
         fetchLocations();
         restoreFromRoom();
@@ -213,10 +228,6 @@ public class StockInActivity extends ScannerActivity
                 sumAdapter = new StockInProductAdapter(sumProductList);
                 rvTags.setAdapter(sumAdapter);
             }
-        });
-        fabScanCamera.setOnClickListener(v -> {
-            if (switchRfid.isChecked()) switchRfid.setChecked(false);
-            cameraScanLauncher.launch(new Intent(this, BarcodeCameraActivity.class));
         });
     }
 
@@ -493,6 +504,7 @@ public class StockInActivity extends ScannerActivity
             if (t.getEpcTag().equalsIgnoreCase(cleanData)) {
                 playScanFeedback(1);
                 showWarning("Already scanned");
+                LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock In", cleanData, "Duplicate scan: " + cleanData, new PrefManager(this).getUserId());
                 return;
             }
         }
@@ -500,6 +512,7 @@ public class StockInActivity extends ScannerActivity
 
         addItemToList(new ItemModel.Item(cleanData, "", "Loading...", 1));
         playScanFeedback(0);
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock In", cleanData, "Scanned: " + cleanData, new PrefManager(this).getUserId());
 
         if (!isNetworkConnected()) {
             new Thread(() -> db.appDao().insertStockInScan(
@@ -525,7 +538,9 @@ public class StockInActivity extends ScannerActivity
                             runOnUiThread(() -> {
                                 removeItemFromList(cleanData);
                                 playScanFeedback(2);
-                                showError(ErrorParser.getMessage(response));
+                                String errMsg = ErrorParser.getMessage(response);
+                                LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN, "Stock In", cleanData, "Scan rejected: " + errMsg, new PrefManager(StockInActivity.this).getUserId());
+                                showError(errMsg);
                             });
                         }
                     }
@@ -595,6 +610,7 @@ public class StockInActivity extends ScannerActivity
                             new Thread(() -> db.appDao().clearAllStockInScans()).start();
                             showSuccess(response.body().getMessage());
                             playScanFeedback(0);
+                            LogManager.get(StockInActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock In", "", "Stock In submitted: " + totalScanCount + " items", new PrefManager(StockInActivity.this).getUserId());
                             clearAllData();
                         } else {
                             handleApiErrorFriendly(response);

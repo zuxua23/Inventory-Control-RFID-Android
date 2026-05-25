@@ -28,6 +28,7 @@ import android.util.Log;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.work.Constraints;
 import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
@@ -58,11 +59,13 @@ import com.example.inventory_system_ht.model.TagModel;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.network.ErrorParser;
+import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.util.SyncWorker;
 import com.example.inventory_system_ht.R;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 
 import java.text.SimpleDateFormat;
@@ -88,7 +91,7 @@ public class StockPrepProductActivity extends ScannerActivity
     private EditText resultScan;
     private TextView tvScanned, tvNoDo, tvDateDo;
     private Switch switchRfid;
-    private android.widget.RecyclerView rvTags;
+    private RecyclerView rvTags;
     private Spinner spinnerLocation, spinnerPower;
     private Button btnListProduct, btnSumProduct;
     private com.google.android.material.floatingactionbutton.FloatingActionButton fabScanCamera;
@@ -155,6 +158,16 @@ public class StockPrepProductActivity extends ScannerActivity
         fetchDoDetail();
         restoreScannedTagsFromRoom();
         setupListeners();
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent i = new Intent(this, LogActivity.class);
+                i.putExtra(LogActivity.EXTRA_MENU, "Stock Preparation");
+                startActivity(i);
+            });
+        }
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Preparation", "", "Opened Stock Preparation", new PrefManager(this).getUserId());
     }
 
     @Override
@@ -569,6 +582,7 @@ public class StockPrepProductActivity extends ScannerActivity
 
         if (scannedRawSet.contains(key) || scannedEpcSet.contains(key)) {
             if (!isRfid) { playScanFeedback(1); showWarning("Already scanned"); }
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Preparation", scannedData, "Duplicate scan: " + scannedData, new PrefManager(this).getUserId());
             return;
         }
 
@@ -582,6 +596,7 @@ public class StockPrepProductActivity extends ScannerActivity
         scanCount++;
         tvScanned.setText("Scanned : " + scanCount);
         playScanFeedback(0);
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock Preparation", scannedData, "Scanned: " + scannedData, new PrefManager(this).getUserId());
 
         if (!isNetworkConnected()) {
             new Thread(() -> {
@@ -689,6 +704,9 @@ public class StockPrepProductActivity extends ScannerActivity
         scannedRawSet.remove(key);
         scanCount = Math.max(0, scanCount - 1);
         tvScanned.setText("Scanned : " + scanCount);
+        String logMsg = message != null ? message : "API error";
+        String logLevel = "Already scanned".equals(message) ? LogManager.WARNING : LogManager.ERROR;
+        LogManager.get(this).log(logLevel, LogManager.ACTION_SCAN, "Stock Preparation", key, "Scan rejected: " + logMsg, new PrefManager(this).getUserId());
         if (message != null && !isRfid) { showError(message); playScanFeedback(2); }
     }
 
@@ -777,6 +795,7 @@ public class StockPrepProductActivity extends ScannerActivity
                                 runOnUiThread(() -> {
                                     showSuccess("Items saved");
                                     playScanFeedback(0);
+                                    LogManager.get(StockPrepProductActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock Preparation", "", "Submitted " + codes.size() + " items", new PrefManager(StockPrepProductActivity.this).getUserId());
                                     clearScannedData();
                                     finish();
                                 });

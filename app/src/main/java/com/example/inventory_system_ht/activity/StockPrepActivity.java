@@ -16,10 +16,13 @@ import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Listener.BarcodeDataDelegate;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
+import com.example.inventory_system_ht.util.LogManager;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.example.inventory_system_ht.adapter.DeliveryOrderAdapter;
 import com.example.inventory_system_ht.database.AppDao;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.DeliveryOrderEntity;
+import com.example.inventory_system_ht.model.DOModel;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.PrefManager;
@@ -56,6 +59,16 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
         initViews();
         setupListeners();
         loadDataFromLocalDB();
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent i = new Intent(this, LogActivity.class);
+                i.putExtra(LogActivity.EXTRA_MENU, "Stock Preparation");
+                startActivity(i);
+            });
+        }
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Preparation", "", "Opened Stock Preparation", new PrefManager(this).getUserId());
     }
 
     @Override
@@ -124,15 +137,20 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
 
         ApiClient.getClient(this).create(ApiService.class)
                 .getDo(token)
-                .enqueue(new retrofit2.Callback<List<DeliveryOrderEntity>>() {
+                .enqueue(new retrofit2.Callback<List<DOModel.DOResponse>>() {
                     @Override
-                    public void onResponse(Call<List<DeliveryOrderEntity>> call,
-                                           retrofit2.Response<List<DeliveryOrderEntity>> response) {
+                    public void onResponse(Call<List<DOModel.DOResponse>> call,
+                                           retrofit2.Response<List<DOModel.DOResponse>> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            List<DeliveryOrderEntity> remoteDOs = response.body();
+                            List<DOModel.DOResponse> remoteList = response.body();
+                            List<DeliveryOrderEntity> entities = new ArrayList<>();
+                            for (DOModel.DOResponse r : remoteList) {
+                                entities.add(new DeliveryOrderEntity(
+                                        r.getDoId(), r.getDoNumber(), "", "", ""));
+                            }
                             new Thread(() -> {
                                 try { appDao.deleteAllDO(); } catch (Exception ignored) {}
-                                appDao.insertDOList(remoteDOs);
+                                appDao.insertDOList(entities);
                                 runOnUiThread(() -> {
                                     hideLoading();
                                     playScanFeedback(0);
@@ -147,7 +165,7 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
                     }
 
                     @Override
-                    public void onFailure(Call<List<DeliveryOrderEntity>> call, Throwable t) {
+                    public void onFailure(Call<List<DOModel.DOResponse>> call, Throwable t) {
                         hideLoading();
                         handleFailure(t);
                         playScanFeedback(2);

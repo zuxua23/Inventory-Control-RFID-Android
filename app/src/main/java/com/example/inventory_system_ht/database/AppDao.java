@@ -5,6 +5,7 @@ import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
+import com.example.inventory_system_ht.entity.AppLogEntity;
 import com.example.inventory_system_ht.entity.DeliveryOrderEntity;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
@@ -135,4 +136,26 @@ public interface AppDao {
 
     @Query("DELETE FROM tb_stockin_scan WHERE epc_tag = :epc")
     void deleteStockInScanByEpc(String epc);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertLog(AppLogEntity log);
+
+    @Query("SELECT * FROM tb_app_log ORDER BY timestamp DESC")
+    List<AppLogEntity> getAllLogs();
+
+    @Query("DELETE FROM tb_app_log WHERE timestamp < :cutoff")
+    void deleteOldLogs(long cutoff);
+
+    @Query("SELECT * FROM tb_app_log WHERE " +
+           "(:level IS NULL OR level = :level) AND " +
+           "(:action IS NULL OR action = :action) AND " +
+           "(:menu IS NULL OR menu = :menu) AND " +
+           "(:fromTime = 0 OR timestamp >= :fromTime) AND " +
+           "(:toTime = 0 OR timestamp <= :toTime) AND " +
+           "(:search IS NULL OR LOWER(message) LIKE '%' || LOWER(:search) || '%' " +
+           "OR LOWER(entity) LIKE '%' || LOWER(:search) || '%' " +
+           "OR LOWER(action) LIKE '%' || LOWER(:search) || '%' " +
+           "OR LOWER(menu) LIKE '%' || LOWER(:search) || '%') " +
+           "ORDER BY timestamp DESC")
+    List<AppLogEntity> filterLogs(String level, String action, String menu, long fromTime, long toTime, String search);
 }
