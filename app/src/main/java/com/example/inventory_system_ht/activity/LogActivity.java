@@ -66,6 +66,7 @@ public class LogActivity extends ScannerActivity {
     private boolean isInitializing = false;
 
     private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss MM/dd/yyyy", Locale.getDefault());
+
     @Override
     protected CommScanner getScannerInstance() { return null; }
 
@@ -108,10 +109,10 @@ public class LogActivity extends ScannerActivity {
             @Override public void afterTextChanged(Editable s) { loadLogs(); }
         });
 
-         new Thread(() -> {
-             long cutoff = System.currentTimeMillis() - (30L * 24 * 30 * 30 * 1000);
-             db.appDao().deleteOldLogs(cutoff);
-         }).start();
+        new Thread(() -> {
+            long cutoff = System.currentTimeMillis() - (30L * 24 * 30 * 30 * 1000);
+            db.appDao().deleteOldLogs(cutoff);
+        }).start();
 
         loadLogs();
     }
