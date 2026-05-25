@@ -343,21 +343,32 @@
             </androidx.cardview.widget.CardView>
 
         </LinearLayout>
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabLog"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardFabLog"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="20dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginBottom="8dp"
-            android:contentDescription="Activity Log"
-            android:src="@drawable/ic_log"
-            app:fabSize="mini"
-            app:tint="@color/white"
-            app:backgroundTint="@color/blue_theme"
-            app:borderWidth="0dp"
-            app:elevation="6dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="8dp"
+            app:strokeColor="#F57C00"
+            app:strokeWidth="3dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/cardFabCamera" />
+            app:layout_constraintBottom_toTopOf="@id/cardFabCamera">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabLog"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="Activity Log"
+                android:src="@drawable/ic_log"
+                app:tint="#F57C00"
+                app:backgroundTint="@color/white"
+                app:fabSize="mini"
+                app:borderWidth="0dp"
+                app:elevation="0dp" />
+
+        </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardFabCamera"
@@ -367,7 +378,7 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="28dp"
             app:cardElevation="8dp"
-            app:strokeColor="@color/white"
+            app:strokeColor="#4B7BEC"
             app:strokeWidth="3dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toTopOf="@id/bottomButtonsContainer">
@@ -378,11 +389,12 @@
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/desc_scan_camera"
                 android:src="@drawable/ic_camera"
-                app:tint="@color/white"
-                app:backgroundTint="@color/blue_theme"
+                app:tint="#4B7BEC"
+                app:backgroundTint="@color/white"
                 app:borderWidth="0dp"
                 app:elevation="0dp" />
 
-        </com.google.android.material.card.MaterialCardView>    </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
