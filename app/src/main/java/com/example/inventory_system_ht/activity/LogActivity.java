@@ -141,7 +141,10 @@ public class LogActivity extends ScannerActivity {
 
     private void showDatePicker() {
         Calendar cal = Calendar.getInstance();
-        new DatePickerDialog(this, (view, year, month, day) -> {
+        Calendar minCal = Calendar.getInstance();
+        minCal.add(Calendar.DAY_OF_YEAR, -30);
+
+        DatePickerDialog dialog = new DatePickerDialog(this, (view, year, month, day) -> {
             Calendar from = Calendar.getInstance();
             from.set(year, month, day, 0, 0, 0);
             from.set(Calendar.MILLISECOND, 0);
@@ -159,7 +162,10 @@ public class LogActivity extends ScannerActivity {
             spinnerDate.setSelection(dateOptions.size() - 1);
             isInitializing = false;
             loadLogs();
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+        dialog.getDatePicker().setMaxDate(cal.getTimeInMillis());
+        dialog.getDatePicker().setMinDate(minCal.getTimeInMillis());
+        dialog.show();
     }
 
     private void setupSpinner(Spinner spinner, List<String> items) {

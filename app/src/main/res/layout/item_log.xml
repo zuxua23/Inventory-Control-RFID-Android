@@ -105,7 +105,8 @@
                 android:fontFamily="@font/raleway_regular"
                 android:maxLines="2"
                 android:ellipsize="end"
-                android:text="Message preview here" />
+                android:text="Message preview here"
+                android:visibility="gone" />
 
         </LinearLayout>
     </LinearLayout>
