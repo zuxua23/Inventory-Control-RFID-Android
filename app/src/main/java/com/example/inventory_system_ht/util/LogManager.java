@@ -48,6 +48,8 @@ public class LogManager {
         entry.userId = userId != null ? userId : "";
         entry.requestApi = requestApi;
         entry.responseApi = responseApi;
+        entry.device = android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL
+                + " (" + android.os.Build.DEVICE + ") Android " + android.os.Build.VERSION.RELEASE;
 
         new Thread(() -> {
             try {

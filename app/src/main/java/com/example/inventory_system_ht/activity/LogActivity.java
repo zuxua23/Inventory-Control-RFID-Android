@@ -251,6 +251,7 @@ public class LogActivity extends ScannerActivity {
         ((TextView) dialog.findViewById(R.id.tvDetailEntity)).setText(log.entity != null && !log.entity.isEmpty() ? log.entity : "-");
         ((TextView) dialog.findViewById(R.id.tvDetailMessage)).setText(log.message != null ? log.message : "-");
         ((TextView) dialog.findViewById(R.id.tvDetailUserId)).setText(log.userId != null && !log.userId.isEmpty() ? log.userId : "-");
+        ((TextView) dialog.findViewById(R.id.tvDetailDevice)).setText(log.device != null && !log.device.isEmpty() ? log.device : "-");
 
         if (log.requestApi != null && !log.requestApi.isEmpty()) {
             dialog.findViewById(R.id.labelRequest).setVisibility(View.VISIBLE);
@@ -275,7 +276,8 @@ public class LogActivity extends ScannerActivity {
             sb.append("Menu    : ").append(log.menu != null ? log.menu : "-").append("\n");
             sb.append("Entity  : ").append(log.entity != null && !log.entity.isEmpty() ? log.entity : "-").append("\n");
             sb.append("Message : ").append(log.message != null ? log.message : "-").append("\n");
-            sb.append("User ID : ").append(log.userId != null && !log.userId.isEmpty() ? log.userId : "-");
+            sb.append("User ID : ").append(log.userId != null && !log.userId.isEmpty() ? log.userId : "-").append("\n");
+            sb.append("Device  : ").append(log.device != null && !log.device.isEmpty() ? log.device : "-");
             if (log.requestApi != null && !log.requestApi.isEmpty()) {
                 sb.append("\nRequest : ").append(log.requestApi);
             }

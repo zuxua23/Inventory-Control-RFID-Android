@@ -35,4 +35,7 @@ public class AppLogEntity {
 
     @ColumnInfo(name = "response_api")
     public String responseApi;
+
+    @ColumnInfo(name = "device")
+    public String device;
 }

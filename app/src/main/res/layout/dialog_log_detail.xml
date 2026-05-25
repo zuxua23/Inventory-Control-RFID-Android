@@ -158,6 +158,23 @@
                     android:layout_marginBottom="10dp" />
 
                 <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="DEVICE"
+                    android:textSize="10sp"
+                    android:textColor="@color/text_grey"
+                    android:fontFamily="@font/raleway_bold"
+                    android:letterSpacing="0.1" />
+                <TextView
+                    android:id="@+id/tvDetailDevice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_dark"
+                    android:fontFamily="@font/raleway_regular"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
                     android:id="@+id/labelRequest"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
