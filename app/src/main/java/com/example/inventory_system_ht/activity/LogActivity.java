@@ -18,12 +18,16 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.densowave.scannersdk.Common.CommScanner;
 import com.example.inventory_system_ht.R;
+import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.adapter.LogAdapter;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.AppLogEntity;
@@ -36,7 +40,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class LogActivity extends AppCompatActivity {
+public class LogActivity extends ScannerActivity {
 
     public static final String EXTRA_MENU = "extra_menu";
 
@@ -62,6 +66,8 @@ public class LogActivity extends AppCompatActivity {
     private boolean isInitializing = false;
 
     private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss MM/dd/yyyy", Locale.getDefault());
+    @Override
+    protected CommScanner getScannerInstance() { return null; }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -253,6 +259,26 @@ public class LogActivity extends AppCompatActivity {
         }
 
         dialog.findViewById(R.id.btnClose).setOnClickListener(v -> dialog.dismiss());
+
+        dialog.findViewById(R.id.btnCopyLog).setOnClickListener(v -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[").append(log.level != null ? log.level : "INFO").append("] ")
+                    .append(sdf.format(new Date(log.timestamp))).append("\n");
+            sb.append("Action  : ").append(log.action != null ? log.action : "-").append("\n");
+            sb.append("Menu    : ").append(log.menu != null ? log.menu : "-").append("\n");
+            sb.append("Entity  : ").append(log.entity != null && !log.entity.isEmpty() ? log.entity : "-").append("\n");
+            sb.append("Message : ").append(log.message != null ? log.message : "-").append("\n");
+            sb.append("User ID : ").append(log.userId != null && !log.userId.isEmpty() ? log.userId : "-");
+            if (log.requestApi != null && !log.requestApi.isEmpty()) {
+                sb.append("\nRequest : ").append(log.requestApi);
+            }
+            if (log.responseApi != null && !log.responseApi.isEmpty()) {
+                sb.append("\nResponse: ").append(log.responseApi);
+            }
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            clipboard.setPrimaryClip(ClipData.newPlainText("log", sb.toString()));
+        });
+
         dialog.show();
     }
 }

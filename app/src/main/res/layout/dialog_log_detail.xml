@@ -200,21 +200,49 @@
             </LinearLayout>
         </ScrollView>
 
-        <Button
-            android:id="@+id/btnClose"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="16dp"
-            android:text="Close"
-            android:textAllCaps="false"
-            android:textSize="14sp"
-            android:fontFamily="@font/raleway_bold"
-            android:backgroundTint="@color/blue_theme"
-            android:textColor="@color/white"
-            android:stateListAnimator="@null"
-            app:cornerRadius="24dp"
-            style="@style/Widget.MaterialComponents.Button" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="16dp"
+            android:layout_marginTop="4dp">
+
+            <Button
+                android:id="@+id/btnCopyLog"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Copy"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:fontFamily="@font/raleway_bold"
+                android:backgroundTint="@color/white"
+                android:textColor="@color/blue_theme"
+                android:stateListAnimator="@null"
+                app:strokeColor="@color/blue_theme"
+                app:strokeWidth="1.5dp"
+                app:cornerRadius="24dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+            <Button
+                android:id="@+id/btnClose"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Close"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:fontFamily="@font/raleway_bold"
+                android:backgroundTint="@color/blue_theme"
+                android:textColor="@color/white"
+                android:stateListAnimator="@null"
+                app:cornerRadius="24dp"
+                style="@style/Widget.MaterialComponents.Button" />
+
+        </LinearLayout>
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

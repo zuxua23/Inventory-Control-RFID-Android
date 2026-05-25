@@ -55,8 +55,9 @@ public class ApiClient {
                 .addInterceptor(loggingInterceptor)
                 .addInterceptor(authInterceptor)
                 .connectTimeout(8, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .writeTimeout(15, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
                 .build();
 
         if (retrofit == null || !retrofit.baseUrl().toString().equals(baseUrl)) {
