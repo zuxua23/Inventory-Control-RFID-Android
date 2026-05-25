@@ -459,13 +459,20 @@ public class StockInActivity extends ScannerActivity
     private void fetchLocations() {
         if (!isNetworkConnected()) return;
         String token = "Bearer " + new PrefManager(this).getToken();
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"endpoint\":\"getLocations\"}";
         ApiClient.getClient(this).create(ApiService.class)
                 .getLocations(token)
                 .enqueue(new Callback<List<LocationModel>>() {
                     @Override
                     public void onResponse(Call<List<LocationModel>> call,
                                            Response<List<LocationModel>> response) {
+                        String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
+                                + (response.body() != null ? response.body().size() : 0) + "}";
                         if (response.isSuccessful() && response.body() != null) {
+                            LogManager.get(StockInActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                                    "Stock In", "Location", "Fetch locations success: " + response.body().size() + " items",
+                                    userId, reqJson, resJson);
                             masterLocationList = response.body();
                             locationList.clear();
                             for (LocationModel loc : masterLocationList)
@@ -489,11 +496,20 @@ public class StockInActivity extends ScannerActivity
                                     }
                                 }
                             });
+                        } else {
+                            LogManager.get(StockInActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                                    "Stock In", "Location", "Fetch locations failed: HTTP " + response.code(),
+                                    userId, reqJson, resJson);
                         }
                     }
 
                     @Override
-                    public void onFailure(Call<List<LocationModel>> call, Throwable t) {}
+                    public void onFailure(Call<List<LocationModel>> call, Throwable t) {
+                        String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                                "Stock In", "Location", "Fetch locations error: " + t.getMessage(),
+                                userId, reqJson, resJson);
+                    }
                 });
     }
 
@@ -523,14 +539,21 @@ public class StockInActivity extends ScannerActivity
 
         String token = "Bearer " + new PrefManager(this).getToken();
         String type = switchRfid.isChecked() ? "RFID" : "QR";
+        String userId = new PrefManager(this).getUserId();
+        String tagReqJson = "{\"code\":\"" + cleanData + "\",\"type\":\"" + type + "\"}";
 
         ApiClient.getClient(this).create(ApiService.class)
                 .getTagByCode(token, cleanData, type)
                 .enqueue(new Callback<TagModel.TagResponse>() {
                     @Override
                     public void onResponse(Call<TagModel.TagResponse> call, Response<TagModel.TagResponse> response) {
+                        String tagResJson = "{\"http_code\":" + response.code() + ",\"found\":"
+                                + (response.body() != null) + "}";
                         if (response.isSuccessful() && response.body() != null) {
                             TagModel.TagResponse tag = response.body();
+                            LogManager.get(StockInActivity.this).log(LogManager.INFO, LogManager.ACTION_SCAN,
+                                    "Stock In", cleanData, "Tag resolved: " + tag.getItemName(),
+                                    userId, tagReqJson, tagResJson);
                             new Thread(() -> db.appDao().insertStockInScan(
                                     buildEntity(cleanData, tag.getItemId(), tag.getItemName(), true))).start();
                             runOnUiThread(() -> updateItemInList(cleanData, tag.getItemId(), tag.getItemName()));
@@ -539,7 +562,9 @@ public class StockInActivity extends ScannerActivity
                                 removeItemFromList(cleanData);
                                 playScanFeedback(2);
                                 String errMsg = ErrorParser.getMessage(response);
-                                LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN, "Stock In", cleanData, "Scan rejected: " + errMsg, new PrefManager(StockInActivity.this).getUserId());
+                                LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
+                                        "Stock In", cleanData, "Scan rejected: " + errMsg,
+                                        userId, tagReqJson, tagResJson);
                                 showError(errMsg);
                             });
                         }
@@ -547,6 +572,10 @@ public class StockInActivity extends ScannerActivity
 
                     @Override
                     public void onFailure(Call<TagModel.TagResponse> call, Throwable t) {
+                        String tagResJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
+                                "Stock In", cleanData, "Tag resolve error: " + t.getMessage(),
+                                userId, tagReqJson, tagResJson);
                         new Thread(() -> db.appDao().insertStockInScan(
                                 buildEntity(cleanData, "", "Loading...", false))).start();
                         handler.post(() -> showWarning("Saved offline"));
@@ -596,9 +625,13 @@ public class StockInActivity extends ScannerActivity
     private void hitApiStockIn(String scannerType) {
         showLoading();
         String token = "Bearer " + new PrefManager(this).getToken();
+        String userId = new PrefManager(this).getUserId();
 
         List<String> codes = new ArrayList<>();
         for (ItemModel.Item item : scannedItemsList) codes.add(item.getEpcTag());
+
+        String submitReqJson = "{\"scannerType\":\"" + scannerType + "\",\"locationId\":\""
+                + selectedLocationId + "\",\"count\":" + codes.size() + "}";
 
         ApiClient.getClient(this).create(ApiService.class)
                 .stockIn(token, new StockInRequest(scannerType, codes, selectedLocationId))
@@ -606,13 +639,20 @@ public class StockInActivity extends ScannerActivity
                     @Override
                     public void onResponse(Call<GeneralResponse> call, Response<GeneralResponse> response) {
                         hideLoading();
+                        String submitResJson = "{\"http_code\":" + response.code() + ",\"success\":"
+                                + response.isSuccessful() + "}";
                         if (response.isSuccessful()) {
+                            LogManager.get(StockInActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT,
+                                    "Stock In", "", "Stock In submitted: " + totalScanCount + " items",
+                                    userId, submitReqJson, submitResJson);
                             new Thread(() -> db.appDao().clearAllStockInScans()).start();
                             showSuccess(response.body().getMessage());
                             playScanFeedback(0);
-                            LogManager.get(StockInActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock In", "", "Stock In submitted: " + totalScanCount + " items", new PrefManager(StockInActivity.this).getUserId());
                             clearAllData();
                         } else {
+                            LogManager.get(StockInActivity.this).log(LogManager.WARNING, LogManager.ACTION_SUBMIT,
+                                    "Stock In", "", "Stock In failed: HTTP " + response.code(),
+                                    userId, submitReqJson, submitResJson);
                             handleApiErrorFriendly(response);
                             playScanFeedback(2);
                         }
@@ -622,6 +662,10 @@ public class StockInActivity extends ScannerActivity
                     @Override
                     public void onFailure(Call<GeneralResponse> call, Throwable t) {
                         hideLoading();
+                        String submitResJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                                "Stock In", "", "Stock In error: " + t.getMessage(),
+                                userId, submitReqJson, submitResJson);
                         handleFailure(t);
                         playScanFeedback(2);
                         showWarning("Saved offline");
