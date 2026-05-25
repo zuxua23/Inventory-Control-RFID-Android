@@ -57,7 +57,7 @@ public class LogActivity extends ScannerActivity {
 
     private final List<String> levelOptions = Arrays.asList("All Levels", "INFO", "WARNING", "ERROR");
     private final List<String> actionOptions = Arrays.asList("All Actions", "OPEN", "SCAN", "READ", "SUBMIT", "DELETE", "CREATE", "LOGIN", "LOGOUT");
-    private final List<String> menuOptions = Arrays.asList("All Menus", "Home", "Stock In", "Stock Preparation", "Stock Taking", "Tag Registration", "Search Item", "Search Signal", "Login");
+    private final List<String> menuOptions = Arrays.asList("All Modules", "Home", "Stock In", "Stock Preparation", "Stock Taking", "Tag Registration", "Search Item", "Search Signal", "Login");
     private final List<String> dateOptions = new ArrayList<>(Arrays.asList("All Time", "Today", "Last 7 Days", "Last 30 Days", "Pick Date..."));
     private ArrayAdapter<String> dateAdapter;
     private long pickedFromTime = 0;
@@ -129,7 +129,7 @@ public class LogActivity extends ScannerActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                 if (isInitializing) return;
-                if (pos == dateOptions.size() - 1 && dateOptions.get(pos).equals("Pick Date...")) {
+                if (pos == dateOptions.size() - 1 && dateOptions.get(pos).equals("Pick Date")) {
                     showDatePicker();
                 } else {
                     loadLogs();

@@ -82,7 +82,7 @@
                     android:textSize="13sp"
                     android:textColor="#80FFFFFF"
                     android:fontFamily="@font/raleway_regular"
-                    android:text=" · " />
+                    android:text=" - " />
 
                 <TextView
                     android:id="@+id/tvMenu"
