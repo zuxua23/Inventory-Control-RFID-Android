@@ -178,6 +178,10 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             float rssi = data.getRSSI() / 10f;
 
             if (selectedItem != null && epc.equalsIgnoreCase(selectedItem.getEpcTag())) {
+                LogManager.get(SearchSignalActivity.this).log(LogManager.INFO, LogManager.ACTION_SCAN,
+                        "Search Signal", epc,
+                        "Tag detected: " + selectedItem.getItemName() + " | RSSI: " + rssi + " dBm",
+                        new PrefManager(SearchSignalActivity.this).getUserId());
                 handler.removeCallbacks(noSignalRunnable);
                 handler.post(() -> {
                     playScanFeedback(0);
@@ -216,6 +220,12 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
 
             if (finalLevel >= 9 && !tagFoundNotified) {
                 tagFoundNotified = true;
+                String itemName = selectedItem != null ? selectedItem.getItemName() : "-";
+                String epcTag = selectedItem != null ? selectedItem.getEpcTag() : "-";
+                LogManager.get(SearchSignalActivity.this).log(LogManager.INFO, LogManager.ACTION_SCAN,
+                        "Search Signal", epcTag,
+                        "Tag very close: " + itemName + " | RSSI: " + String.format("%.1f", rssi) + " dBm",
+                        new PrefManager(SearchSignalActivity.this).getUserId());
                 showSuccess("Tag found! Very close.");
                 playScanFeedback(0);
             } else if (finalLevel < 7) {
