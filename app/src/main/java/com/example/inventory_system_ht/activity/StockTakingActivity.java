@@ -43,6 +43,7 @@ import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.model.StockTakingModel;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
+import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
@@ -117,6 +118,16 @@ public class StockTakingActivity extends ScannerActivity
 
         if (isNetworkConnected()) loadSessionTagsFromServer();
         else { loadSessionTagsFromCache(); showWarning("Offline, using cache"); }
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent intent = new Intent(this, LogActivity.class);
+                intent.putExtra(LogActivity.EXTRA_MENU, "Stock Taking");
+                startActivity(intent);
+            });
+        }
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Taking", "", "Opened Stock Taking", new PrefManager(this).getUserId());
     }
 
     @Override

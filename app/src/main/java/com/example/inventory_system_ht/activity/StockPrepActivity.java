@@ -16,6 +16,8 @@ import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Listener.BarcodeDataDelegate;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
+import com.example.inventory_system_ht.util.LogManager;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.example.inventory_system_ht.adapter.DeliveryOrderAdapter;
 import com.example.inventory_system_ht.database.AppDao;
 import com.example.inventory_system_ht.database.AppDatabase;
@@ -57,6 +59,16 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
         initViews();
         setupListeners();
         loadDataFromLocalDB();
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent i = new Intent(this, LogActivity.class);
+                i.putExtra(LogActivity.EXTRA_MENU, "Stock Preparation");
+                startActivity(i);
+            });
+        }
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Preparation", "", "Opened Stock Preparation", new PrefManager(this).getUserId());
     }
 
     @Override

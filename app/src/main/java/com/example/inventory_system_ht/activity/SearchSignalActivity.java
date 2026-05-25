@@ -1,5 +1,6 @@
 package com.example.inventory_system_ht.activity;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,9 +25,12 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.util.LogManager;
+import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.Arrays;
 import java.util.List;
@@ -81,6 +85,16 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
                     ? selectedDetail.getLocation() : "-";
             tvItemTitle.setText("Locating: " + selectedItem.getItemName() + " | " + location);
         }
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent i = new Intent(this, LogActivity.class);
+                i.putExtra(LogActivity.EXTRA_MENU, "Search Signal");
+                startActivity(i);
+            });
+        }
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Search Signal", "", "Opened Search Signal", new PrefManager(this).getUserId());
     }
 
     @Override
