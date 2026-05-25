@@ -115,7 +115,7 @@ public class LogActivity extends AppCompatActivity {
 
     private void setupSpinner(Spinner spinner, List<String> items) {
         ArrayAdapter<String> adp = new ArrayAdapter<>(this, R.layout.item_spinner_selected, items);
-        adp.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        adp.setDropDownViewResource(R.layout.item_spinner_dropdown);
         spinner.setAdapter(adp);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
