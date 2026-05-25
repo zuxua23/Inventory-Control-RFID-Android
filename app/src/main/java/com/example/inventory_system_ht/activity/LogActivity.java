@@ -228,8 +228,8 @@ public class LogActivity extends ScannerActivity {
         int levelColor;
         switch (log.level != null ? log.level : "") {
             case "WARNING": levelColor = Color.parseColor("#F57C00"); break;
-            case "ERROR":   levelColor = Color.parseColor("#E74C3C"); break;
-            default:        levelColor = Color.parseColor("#4CAF50"); break;
+            case "ERROR": levelColor = Color.parseColor("#E74C3C"); break;
+            default: levelColor = Color.parseColor("#4CAF50"); break;
         }
 
         TextView tvDetailLevel = dialog.findViewById(R.id.tvDetailLevel);
