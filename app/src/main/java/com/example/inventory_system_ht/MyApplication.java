@@ -10,8 +10,8 @@ import com.densowave.scannersdk.Const.CommConst;
 import com.densowave.scannersdk.Listener.ScannerStatusListener;
 
 import com.densowave.scannersdk.Listener.ScannerAcceptStatusListener;
-import com.example.inventory_system_ht.Helper.PrefManager;
-import com.example.inventory_system_ht.Helper.ScannerManager;
+import com.example.inventory_system_ht.util.PrefManager;
+import com.example.inventory_system_ht.util.ScannerManager;
 
 public class MyApplication extends Application
         implements ScannerAcceptStatusListener, ScannerStatusListener {

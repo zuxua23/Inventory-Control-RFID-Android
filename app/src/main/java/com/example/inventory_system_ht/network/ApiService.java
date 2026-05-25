@@ -1,0 +1,116 @@
+package com.example.inventory_system_ht.network;
+
+import com.example.inventory_system_ht.model.AuthModel;
+import com.example.inventory_system_ht.model.DOModel;
+import com.example.inventory_system_ht.model.GeneralResponse;
+import com.example.inventory_system_ht.model.ItemModel;
+import com.example.inventory_system_ht.model.LocationModel;
+import com.example.inventory_system_ht.model.StockInRequest;
+import com.example.inventory_system_ht.model.StockPrepBulkRequest;
+import com.example.inventory_system_ht.model.StockTakingModel;
+import com.example.inventory_system_ht.model.TagModel;
+
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.GET;
+import retrofit2.http.Header;
+import retrofit2.http.POST;
+import retrofit2.http.Path;
+import retrofit2.http.Query;
+
+public interface ApiService {
+
+    // ── Auth ───────────────────────────────────────────────
+    @GET("api/ping")
+    Call<GeneralResponse> ping();
+
+    @POST("api/auth/login")
+    Call<AuthModel.LoginResponse> login(@Body AuthModel.LoginRequest loginRequest);
+
+    // ── Tag ───────────────────────────────────────────────────────
+    @POST("api/tag/register")
+    Call<GeneralResponse> registerTags(@Header("Authorization") String token,
+                                       @Body AuthModel.RegisterRequest request);
+
+    @GET("api/tag/{id}")
+    Call<TagModel.TagDetailDto> getTagDetail(@Header("Authorization") String token,
+                                             @Path("id") String tagId);
+
+    @GET("api/stockin/{code}")
+    Call<TagModel.TagResponse> getTagByCode(@Header("Authorization") String token,
+                                            @Path("code") String code,
+                                            @Query("scannerType") String scannerType);
+
+    @GET("api/stockin/{code}")
+    Call<TagModel.TagInfoDto> getTagInfo(@Header("Authorization") String token,
+                                         @Path("code") String code);
+
+    // ── Stock In ──────────────────────────────────────────────────
+    @POST("api/stockin")
+    Call<GeneralResponse> stockIn(@Header("Authorization") String token,
+                                  @Body StockInRequest request);
+
+    // ── Stock Preparation ─────────────────────────────────────────
+    @POST("api/preparation/bulk")
+    Call<GeneralResponse> submitStockPrep(@Header("Authorization") String token,
+                                          @Body StockPrepBulkRequest request);
+
+    @GET("api/preparation/do")
+    Call<List<DOModel.DOResponse>> getDo(@Header("Authorization") String token);
+
+    @GET("api/pickinglist/{id}")
+    Call<DOModel.DOResponse> getPickingListById(@Header("Authorization") String token,
+                                                @Path("id") String id);
+
+    @GET("api/do")
+    Call<List<DOModel.DOResponse>> getAllDO(@Header("Authorization") String token);
+
+    @GET("api/preparation/do/{id}")
+    Call<DOModel.DOResponse> getDoDetailForPrep(@Header("Authorization") String token,
+                                                @Path("id") String id);
+
+    // ── Stock Taking ──────────────────────────────────────────────
+    @GET("api/stock-taking/active")
+    Call<StockTakingModel.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);
+
+    @GET("api/stock-taking/tags/{sttId}")
+    Call<List<StockTakingModel.SessionItem>> getSessionTags(@Header("Authorization") String token,
+                                                            @Path("sttId") String sttId);
+
+    @POST("api/stock-taking/scan")
+    Call<GeneralResponse> scanStockTaking(@Header("Authorization") String token,
+                                          @Body StockTakingModel.ScanReq request);
+
+    @POST("api/stock-taking/scan/bulk")
+    Call<GeneralResponse> bulkScanStockTaking(@Header("Authorization") String token,
+                                              @Body StockTakingModel.BulkScanReq request);
+
+    @POST("api/stock-taking/remove")
+    Call<GeneralResponse> removeStockTaking(@Header("Authorization") String token,
+                                            @Body StockTakingModel.RemoveReq request);
+
+    @POST("api/stock-taking/manual-add")
+    Call<GeneralResponse> manualAddStockTaking(@Header("Authorization") String token,
+                                               @Body StockTakingModel.ManualAddReq request);
+
+    @POST("api/stock-taking/apply-adjustment")
+    Call<GeneralResponse> applyAdjustment(@Header("Authorization") String token,
+                                          @Body StockTakingModel.FinalizeReq request);
+
+    // ── Location & Item ───────────────────────────────────────────
+    @GET("api/location")
+    Call<List<LocationModel>> getLocations(@Header("Authorization") String token);
+
+    @GET("api/item")
+    Call<List<ItemModel.ItemResponse>> getAllItems(@Header("Authorization") String token);
+
+    // ── Search Item ───────────────────────────────────────────────
+    @GET("api/search-item")
+    Call<List<TagModel.SearchItemDto>> getSearchItems(@Header("Authorization") String token);
+
+    @GET("api/search-item/{code}")
+    Call<TagModel.TagDetailDto> getTagDetailSearchItem(@Header("Authorization") String token,
+                                                       @Path("code") String code);
+}

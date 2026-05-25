@@ -1,0 +1,331 @@
+package com.example.inventory_system_ht.activity;
+
+import android.content.Intent;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.densowave.scannersdk.Barcode.BarcodeData;
+import com.densowave.scannersdk.Barcode.BarcodeDataReceivedEvent;
+import com.densowave.scannersdk.Common.CommScanner;
+import com.densowave.scannersdk.Listener.BarcodeDataDelegate;
+import com.densowave.scannersdk.Listener.RFIDDataDelegate;
+import com.densowave.scannersdk.RFID.RFIDData;
+import com.densowave.scannersdk.RFID.RFIDDataReceivedEvent;
+
+import com.example.inventory_system_ht.activity.base.ScannerActivity;
+import com.example.inventory_system_ht.adapter.SearchItemAdapter;
+import com.example.inventory_system_ht.database.AppDatabase;
+import com.example.inventory_system_ht.entity.SearchItemEntity;
+import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.network.ApiClient;
+import com.example.inventory_system_ht.network.ApiService;
+import com.example.inventory_system_ht.util.PrefManager;
+import com.example.inventory_system_ht.util.RfidBulkHelper;
+import com.example.inventory_system_ht.util.ScannerManager;
+import com.example.inventory_system_ht.R;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+public class SearchItemActivity extends ScannerActivity
+        implements BarcodeDataDelegate, RFIDDataDelegate {
+
+    private EditText etSearchItem;
+    private RecyclerView rvTags;
+    private SearchItemAdapter adapter;
+    private List<TagModel.SearchItemDto> allItemList;
+    private List<TagModel.SearchItemDto> filteredList;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private ApiService api;
+    private String token;
+    private AppDatabase db;
+
+    @Override
+    protected CommScanner getScannerInstance() {
+        return ScannerManager.getInstance().getScanner();
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_search_item);
+
+        token = "Bearer " + new PrefManager(this).getToken();
+        api = ApiClient.getClient(this).create(ApiService.class);
+        db = AppDatabase.getDatabase(this);
+
+        initViews();
+        setupListeners();
+
+        loadFromLocal();
+        if (isNetworkConnected()) fetchData();
+        else showWarning("Offline mode");
+
+        etSearchItem.requestFocus();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        CommScanner scanner = getScannerInstance();
+        updateReaderBattery(findViewById(R.id.ivReaderBattery));
+        if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
+
+        int bat = getHTBatteryLevel();
+        if (bat <= 15) {
+            showWarning("Battery low: " + bat + "%");
+            playScanFeedback(2);
+        }
+
+        if (etSearchItem != null)
+            etSearchItem.postDelayed(() -> etSearchItem.requestFocus(), 200);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        RfidBulkHelper.closeBarcode(getScannerInstance());
+    }
+
+    private void initViews() {
+        etSearchItem = findViewById(R.id.searchItem);
+        rvTags = findViewById(R.id.rvTags);
+
+        allItemList = new ArrayList<>();
+        filteredList = new ArrayList<>();
+
+        adapter = new SearchItemAdapter(filteredList);
+        rvTags.setLayoutManager(new LinearLayoutManager(this));
+        rvTags.setAdapter(adapter);
+    }
+
+    private void setupListeners() {
+        etSearchItem.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filter(s.toString());
+            }
+        });
+
+        adapter.setOnItemClickListener(this::fetchAndShowDetail);
+
+        findViewById(R.id.btnRefresh).setOnClickListener(v -> {
+            if (!isNetworkConnected()) { showWarning("No internet connection"); return; }
+            fetchData();
+        });
+
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+    }
+
+    private void loadFromLocal() {
+        List<SearchItemEntity> cached = db.appDao().getAllSearchItems();
+        allItemList.clear();
+        for (SearchItemEntity e : cached) {
+            TagModel.SearchItemDto dto = new TagModel.SearchItemDto();
+            dto.setTagId(e.tagId);
+            dto.setEpcTag(e.epcTag);
+            dto.setItemName(e.itemName);
+            dto.setLocation(e.location);
+            allItemList.add(dto);
+        }
+        filteredList.clear();
+        filteredList.addAll(allItemList);
+        adapter.notifyDataSetChanged();
+    }
+
+    private void saveToLocal(List<TagModel.SearchItemDto> items) {
+        new Thread(() -> {
+            db.appDao().deleteAllSearchItems();
+            List<SearchItemEntity> entities = new ArrayList<>();
+            for (TagModel.SearchItemDto dto : items) {
+                SearchItemEntity e = new SearchItemEntity();
+                e.tagId = dto.getTagId();
+                e.epcTag = dto.getEpcTag();
+                e.itemName = dto.getItemName();
+                e.location = dto.getLocation();
+                entities.add(e);
+            }
+            db.appDao().insertSearchItems(entities);
+        }).start();
+    }
+
+    private void fetchData() {
+        showLoading();
+        api.getSearchItems(token).enqueue(new Callback<List<TagModel.SearchItemDto>>() {
+            @Override
+            public void onResponse(Call<List<TagModel.SearchItemDto>> call,
+                                   Response<List<TagModel.SearchItemDto>> response) {
+                hideLoading();
+                if (response.isSuccessful() && response.body() != null) {
+                    List<TagModel.SearchItemDto> data = response.body();
+                    saveToLocal(data);
+                    allItemList.clear();
+                    allItemList.addAll(data);
+                    filteredList.clear();
+                    filteredList.addAll(allItemList);
+                    adapter.notifyDataSetChanged();
+                } else {
+                    handleApiError(response);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<TagModel.SearchItemDto>> call, Throwable t) {
+                hideLoading();
+                handleFailure(t);
+            }
+        });
+    }
+
+    private void fetchAndShowDetail(TagModel.SearchItemDto item) {
+        if (!isNetworkConnected()) { showWarning("Offline, cannot view detail"); return; }
+        showLoading();
+        api.getTagDetailSearchItem(token, item.getTagId())
+                .enqueue(new Callback<TagModel.TagDetailDto>() {
+                    @Override
+                    public void onResponse(Call<TagModel.TagDetailDto> call,
+                                           Response<TagModel.TagDetailDto> response) {
+                        hideLoading();
+                        if (response.isSuccessful() && response.body() != null)
+                            handler.post(() -> showTagDetailDialog(item, response.body()));
+                        else showError("Tag not found");
+                    }
+
+                    @Override
+                    public void onFailure(Call<TagModel.TagDetailDto> call, Throwable t) {
+                        hideLoading();
+                        handleFailure(t);
+                    }
+                });
+    }
+
+    private void showTagDetailDialog(TagModel.SearchItemDto selectedItem,
+                                     TagModel.TagDetailDto detail) {
+        android.app.Dialog dialog = new android.app.Dialog(this);
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_tag_detail);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(
+                    new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    (int) (getResources().getDisplayMetrics().widthPixels * 0.9),
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        View view = dialog.getWindow().getDecorView();
+        ((TextView) view.findViewById(R.id.tvDetailItemName)).setText(detail.getItemName());
+        ((TextView) view.findViewById(R.id.tvDetailTagId)).setText(detail.getTagId());
+        ((TextView) view.findViewById(R.id.tvDetailEpc)).setText(detail.getEpcTag());
+        ((TextView) view.findViewById(R.id.tvDetailLocation)).setText(detail.getLocation());
+
+        TextView tvStatus = view.findViewById(R.id.tvDetailStatus);
+        CardView cvStatus = view.findViewById(R.id.cvDetailStatus);
+        tvStatus.setText(detail.getStatus());
+        cvStatus.setCardBackgroundColor(statusColor(detail.getStatus()));
+
+        view.findViewById(R.id.btnSearchSignal).setOnClickListener(v -> {
+            if (getScannerInstance() == null || getScannerInstance().getRFIDScanner() == null) {
+                dialog.dismiss();
+                showError("RFID not connected");
+                playScanFeedback(2);
+                return;
+            }
+            dialog.dismiss();
+            Intent intent = new Intent(this, SearchSignalActivity.class);
+            intent.putExtra("SELECTED_ITEM", selectedItem);
+            intent.putExtra("SELECTED_DETAIL", detail);
+            startActivity(intent);
+        });
+
+        dialog.show();
+    }
+
+    @Override
+    public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
+        for (RFIDData data : event.getRFIDData()) {
+            String epc = RfidBulkHelper.bytesToHex(data.getUII());
+            handler.post(() -> {
+                etSearchItem.setText(epc);
+                moveScannedItemToTop(epc);
+            });
+        }
+    }
+
+    @Override
+    public void onBarcodeDataReceived(CommScanner scanner, BarcodeDataReceivedEvent event) {
+        List<BarcodeData> dataList = event.getBarcodeData();
+        if (!dataList.isEmpty()) {
+            String barcode = new String(dataList.get(0).getData()).trim();
+            handler.post(() -> {
+                etSearchItem.setText(barcode);
+                etSearchItem.setSelection(etSearchItem.getText().length());
+                moveScannedItemToTop(barcode);
+            });
+        }
+    }
+
+    private void filter(String text) {
+        filteredList.clear();
+        String query = text.toLowerCase().trim();
+        if (query.isEmpty()) {
+            filteredList.addAll(allItemList);
+        } else {
+            for (TagModel.SearchItemDto item : allItemList) {
+                String name = item.getItemName() != null ? item.getItemName().toLowerCase() : "";
+                String epc = item.getEpcTag() != null ? item.getEpcTag().toLowerCase() : "";
+                String tid = item.getTagId() != null ? item.getTagId().toLowerCase() : "";
+                String location = item.getLocation() != null ? item.getLocation().toLowerCase() : "";
+                if (name.contains(query) || epc.contains(query)
+                        || tid.contains(query) || location.contains(query))
+                    filteredList.add(item);
+            }
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+    private void moveScannedItemToTop(String code) {
+        TagModel.SearchItemDto found = null;
+        for (TagModel.SearchItemDto item : allItemList) {
+            if (code.equalsIgnoreCase(item.getEpcTag()) || code.equalsIgnoreCase(item.getTagId())) {
+                found = item; break;
+            }
+        }
+        if (found != null) {
+            playScanFeedback(0);
+            filteredList.remove(found);
+            filteredList.add(0, found);
+            adapter.setLastScannedPosition(0);
+            adapter.notifyDataSetChanged();
+            rvTags.scrollToPosition(0);
+            showSuccess("Found: " + found.getItemName());
+        } else {
+            playScanFeedback(2);
+            showError("Item not found");
+        }
+    }
+
+    private int statusColor(String status) {
+        if (status == null) return Color.parseColor("#9E9E9E");
+        switch (status.toUpperCase()) {
+            case "STOCK IN": return Color.parseColor("#28a745");
+            case "PREPARATION": return Color.parseColor("#ffc107");
+            default: return Color.parseColor("#9E9E9E");
+        }
+    }
+}
