@@ -126,6 +126,10 @@ public abstract class ScannerActivity extends AppCompatActivity {
         }
         tvMessage.setText(pesan);
 
+        String level = (type == 2) ? LogManager.ERROR : (type == 1) ? LogManager.WARNING : LogManager.INFO;
+        LogManager.get(this).log(level, LogManager.ACTION_MESSAGE,
+                getClass().getSimpleName(), "", pesan, new PrefManager(this).getUserId());
+
         FrameLayout wrapper = new FrameLayout(this);
         int px = (int)(15 * getResources().getDisplayMetrics().density);
         wrapper.setPadding(px, 0, px, 0);
