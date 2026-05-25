@@ -129,8 +129,8 @@ public class LogActivity extends ScannerActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                 if (isInitializing) return;
-                if (pos == dateOptions.size() - 1 && dateOptions.get(pos).equals("Pick Date")) {
-                    showDatePicker();
+                if (pos == dateOptions.size() - 1 && dateOptions.get(pos).equals("Pick Date...")) {
+                    handler.post(() -> showDatePicker());
                 } else {
                     loadLogs();
                 }
