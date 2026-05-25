@@ -180,7 +180,10 @@ public class LogActivity extends AppCompatActivity {
 
         TextView tvDetailLevel = dialog.findViewById(R.id.tvDetailLevel);
         tvDetailLevel.setText(log.level != null ? log.level : "");
-        tvDetailLevel.setBackgroundColor(levelColor);
+        android.graphics.drawable.GradientDrawable badge = new android.graphics.drawable.GradientDrawable();
+        badge.setColor(levelColor);
+        badge.setCornerRadius(32f);
+        tvDetailLevel.setBackground(badge);
 
         ((TextView) dialog.findViewById(R.id.tvDetailTimestamp)).setText(sdf.format(new Date(log.timestamp)));
         ((TextView) dialog.findViewById(R.id.tvDetailAction)).setText(log.action != null ? log.action : "-");
