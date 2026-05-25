@@ -179,13 +179,20 @@ public class SearchItemActivity extends ScannerActivity
 
     private void fetchData() {
         showLoading();
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"endpoint\":\"getSearchItems\"}";
         api.getSearchItems(token).enqueue(new Callback<List<TagModel.SearchItemDto>>() {
             @Override
             public void onResponse(Call<List<TagModel.SearchItemDto>> call,
                                    Response<List<TagModel.SearchItemDto>> response) {
                 hideLoading();
+                String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
+                        + (response.body() != null ? response.body().size() : 0) + "}";
                 if (response.isSuccessful() && response.body() != null) {
                     List<TagModel.SearchItemDto> data = response.body();
+                    LogManager.get(SearchItemActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                            "Search Item", "Item List", "Fetch items success: " + data.size() + " items",
+                            userId, reqJson, resJson);
                     saveToLocal(data);
                     allItemList.clear();
                     allItemList.addAll(data);
@@ -193,6 +200,9 @@ public class SearchItemActivity extends ScannerActivity
                     filteredList.addAll(allItemList);
                     adapter.notifyDataSetChanged();
                 } else {
+                    LogManager.get(SearchItemActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                            "Search Item", "Item List", "Fetch items failed: HTTP " + response.code(),
+                            userId, reqJson, resJson);
                     handleApiError(response);
                 }
             }
@@ -200,6 +210,10 @@ public class SearchItemActivity extends ScannerActivity
             @Override
             public void onFailure(Call<List<TagModel.SearchItemDto>> call, Throwable t) {
                 hideLoading();
+                String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                LogManager.get(SearchItemActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                        "Search Item", "Item List", "Fetch items error: " + t.getMessage(),
+                        userId, reqJson, resJson);
                 handleFailure(t);
             }
         });
@@ -208,20 +222,36 @@ public class SearchItemActivity extends ScannerActivity
     private void fetchAndShowDetail(TagModel.SearchItemDto item) {
         if (!isNetworkConnected()) { showWarning("Offline, cannot view detail"); return; }
         showLoading();
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"tagId\":\"" + item.getTagId() + "\"}";
         api.getTagDetailSearchItem(token, item.getTagId())
                 .enqueue(new Callback<TagModel.TagDetailDto>() {
                     @Override
                     public void onResponse(Call<TagModel.TagDetailDto> call,
                                            Response<TagModel.TagDetailDto> response) {
                         hideLoading();
-                        if (response.isSuccessful() && response.body() != null)
+                        String resJson = "{\"http_code\":" + response.code() + ",\"found\":"
+                                + (response.body() != null) + "}";
+                        if (response.isSuccessful() && response.body() != null) {
+                            LogManager.get(SearchItemActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                                    "Search Item", item.getTagId(), "Fetch tag detail success",
+                                    userId, reqJson, resJson);
                             handler.post(() -> showTagDetailDialog(item, response.body()));
-                        else showError("Tag not found");
+                        } else {
+                            LogManager.get(SearchItemActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                                    "Search Item", item.getTagId(), "Fetch tag detail failed: HTTP " + response.code(),
+                                    userId, reqJson, resJson);
+                            showError("Tag not found");
+                        }
                     }
 
                     @Override
                     public void onFailure(Call<TagModel.TagDetailDto> call, Throwable t) {
                         hideLoading();
+                        String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(SearchItemActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                                "Search Item", item.getTagId(), "Fetch tag detail error: " + t.getMessage(),
+                                userId, reqJson, resJson);
                         handleFailure(t);
                     }
                 });
