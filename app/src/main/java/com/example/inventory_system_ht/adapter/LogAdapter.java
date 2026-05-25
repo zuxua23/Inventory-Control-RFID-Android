@@ -65,7 +65,10 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
                 break;
         }
         holder.levelBar.setBackgroundColor(color);
-        holder.tvLevel.setBackgroundColor(color);
+        android.graphics.drawable.GradientDrawable badge = new android.graphics.drawable.GradientDrawable();
+        badge.setColor(color);
+        badge.setCornerRadius(32f);
+        holder.tvLevel.setBackground(badge);
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onItemClick(log);
