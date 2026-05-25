@@ -28,6 +28,7 @@ import android.util.Log;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.work.Constraints;
 import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
@@ -88,7 +89,7 @@ public class StockPrepProductActivity extends ScannerActivity
     private EditText resultScan;
     private TextView tvScanned, tvNoDo, tvDateDo;
     private Switch switchRfid;
-    private android.widget.RecyclerView rvTags;
+    private RecyclerView rvTags;
     private Spinner spinnerLocation, spinnerPower;
     private Button btnListProduct, btnSumProduct;
     private com.google.android.material.floatingactionbutton.FloatingActionButton fabScanCamera;

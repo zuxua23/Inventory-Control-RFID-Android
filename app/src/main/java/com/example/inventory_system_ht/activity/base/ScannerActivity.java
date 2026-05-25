@@ -31,6 +31,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Const.CommConst;
 import com.densowave.scannersdk.Dto.RFIDScannerSettings;
+import com.example.inventory_system_ht.activity.LoginActivity;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.R;
 
@@ -188,7 +189,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         if (statusCode == 401) {
             showSagaFeedback("Session expired", false);
             new PrefManager(this).clearSession();
-            Intent intent = new Intent(this, com.example.inventory_system_ht.Activity.LoginActivity.class);
+            Intent intent = new Intent(this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             finish();
@@ -209,7 +210,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         if (statusCode == 401) {
             new PrefManager(this).clearSession();
             showSagaFeedback("Session expired", false);
-            Intent intent = new Intent(this, com.example.inventory_system_ht.Activity.LoginActivity.class);
+            Intent intent = new Intent(this, com.example.inventory_system_ht.activity.LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             finish();
