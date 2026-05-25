@@ -398,6 +398,7 @@ public class StockTakingActivity extends ScannerActivity
         if (idx == null) {
             playScanFeedback(2);
             showWarning("Tag not found: " + epcOrBarcode);
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Tag not found in session: " + epcOrBarcode, new PrefManager(this).getUserId());
             return;
         }
 

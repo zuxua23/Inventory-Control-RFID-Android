@@ -704,6 +704,9 @@ public class StockPrepProductActivity extends ScannerActivity
         scannedRawSet.remove(key);
         scanCount = Math.max(0, scanCount - 1);
         tvScanned.setText("Scanned : " + scanCount);
+        String logMsg = message != null ? message : "API error";
+        String logLevel = "Already scanned".equals(message) ? LogManager.WARNING : LogManager.ERROR;
+        LogManager.get(this).log(logLevel, LogManager.ACTION_SCAN, "Stock Preparation", key, "Scan rejected: " + logMsg, new PrefManager(this).getUserId());
         if (message != null && !isRfid) { showError(message); playScanFeedback(2); }
     }
 

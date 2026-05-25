@@ -538,7 +538,9 @@ public class StockInActivity extends ScannerActivity
                             runOnUiThread(() -> {
                                 removeItemFromList(cleanData);
                                 playScanFeedback(2);
-                                showError(ErrorParser.getMessage(response));
+                                String errMsg = ErrorParser.getMessage(response);
+                                LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN, "Stock In", cleanData, "Scan rejected: " + errMsg, new PrefManager(StockInActivity.this).getUserId());
+                                showError(errMsg);
                             });
                         }
                     }
