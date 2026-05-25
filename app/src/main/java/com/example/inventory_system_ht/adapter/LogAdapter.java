@@ -50,7 +50,7 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
         holder.tvLevel.setText(log.level != null ? log.level : "");
         holder.tvAction.setText(log.action != null ? log.action : "");
         holder.tvMenu.setText(log.menu != null ? log.menu : "");
-        holder.tvMessage.setText(log.message != null ? log.message : "");
+        holder.tvMessage.setText(log.userId != null && !log.userId.isEmpty() ? log.userId : "-");
 
         int color;
         switch (log.level != null ? log.level : "") {

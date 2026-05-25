@@ -103,10 +103,9 @@
                 android:textSize="12sp"
                 android:textColor="#B3FFFFFF"
                 android:fontFamily="@font/raleway_regular"
-                android:maxLines="2"
+                android:maxLines="1"
                 android:ellipsize="end"
-                android:text="Message preview here"
-                android:visibility="gone" />
+                android:text="User ID" />
 
         </LinearLayout>
     </LinearLayout>
