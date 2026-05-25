@@ -102,10 +102,10 @@ public class LogActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) { loadLogs(); }
         });
 
-        // new Thread(() -> {
-        //     long cutoff = System.currentTimeMillis() - (60L * 24 * 60 * 60 * 1000);
-        //     db.appDao().deleteOldLogs(cutoff);
-        // }).start();
+         new Thread(() -> {
+             long cutoff = System.currentTimeMillis() - (30L * 24 * 30 * 30 * 1000);
+             db.appDao().deleteOldLogs(cutoff);
+         }).start();
 
         loadLogs();
     }

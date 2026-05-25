@@ -32,6 +32,7 @@ import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Const.CommConst;
 import com.densowave.scannersdk.Dto.RFIDScannerSettings;
 import com.example.inventory_system_ht.activity.LoginActivity;
+import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.R;
 
@@ -89,7 +90,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
 
         switch (type) {
             case 1: dot.setImageResource(R.drawable.dot_warning); break;
-            case 2: dot.setImageResource(R.drawable.dot_error);   break;
+            case 2: dot.setImageResource(R.drawable.dot_error); break;
             default: dot.setImageResource(R.drawable.dot_success); break;
         }
         tvMessage.setText(pesan);
@@ -120,7 +121,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
 
         switch (type) {
             case 1: dot.setImageResource(R.drawable.dot_warning); break;
-            case 2: dot.setImageResource(R.drawable.dot_error);   break;
+            case 2: dot.setImageResource(R.drawable.dot_error); break;
             default: dot.setImageResource(R.drawable.dot_success); break;
         }
         tvMessage.setText(pesan);
@@ -156,9 +157,41 @@ public abstract class ScannerActivity extends AppCompatActivity {
                         }).start(), 2000);
     }
 
-    public void showSuccess(String pesan) { showSagaFeedback(pesan, 0); }
-    public void showError(String pesan) { showSagaFeedback(pesan, 2); }
-    public void showWarning(String pesan) { showSagaFeedback(pesan, 1); }
+    public void showSuccess(String pesan) {
+        showSagaFeedback(pesan, 0);
+        LogManager.get(this).log(
+                LogManager.INFO,
+                LogManager.ACTION_MESSAGE,
+                getClass().getSimpleName(),
+                "",
+                pesan,
+                new PrefManager(this).getUserId()
+        );
+    }
+
+    public void showError(String pesan) {
+        showSagaFeedback(pesan, 2);
+        LogManager.get(this).log(
+                LogManager.ERROR,
+                LogManager.ACTION_MESSAGE,
+                getClass().getSimpleName(),
+                "",
+                pesan,
+                new PrefManager(this).getUserId()
+        );
+    }
+
+    public void showWarning(String pesan) {
+        showSagaFeedback(pesan, 1);
+        LogManager.get(this).log(
+                LogManager.WARNING,
+                LogManager.ACTION_MESSAGE,
+                getClass().getSimpleName(),
+                "",
+                pesan,
+                new PrefManager(this).getUserId()
+        );
+    }
 
     // ─── Loading Dialog ───────────────────────────────────────────────────────
 

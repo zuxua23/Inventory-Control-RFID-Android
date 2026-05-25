@@ -166,9 +166,17 @@ public class LoginActivity extends ScannerActivity {
 
         btnCekIp.setOnClickListener(v -> {
             String ip = etIpAPI.getText().toString().trim();
-            if (ip.isEmpty()) { dWarn.accept("Server IP is empty"); return; }
+            if (ip.isEmpty()) {
+                dWarn.accept("Server IP is empty");
+                LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SETTING,
+                        "Setting", "API URL", "Ping gagal: Server IP kosong", prefManager.getUserId());
+                return;
+            }
             if (!ip.startsWith("http://")) {
-                dError.accept("Wrong format, must start with http://"); return;
+                dError.accept("Wrong format, must start with http://");
+                LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SETTING,
+                        "Setting", "API URL", "Ping gagal: Format URL salah -> " + ip, prefManager.getUserId());
+                return;
             }
             showLoading();
             prefManager.saveIp(ip);
@@ -177,21 +185,38 @@ public class LoginActivity extends ScannerActivity {
                         @Override
                         public void onResponse(Call<GeneralResponse> call, Response<GeneralResponse> response) {
                             hideLoading();
-                            if (response.isSuccessful()) dSuccess.accept("Server connected");
-                            else dError.accept("Server error: " + response.code());
+                            if (response.isSuccessful()) {
+                                dSuccess.accept("Server connected");
+                                LogManager.get(LoginActivity.this).log(LogManager.INFO, LogManager.ACTION_SETTING,
+                                        "Setting", "API URL", "Ping sukses: " + ip, prefManager.getUserId());
+                            } else {
+                                dError.accept("Server error: " + response.code());
+                                LogManager.get(LoginActivity.this).log(LogManager.ERROR, LogManager.ACTION_SETTING,
+                                        "Setting", "API URL", "Ping error: HTTP " + response.code() + " -> " + ip, prefManager.getUserId());
+                            }
                         }
+
                         @Override
                         public void onFailure(Call<GeneralResponse> call, Throwable t) {
                             hideLoading();
                             dError.accept("Cannot connect to server");
+                            LogManager.get(LoginActivity.this).log(LogManager.ERROR, LogManager.ACTION_SETTING,
+                                    "Setting", "API URL", "Ping gagal: " + t.getMessage() + " -> " + ip, prefManager.getUserId());
                         }
                     });
         });
 
         btnApplyIp.setOnClickListener(v -> {
             String ip = etIpAPI.getText().toString().trim();
-            if (ip.isEmpty()) { dWarn.accept("Server IP is empty"); return; }
+            if (ip.isEmpty()) {
+                dWarn.accept("Server IP is empty");
+                LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SETTING,
+                        "Setting", "API URL", "Simpan URL gagal: IP kosong", prefManager.getUserId());
+                return;
+            }
             prefManager.saveIp(ip);
+            LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SETTING,
+                    "Setting", "API URL", "URL API disimpan: " + prefManager.getIp(), prefManager.getUserId());
             dialog.dismiss();
         });
 

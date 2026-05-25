@@ -22,6 +22,8 @@ public class LogManager {
     public static final String ACTION_CREATE = "CREATE";
     public static final String ACTION_LOGIN = "LOGIN";
     public static final String ACTION_LOGOUT = "LOGOUT";
+    public static final String ACTION_MESSAGE = "MESSAGE";
+    public static final String ACTION_SETTING = "SETTING";
 
     private LogManager(Context context) {
         this.appContext = context.getApplicationContext();
