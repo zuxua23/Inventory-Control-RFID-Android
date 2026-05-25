@@ -316,6 +316,8 @@ public class TagRegistrationActivity extends ScannerActivity
 
         showLoading();
         String token = "Bearer " + new PrefManager(this).getToken();
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"count\":" + tagIds.size() + "}";
         ApiClient.getClient(this).create(ApiService.class)
                 .registerTags(token, new AuthModel.RegisterRequest(tagIds))
                 .enqueue(new retrofit2.Callback<GeneralResponse>() {
@@ -323,14 +325,20 @@ public class TagRegistrationActivity extends ScannerActivity
                     public void onResponse(Call<GeneralResponse> call,
                                            retrofit2.Response<GeneralResponse> response) {
                         hideLoading();
+                        String resJson = "{\"http_code\":" + response.code() + ",\"success\":" + response.isSuccessful() + "}";
                         if (response.isSuccessful()) {
+                            LogManager.get(TagRegistrationActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT,
+                                    "Tag Registration", "", "Registered " + tagIds.size() + " tags",
+                                    userId, reqJson, resJson);
                             showSuccess(response.body().getMessage());
                             playScanFeedback(0);
-                            LogManager.get(TagRegistrationActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Tag Registration", "", "Registered " + tagIds.size() + " tags", new PrefManager(TagRegistrationActivity.this).getUserId());
                             registeredTagList.clear();
                             adapter.notifyDataSetChanged();
                             updateCount();
                         } else {
+                            LogManager.get(TagRegistrationActivity.this).log(LogManager.WARNING, LogManager.ACTION_SUBMIT,
+                                    "Tag Registration", "", "Register failed: HTTP " + response.code(),
+                                    userId, reqJson, resJson);
                             handleApiError(response);
                             playScanFeedback(2);
                         }
@@ -339,6 +347,10 @@ public class TagRegistrationActivity extends ScannerActivity
                     @Override
                     public void onFailure(Call<GeneralResponse> call, Throwable t) {
                         hideLoading();
+                        String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(TagRegistrationActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                                "Tag Registration", "", "Register error: " + t.getMessage(),
+                                userId, reqJson, resJson);
                         handleFailure(t);
                         playScanFeedback(2);
                     }

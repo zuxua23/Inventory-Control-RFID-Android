@@ -309,13 +309,21 @@ public class StockTakingActivity extends ScannerActivity
             return;
         }
         showLoading();
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"sttId\":\"" + sttId + "\"}";
         api.getSessionTags(token, sttId)
                 .enqueue(new Callback<List<StockTakingModel.SessionItem>>() {
                     @Override
                     public void onResponse(Call<List<StockTakingModel.SessionItem>> call,
                                            Response<List<StockTakingModel.SessionItem>> response) {
                         hideLoading();
+                        String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
+                                + (response.body() != null ? response.body().size() : 0) + "}";
                         if (response.isSuccessful() && response.body() != null) {
+                            LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                                    "Stock Taking", sttId,
+                                    "Load session tags success: " + response.body().size() + " items",
+                                    userId, reqJson, resJson);
                             List<StockTakingModel.SessionItem> body = response.body();
                             sessionItems.clear();
                             epcIndexMap.clear();
@@ -330,6 +338,10 @@ public class StockTakingActivity extends ScannerActivity
                             updateSyncStatus();
                             saveSessionItemsToCache(body);
                         } else {
+                            LogManager.get(StockTakingActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                                    "Stock Taking", sttId,
+                                    "Load session tags failed: HTTP " + response.code(),
+                                    userId, reqJson, resJson);
                             showError("Load failed, using cache");
                             loadSessionTagsFromCache();
                         }
@@ -338,6 +350,11 @@ public class StockTakingActivity extends ScannerActivity
                     @Override
                     public void onFailure(Call<List<StockTakingModel.SessionItem>> call, Throwable t) {
                         hideLoading();
+                        String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                                "Stock Taking", sttId,
+                                "Load session tags error: " + t.getMessage(),
+                                userId, reqJson, resJson);
                         showError("Load failed, using cache");
                         loadSessionTagsFromCache();
                     }
@@ -438,18 +455,33 @@ public class StockTakingActivity extends ScannerActivity
     }
 
     private void syncSingleScan(String epc) {
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"sttId\":\"" + sttId + "\",\"epc\":\"" + epc + "\"}";
         api.scanStockTaking(token, new StockTakingModel.ScanReq(sttId, epc))
                 .enqueue(new Callback<GeneralResponse>() {
                     @Override
                     public void onResponse(Call<GeneralResponse> call, Response<GeneralResponse> res) {
+                        String resJson = "{\"http_code\":" + res.code() + ",\"success\":" + res.isSuccessful() + "}";
                         if (res.isSuccessful()) {
+                            LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_SCAN,
+                                    "Stock Taking", epc, "Scan synced: " + epc,
+                                    userId, reqJson, resJson);
                             new Thread(() -> {
                                 db.appDao().markSyncedByEpc(sttId, epc);
                                 handler.post(StockTakingActivity.this::updateSyncStatus);
                             }).start();
+                        } else {
+                            LogManager.get(StockTakingActivity.this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
+                                    "Stock Taking", epc, "Scan sync failed: HTTP " + res.code(),
+                                    userId, reqJson, resJson);
                         }
                     }
-                    @Override public void onFailure(Call<GeneralResponse> call, Throwable t) {}
+                    @Override public void onFailure(Call<GeneralResponse> call, Throwable t) {
+                        String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
+                                "Stock Taking", epc, "Scan sync error: " + t.getMessage(),
+                                userId, reqJson, resJson);
+                    }
                 });
     }
 
@@ -533,29 +565,43 @@ public class StockTakingActivity extends ScannerActivity
     }
 
     private void sendApplyAdjustment() {
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"sttId\":\"" + sttId + "\"}";
         api.applyAdjustment(token, new StockTakingModel.FinalizeReq(sttId))
                 .enqueue(new Callback<GeneralResponse>() {
                     @Override
                     public void onResponse(Call<GeneralResponse> call, Response<GeneralResponse> response) {
                         hideLoading();
+                        String resJson = "{\"http_code\":" + response.code() + ",\"success\":" + response.isSuccessful() + "}";
                         if (response.isSuccessful()) {
+                            LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT,
+                                    "Stock Taking", sttId, "Stock taking submitted: " + sttId,
+                                    userId, reqJson, resJson);
                             new Thread(() -> {
                                 db.appDao().clearSyncedBySttId(sttId);
                                 db.appDao().clearSessionItemsBySttId(sttId);
                             }).start();
                             showSuccess("Data submitted");
                             playScanFeedback(0);
-                            LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT, "Stock Taking", "", "Stock taking submitted: " + sttId, new PrefManager(StockTakingActivity.this).getUserId());
                             hasChanges = false;
                             finish();
                         } else {
+                            LogManager.get(StockTakingActivity.this).log(LogManager.WARNING, LogManager.ACTION_SUBMIT,
+                                    "Stock Taking", sttId, "Submit failed: HTTP " + response.code(),
+                                    userId, reqJson, resJson);
                             handleApiError(response.code());
                             playScanFeedback(2);
                         }
                     }
                     @Override
                     public void onFailure(Call<GeneralResponse> call, Throwable t) {
-                        hideLoading(); handleFailure(t); playScanFeedback(2);
+                        hideLoading();
+                        String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                        LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                                "Stock Taking", sttId, "Submit error: " + t.getMessage(),
+                                userId, reqJson, resJson);
+                        handleFailure(t);
+                        playScanFeedback(2);
                     }
                 });
     }
@@ -634,11 +680,26 @@ public class StockTakingActivity extends ScannerActivity
             if (item.tagId != null && !item.tagId.isEmpty()) {
                 saveToQueue(item.tagId, "REMOVE", null, null);
                 if (isNetworkConnected()) {
+                    String userId = new PrefManager(StockTakingActivity.this).getUserId();
+                    String removeReqJson = "{\"sttId\":\"" + sttId + "\",\"tagId\":\"" + item.tagId + "\"}";
                     api.removeStockTaking(token,
                                     new StockTakingModel.RemoveReq(sttId, item.tagId))
                             .enqueue(new Callback<GeneralResponse>() {
-                                @Override public void onResponse(Call<GeneralResponse> c, Response<GeneralResponse> r) {}
-                                @Override public void onFailure(Call<GeneralResponse> c, Throwable t) {}
+                                @Override public void onResponse(Call<GeneralResponse> c, Response<GeneralResponse> r) {
+                                    String removeResJson = "{\"http_code\":" + r.code() + ",\"success\":" + r.isSuccessful() + "}";
+                                    LogManager.get(StockTakingActivity.this).log(
+                                            r.isSuccessful() ? LogManager.INFO : LogManager.WARNING,
+                                            LogManager.ACTION_DELETE, "Stock Taking", item.tagId,
+                                            "Remove item " + (r.isSuccessful() ? "success" : "failed: HTTP " + r.code()),
+                                            userId, removeReqJson, removeResJson);
+                                }
+                                @Override public void onFailure(Call<GeneralResponse> c, Throwable t) {
+                                    String removeResJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                                    LogManager.get(StockTakingActivity.this).log(LogManager.ERROR,
+                                            LogManager.ACTION_DELETE, "Stock Taking", item.tagId,
+                                            "Remove item error: " + t.getMessage(),
+                                            userId, removeReqJson, removeResJson);
+                                }
                             });
                 }
             }
@@ -679,11 +740,19 @@ public class StockTakingActivity extends ScannerActivity
 
             saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, remarkText);
             if (isNetworkConnected()) {
+                String userId = new PrefManager(StockTakingActivity.this).getUserId();
+                String manualReqJson = "{\"sttId\":\"" + sttId + "\",\"itemId\":\"" + item.itemId + "\",\"remark\":\"" + remarkText + "\"}";
                 api.manualAddStockTaking(token,
                                 new StockTakingModel.ManualAddReq(sttId, item.itemId, remarkText))
                         .enqueue(new Callback<GeneralResponse>() {
                             @Override
                             public void onResponse(Call<GeneralResponse> c, Response<GeneralResponse> r) {
+                                String manualResJson = "{\"http_code\":" + r.code() + ",\"success\":" + r.isSuccessful() + "}";
+                                LogManager.get(StockTakingActivity.this).log(
+                                        r.isSuccessful() ? LogManager.INFO : LogManager.WARNING,
+                                        LogManager.ACTION_CREATE, "Stock Taking", item.itemId,
+                                        "Manual add " + (r.isSuccessful() ? "success" : "failed: HTTP " + r.code()),
+                                        userId, manualReqJson, manualResJson);
                                 if (r.isSuccessful()) {
                                     new Thread(() -> {
                                         List<ScanQueueEntity> pending =
@@ -700,7 +769,13 @@ public class StockTakingActivity extends ScannerActivity
                                     }).start();
                                 }
                             }
-                            @Override public void onFailure(Call<GeneralResponse> c, Throwable t) {}
+                            @Override public void onFailure(Call<GeneralResponse> c, Throwable t) {
+                                String manualResJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                                LogManager.get(StockTakingActivity.this).log(LogManager.ERROR,
+                                        LogManager.ACTION_CREATE, "Stock Taking", item.itemId,
+                                        "Manual add error: " + t.getMessage(),
+                                        userId, manualReqJson, manualResJson);
+                            }
                         });
             }
             item.state = "MANUAL_ADD";

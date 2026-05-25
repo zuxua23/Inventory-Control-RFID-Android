@@ -102,16 +102,28 @@ public class StockTakingListActivity extends ScannerActivity {
             return;
         }
         showLoading();
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"endpoint\":\"getActiveStockTaking\"}";
         api.getActiveStockTaking(token).enqueue(new Callback<StockTakingModel.ActiveRes>() {
             @Override
             public void onResponse(@NonNull Call<StockTakingModel.ActiveRes> call,
                                    @NonNull Response<StockTakingModel.ActiveRes> response) {
                 hideLoading();
+                String resJson = "{\"http_code\":" + response.code() + ",\"found\":"
+                        + (response.body() != null) + "}";
                 sessionList.clear();
                 if (response.isSuccessful() && response.body() != null) {
+                    LogManager.get(StockTakingListActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                            "Stock Taking", "Session",
+                            "Active session found: " + response.body().sttId,
+                            userId, reqJson, resJson);
                     sessionList.add(response.body());
                     tvEmpty.setVisibility(View.GONE);
                 } else {
+                    LogManager.get(StockTakingListActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                            "Stock Taking", "Session",
+                            "No active session: HTTP " + response.code(),
+                            userId, reqJson, resJson);
                     tvEmpty.setVisibility(View.VISIBLE);
                 }
                 adapter.notifyDataSetChanged();
@@ -121,6 +133,11 @@ public class StockTakingListActivity extends ScannerActivity {
             public void onFailure(@NonNull Call<StockTakingModel.ActiveRes> call,
                                   @NonNull Throwable t) {
                 hideLoading();
+                String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                LogManager.get(StockTakingListActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                        "Stock Taking", "Session",
+                        "Load session error: " + t.getMessage(),
+                        userId, reqJson, resJson);
                 handleFailure(t);
                 tvEmpty.setVisibility(View.VISIBLE);
                 adapter.notifyDataSetChanged();
