@@ -88,13 +88,8 @@ public class LogActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
 
         String menuFilter = getIntent().getStringExtra(EXTRA_MENU);
-        if (menuFilter != null) {
-            int idx = menuOptions.indexOf(menuFilter);
-            if (idx >= 0) {
-                isInitializing = true;
-                spinnerMenu.setSelection(idx);
-                isInitializing = false;
-            }
+        if (menuFilter != null && !menuFilter.isEmpty()) {
+            etSearch.setText(menuFilter);
         }
 
         etSearch.addTextChangedListener(new TextWatcher() {
