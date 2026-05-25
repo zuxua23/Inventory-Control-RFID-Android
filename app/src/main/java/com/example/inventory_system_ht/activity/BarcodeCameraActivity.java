@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Size;
-import android.util.Log;
 import android.view.Surface;
 import android.view.View;
 import android.widget.ImageView;
@@ -31,13 +30,13 @@ import com.google.mlkit.vision.common.InputImage;
 
 import com.example.inventory_system_ht.R;
 import com.example.inventory_system_ht.util.LogManager;
+import com.example.inventory_system_ht.util.PrefManager;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BarcodeCameraActivity extends AppCompatActivity {
-    private static final String TAG = "BarcodeCamera";
     public static final String EXTRA_BARCODE = "barcode";
     public static final int RESULT_PERMISSION_DENIED = 1001;
     private static final int REQ_CAMERA = 42;
@@ -55,10 +54,14 @@ public class BarcodeCameraActivity extends AppCompatActivity {
     private Preview preview;
     private ImageAnalysis imageAnalysis;
 
+    private String currentUserId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_barcode_camera);
+
+        currentUserId = new PrefManager(this).getUserId();
 
         previewView = findViewById(R.id.previewView);
         previewView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
@@ -102,6 +105,8 @@ public class BarcodeCameraActivity extends AppCompatActivity {
             if (grants.length > 0 && grants[0] == PackageManager.PERMISSION_GRANTED) {
                 startCamera();
             } else {
+                LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
+                        "Camera Scanner", "", "Izin kamera ditolak oleh user", currentUserId);
                 setResult(RESULT_PERMISSION_DENIED);
                 finish();
             }
@@ -135,7 +140,8 @@ public class BarcodeCameraActivity extends AppCompatActivity {
                         imageAnalysis
                 );
             } catch (Exception e) {
-                Log.e(TAG, "Failed to bind camera", e);
+                LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
+                        "Camera Scanner", "", "Gagal bind camera: " + e.getMessage(), currentUserId);
                 finish();
             }
         }, ContextCompat.getMainExecutor(this));
@@ -165,11 +171,10 @@ public class BarcodeCameraActivity extends AppCompatActivity {
     }
 
     private void onBarcodeDetected(String raw) {
-        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Camera Scanner", raw, "Barcode scanned: " + raw, "");
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN,
+                "Camera Scanner", raw, "Barcode scanned: " + raw, currentUserId);
         runOnUiThread(() -> {
-            if (cornerOverlay != null) {
-                cornerOverlay.setSelected(true);
-            }
+            if (cornerOverlay != null) cornerOverlay.setSelected(true);
 
             android.content.Intent out = new android.content.Intent();
             out.putExtra(EXTRA_BARCODE, raw);
