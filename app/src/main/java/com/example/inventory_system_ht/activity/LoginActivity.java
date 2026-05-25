@@ -11,6 +11,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import com.densowave.scannersdk.Common.CommScanner;
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.model.AuthModel;
@@ -62,6 +64,15 @@ public class LoginActivity extends ScannerActivity {
     private void setupListeners() {
         btnLogin.setOnClickListener(v -> performLogin());
         btnSetting.setOnClickListener(v -> showSettingDialog());
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent i = new Intent(this, LogActivity.class);
+                i.putExtra(LogActivity.EXTRA_MENU, "Login");
+                startActivity(i);
+            });
+        }
     }
 
     private void performLogin() {
