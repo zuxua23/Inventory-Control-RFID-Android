@@ -151,10 +151,11 @@ public interface AppDao {
            "(:action IS NULL OR action = :action) AND " +
            "(:menu IS NULL OR menu = :menu) AND " +
            "(:fromTime = 0 OR timestamp >= :fromTime) AND " +
+           "(:toTime = 0 OR timestamp <= :toTime) AND " +
            "(:search IS NULL OR LOWER(message) LIKE '%' || LOWER(:search) || '%' " +
            "OR LOWER(entity) LIKE '%' || LOWER(:search) || '%' " +
            "OR LOWER(action) LIKE '%' || LOWER(:search) || '%' " +
            "OR LOWER(menu) LIKE '%' || LOWER(:search) || '%') " +
            "ORDER BY timestamp DESC")
-    List<AppLogEntity> filterLogs(String level, String action, String menu, long fromTime, String search);
+    List<AppLogEntity> filterLogs(String level, String action, String menu, long fromTime, long toTime, String search);
 }

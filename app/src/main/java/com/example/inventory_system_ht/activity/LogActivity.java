@@ -1,5 +1,6 @@
 package com.example.inventory_system_ht.activity;
 
+import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -53,7 +54,10 @@ public class LogActivity extends AppCompatActivity {
     private final List<String> levelOptions = Arrays.asList("All Levels", "INFO", "WARNING", "ERROR");
     private final List<String> actionOptions = Arrays.asList("All Actions", "OPEN", "SCAN", "READ", "SUBMIT", "DELETE", "CREATE", "LOGIN", "LOGOUT");
     private final List<String> menuOptions = Arrays.asList("All Menus", "Home", "Stock In", "Stock Preparation", "Stock Taking", "Tag Registration", "Search Item", "Search Signal", "Login");
-    private final List<String> dateOptions = Arrays.asList("All Time", "Today", "Last 7 Days", "Last 30 Days");
+    private final List<String> dateOptions = new ArrayList<>(Arrays.asList("All Time", "Today", "Last 7 Days", "Last 30 Days", "Pick Date..."));
+    private ArrayAdapter<String> dateAdapter;
+    private long pickedFromTime = 0;
+    private long pickedToTime = 0;
 
     private boolean isInitializing = false;
 
@@ -98,10 +102,10 @@ public class LogActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) { loadLogs(); }
         });
 
-        new Thread(() -> {
-            long cutoff = System.currentTimeMillis() - (60L * 24 * 60 * 60 * 1000);
-            db.appDao().deleteOldLogs(cutoff);
-        }).start();
+        // new Thread(() -> {
+        //     long cutoff = System.currentTimeMillis() - (60L * 24 * 60 * 60 * 1000);
+        //     db.appDao().deleteOldLogs(cutoff);
+        // }).start();
 
         loadLogs();
     }
@@ -110,7 +114,45 @@ public class LogActivity extends AppCompatActivity {
         setupSpinner(spinnerLevel, levelOptions);
         setupSpinner(spinnerAction, actionOptions);
         setupSpinner(spinnerMenu, menuOptions);
-        setupSpinner(spinnerDate, dateOptions);
+
+        dateAdapter = new ArrayAdapter<>(this, R.layout.item_spinner_selected, dateOptions);
+        dateAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        spinnerDate.setAdapter(dateAdapter);
+        spinnerDate.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+                if (isInitializing) return;
+                if (pos == dateOptions.size() - 1 && dateOptions.get(pos).equals("Pick Date...")) {
+                    showDatePicker();
+                } else {
+                    loadLogs();
+                }
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void showDatePicker() {
+        Calendar cal = Calendar.getInstance();
+        new DatePickerDialog(this, (view, year, month, day) -> {
+            Calendar from = Calendar.getInstance();
+            from.set(year, month, day, 0, 0, 0);
+            from.set(Calendar.MILLISECOND, 0);
+            pickedFromTime = from.getTimeInMillis();
+
+            Calendar to = Calendar.getInstance();
+            to.set(year, month, day, 23, 59, 59);
+            to.set(Calendar.MILLISECOND, 999);
+            pickedToTime = to.getTimeInMillis();
+
+            String label = String.format(Locale.getDefault(), "%02d/%02d/%04d", day, month + 1, year);
+            isInitializing = true;
+            dateOptions.set(dateOptions.size() - 1, label);
+            dateAdapter.notifyDataSetChanged();
+            spinnerDate.setSelection(dateOptions.size() - 1);
+            isInitializing = false;
+            loadLogs();
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private void setupSpinner(Spinner spinner, List<String> items) {
@@ -134,6 +176,7 @@ public class LogActivity extends AppCompatActivity {
         String search = searchText.isEmpty() ? null : searchText;
 
         long fromTime = 0;
+        long toTime = 0;
         int datePos = spinnerDate.getSelectedItemPosition();
         if (datePos == 1) {
             Calendar cal = Calendar.getInstance();
@@ -146,11 +189,15 @@ public class LogActivity extends AppCompatActivity {
             fromTime = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000);
         } else if (datePos == 3) {
             fromTime = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000);
+        } else if (datePos == dateOptions.size() - 1 && pickedFromTime > 0) {
+            fromTime = pickedFromTime;
+            toTime = pickedToTime;
         }
 
         final long finalFromTime = fromTime;
+        final long finalToTime = toTime;
         new Thread(() -> {
-            List<AppLogEntity> results = db.appDao().filterLogs(level, action, menu, finalFromTime, search);
+            List<AppLogEntity> results = db.appDao().filterLogs(level, action, menu, finalFromTime, finalToTime, search);
             handler.post(() -> {
                 logList.clear();
                 logList.addAll(results);
