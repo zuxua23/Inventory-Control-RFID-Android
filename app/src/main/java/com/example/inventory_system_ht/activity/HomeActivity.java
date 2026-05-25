@@ -13,6 +13,9 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.example.inventory_system_ht.util.LogManager;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import androidx.activity.OnBackPressedCallback;
 
 import com.densowave.scannersdk.Common.CommScanner;
@@ -43,6 +46,16 @@ public class HomeActivity extends ScannerActivity {
         initViews();
         setupUserInfo();
         setupListeners();
+
+        FloatingActionButton fabLog = findViewById(R.id.fabLog);
+        if (fabLog != null) {
+            fabLog.setOnClickListener(v -> {
+                Intent i = new Intent(this, LogActivity.class);
+                i.putExtra(LogActivity.EXTRA_MENU, "Home");
+                startActivity(i);
+            });
+        }
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Home", "", "Opened Home", prefManager.getUserId());
     }
 
     @Override

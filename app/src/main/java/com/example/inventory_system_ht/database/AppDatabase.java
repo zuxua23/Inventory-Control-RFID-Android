@@ -4,6 +4,7 @@ import android.content.Context;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import com.example.inventory_system_ht.entity.AppLogEntity;
 import com.example.inventory_system_ht.entity.DeliveryOrderEntity;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
@@ -15,6 +16,7 @@ import com.example.inventory_system_ht.entity.TagLocalEntity;
 
 @Database(
         entities = {
+                AppLogEntity.class,
                 DeliveryOrderEntity.class,
                 TagLocalEntity.class,
                 SearchItemEntity.class,
@@ -24,7 +26,7 @@ import com.example.inventory_system_ht.entity.TagLocalEntity;
                 SessionItemEntity.class,
                 StockInScanEntity.class
         },
-        version = 6,
+        version = 7,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {

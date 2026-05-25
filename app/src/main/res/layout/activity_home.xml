@@ -75,6 +75,20 @@
         android:background="@drawable/bg_white_rounded_top"
         app:cardElevation="16dp">
 
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabLog"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="16dp"
+                android:contentDescription="Activity Log"
+                android:src="@drawable/ic_log"
+                app:fabSize="mini"
+                app:tint="@color/white"
+                app:backgroundTint="@color/blue_theme"
+                app:borderWidth="0dp"
+                android:elevation="6dp" />
+
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
