@@ -19,7 +19,7 @@
             android:layout_width="104dp"
             android:layout_height="111dp"
             android:contentDescription="@string/desc_logo_apl"
-            android:src="@drawable/ic_box_24"
+            android:src="@drawable/ic_box"
             android:layout_marginBottom="24dp"
             app:tint="#10548F"
             tools:ignore="ImageContrastCheck"/>

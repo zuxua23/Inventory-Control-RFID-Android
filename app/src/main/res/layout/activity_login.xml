@@ -38,7 +38,7 @@
                 android:layout_height="50dp"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:src="@drawable/ic_setting_24"
+                android:src="@drawable/ic_setting"
                 android:background="@drawable/bg_btn_setting"
                 android:stateListAnimator="@null"
                 app:tint="#7A7C7D"
@@ -73,7 +73,7 @@
                 android:layout_height="132dp"
                 android:layout_marginBottom="10dp"
                 android:padding="16dp"
-                android:src="@drawable/ic_box_24"
+                android:src="@drawable/ic_box"
                 app:tint="@color/blue_theme"
                 android:importantForAccessibility="no" />
 
