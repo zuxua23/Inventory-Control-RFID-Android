@@ -37,14 +37,11 @@ import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.R;
 
 public abstract class ScannerActivity extends AppCompatActivity {
-
-    // ─── Fields ───────────────────────────────────────────────────────────────
     private Dialog loadingDialog;
     private ToneGenerator toneGen;
     private Vibrator vibrator;
     private PopupWindow activePowerPopup;
 
-    // ─── Abstract ─────────────────────────────────────────────────────────────
     protected abstract CommScanner getScannerInstance();
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────

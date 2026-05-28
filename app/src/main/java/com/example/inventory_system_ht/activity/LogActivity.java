@@ -272,12 +272,12 @@ public class LogActivity extends ScannerActivity {
             StringBuilder sb = new StringBuilder();
             sb.append("[").append(log.level != null ? log.level : "INFO").append("] ")
                     .append(sdf.format(new Date(log.timestamp))).append("\n");
-            sb.append("Action  : ").append(log.action != null ? log.action : "-").append("\n");
-            sb.append("Menu    : ").append(log.menu != null ? log.menu : "-").append("\n");
-            sb.append("Entity  : ").append(log.entity != null && !log.entity.isEmpty() ? log.entity : "-").append("\n");
-            sb.append("Message : ").append(log.message != null ? log.message : "-").append("\n");
-            sb.append("User ID : ").append(log.userId != null && !log.userId.isEmpty() ? log.userId : "-").append("\n");
-            sb.append("Device  : ").append(log.device != null && !log.device.isEmpty() ? log.device : "-");
+            sb.append("Action   : ").append(log.action != null ? log.action : "-").append("\n");
+            sb.append("Menu     : ").append(log.menu != null ? log.menu : "-").append("\n");
+            sb.append("Entity   : ").append(log.entity != null && !log.entity.isEmpty() ? log.entity : "-").append("\n");
+            sb.append("Message  : ").append(log.message != null ? log.message : "-").append("\n");
+            sb.append("User ID  : ").append(log.userId != null && !log.userId.isEmpty() ? log.userId : "-").append("\n");
+            sb.append("Device   : ").append(log.device != null && !log.device.isEmpty() ? log.device : "-");
             if (log.requestApi != null && !log.requestApi.isEmpty()) {
                 sb.append("\nRequest : ").append(log.requestApi);
             }
