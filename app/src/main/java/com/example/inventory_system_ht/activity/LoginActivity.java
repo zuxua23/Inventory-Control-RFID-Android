@@ -10,6 +10,11 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.graphics.Insets;
+import com.google.android.material.card.MaterialCardView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -41,6 +46,22 @@ public class LoginActivity extends ScannerActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.layout_header), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(v.getPaddingLeft(), systemBars.top + 10, v.getPaddingRight(), v.getPaddingBottom());
+            return insets;
+        });
+
+        MaterialCardView cardFabLog = findViewById(R.id.cardFabLog);
+        ViewCompat.setOnApplyWindowInsetsListener(cardFabLog, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            params.bottomMargin = systemBars.bottom + 16;
+            params.rightMargin = systemBars.right + 16;
+            v.setLayoutParams(params);
+            return insets;
+        });
 
         prefManager = new PrefManager(this);
 
@@ -111,7 +132,7 @@ public class LoginActivity extends ScannerActivity {
                                     "Login", username, "Login success: " + username, "", reqJson, resJson);
                             handleLoginSuccess(response.body());
                         } else {
-                            String msg = response.code() == 401 ? "Invalid username or password" : "Login failed";
+                            String msg = response.code() == 401 ? "Invalid username or password" : "Username or password is incorrect";
                             LogManager.get(LoginActivity.this).log(LogManager.WARNING, LogManager.ACTION_LOGIN,
                                     "Login", username, "Login failed: " + msg, "", reqJson, resJson);
                             showError(msg);

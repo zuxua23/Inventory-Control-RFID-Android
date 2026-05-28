@@ -8,6 +8,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
@@ -68,18 +70,37 @@ public abstract class ScannerActivity extends AppCompatActivity {
 
     // ─── UI Feedback ──────────────────────────────────────────────────────────
 
-    // Shortcut: true = success, false = error
+    private int getTopInset() {
+        View decorView = getWindow().getDecorView();
+        WindowInsetsCompat insets = androidx.core.view.ViewCompat.getRootWindowInsets(decorView);
+        if (insets != null) {
+            androidx.core.graphics.Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            return bars.top;
+        }
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        return resourceId > 0 ? getResources().getDimensionPixelSize(resourceId) : 0;
+    }
+
+    private int getBottomInset() {
+        View decorView = getWindow().getDecorView();
+        WindowInsetsCompat insets = androidx.core.view.ViewCompat.getRootWindowInsets(decorView);
+        if (insets != null) {
+            return insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+        }
+        return 0;
+    }
+
     public void showSagaFeedback(String pesan, boolean isSuccess) {
         showSagaFeedback(pesan, isSuccess ? 0 : 2);
     }
 
-    // Banner ke Activity root (normal usage)
     public void showSagaFeedback(String pesan, int type) {
         FrameLayout rootLayout = findViewById(android.R.id.content);
         showSagaFeedback(rootLayout, pesan, type);
     }
 
-    // Banner ke ViewGroup custom (dipakai internal)
     public void showSagaFeedback(ViewGroup root, String pesan, int type) {
         View bannerView = getLayoutInflater().inflate(R.layout.layout_message_banner, root, false);
         ImageView dot = bannerView.findViewById(R.id.dotIndicator);
@@ -92,10 +113,14 @@ public abstract class ScannerActivity extends AppCompatActivity {
         }
         tvMessage.setText(pesan);
 
+        int topInset = getTopInset();
+        int sidePx = (int)(20 * getResources().getDisplayMetrics().density);
+        int topMargin = topInset + (int)(8 * getResources().getDisplayMetrics().density);
+
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.gravity = Gravity.TOP;
-        params.setMargins(15, 15, 15, 0);
+        params.setMargins(sidePx, topMargin, sidePx, 0);
         bannerView.setLayoutParams(params);
 
         bannerView.setAlpha(0f);
@@ -109,6 +134,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
                 bannerView.animate().alpha(0f).translationY(-40f).setDuration(250)
                         .withEndAction(() -> root.removeView(bannerView)).start(), 2000);
     }
+
 
     // Banner overlay via WindowManager — muncul di atas dialog sekalipun
     public void showBannerOverlay(String pesan, int type) {
@@ -128,8 +154,8 @@ public abstract class ScannerActivity extends AppCompatActivity {
                 getClass().getSimpleName(), "", pesan, new PrefManager(this).getUserId());
 
         FrameLayout wrapper = new FrameLayout(this);
-        int px = (int)(15 * getResources().getDisplayMetrics().density);
-        wrapper.setPadding(px, 0, px, 0);
+        int sidePx = (int)(15 * getResources().getDisplayMetrics().density);
+        wrapper.setPadding(sidePx, 0, sidePx, 0);
         wrapper.addView(bannerView);
 
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
@@ -142,7 +168,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
                 PixelFormat.TRANSLUCENT
         );
         params.gravity = Gravity.TOP;
-        params.y = px;
+        params.y = getTopInset() + (int)(8 * getResources().getDisplayMetrics().density);
 
         wrapper.setAlpha(0f);
         wrapper.setTranslationY(-60f);

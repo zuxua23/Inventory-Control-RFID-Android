@@ -5,8 +5,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -17,6 +22,7 @@ import com.densowave.scannersdk.Listener.BarcodeDataDelegate;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.util.LogManager;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.example.inventory_system_ht.adapter.DeliveryOrderAdapter;
 import com.example.inventory_system_ht.database.AppDao;
@@ -53,7 +59,28 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_stock_prep_delivery_order);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnBack), (v, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            ViewGroup.MarginLayoutParams p = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            p.topMargin = bars.top + (int)(12 * getResources().getDisplayMetrics().density);
+            v.setLayoutParams(p);
+            return insets;
+        });
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnRefresh), (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams p = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            int dp28 = (int)(28 * getResources().getDisplayMetrics().density);
+            int dp20 = (int)(20 * getResources().getDisplayMetrics().density);
+            p.bottomMargin = bars.bottom + dp28;
+            p.rightMargin = dp20;
+            v.setLayoutParams(p);
+            return insets;
+        });
         appDao = AppDatabase.getDatabase(this).appDao();
 
         initViews();

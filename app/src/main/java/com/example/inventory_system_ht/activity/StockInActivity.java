@@ -27,6 +27,10 @@ import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -55,6 +59,7 @@ import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -109,7 +114,29 @@ public class StockInActivity extends ScannerActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_stock_in);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnBack), (v, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            ViewGroup.MarginLayoutParams p = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            p.topMargin = bars.top + (int)(12 * getResources().getDisplayMetrics().density);
+            v.setLayoutParams(p);
+            return insets;
+        });
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.bottomButtonsContainer), (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            int dp10 = (int)(10 * getResources().getDisplayMetrics().density);
+            v.setPadding(
+                    v.getPaddingLeft(),
+                    v.getPaddingTop(),
+                    v.getPaddingRight(),
+                    bars.bottom + dp10
+            );
+            return insets;
+        });
         db = AppDatabase.getDatabase(this);
 
         bindViews();

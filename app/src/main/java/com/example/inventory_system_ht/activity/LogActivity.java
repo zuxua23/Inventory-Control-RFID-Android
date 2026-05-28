@@ -22,6 +22,10 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -31,6 +35,7 @@ import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.adapter.LogAdapter;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.AppLogEntity;
+import com.google.android.material.card.MaterialCardView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -74,6 +79,30 @@ public class LogActivity extends ScannerActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log);
+
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnBack), (v, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            int dp12 = (int)(12 * getResources().getDisplayMetrics().density);
+            params.topMargin = bars.top + dp12;
+            params.leftMargin = (int)(12 * getResources().getDisplayMetrics().density);
+            v.setLayoutParams(params);
+            return insets;
+        });
+
+        MaterialCardView cardFabLog = findViewById(R.id.cardFabLog);
+        ViewCompat.setOnApplyWindowInsetsListener(cardFabLog, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            int dp16 = (int)(16 * getResources().getDisplayMetrics().density);
+            params.bottomMargin = bars.bottom + dp16;
+            params.rightMargin = bars.right + dp16;
+            v.setLayoutParams(params);
+            return insets;
+        });
 
         db = AppDatabase.getDatabase(this);
 

@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.util.Size;
 import android.view.Surface;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
@@ -20,7 +21,12 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.card.MaterialCardView;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
@@ -60,7 +66,22 @@ public class BarcodeCameraActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_barcode_camera);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.layout_header), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(v.getPaddingLeft(), systemBars.top + 10, v.getPaddingRight(), v.getPaddingBottom());
+            return insets;
+        });
 
+        MaterialCardView cardFabLog = findViewById(R.id.cardFabLog);
+        ViewCompat.setOnApplyWindowInsetsListener(cardFabLog, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            params.bottomMargin = systemBars.bottom + 16;
+            params.rightMargin = systemBars.right + 16;
+            v.setLayoutParams(params);
+            return insets;
+        });
         currentUserId = new PrefManager(this).getUserId();
 
         previewView = findViewById(R.id.previewView);

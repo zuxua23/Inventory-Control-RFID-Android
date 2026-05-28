@@ -14,9 +14,14 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.inventory_system_ht.util.LogManager;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.densowave.scannersdk.Common.CommScanner;
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
@@ -37,6 +42,30 @@ public class HomeActivity extends ScannerActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.statusBarSpacer), (v, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            v.getLayoutParams().height = bars.top;
+            v.requestLayout();
+            return insets;
+        });
+
+        MaterialCardView cardFabLog = findViewById(R.id.cardFabLog);
+        ViewCompat.setOnApplyWindowInsetsListener(cardFabLog, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            int dp16 = (int)(16 * getResources().getDisplayMetrics().density);
+            params.bottomMargin = bars.bottom + dp16;
+            params.rightMargin = dp16;
+            v.setLayoutParams(params);
+            return insets;
+        });
+
+
         prefManager = new PrefManager(this);
         if (!prefManager.isSessionValid()) {
             redirectToLogin();

@@ -16,6 +16,10 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.cardview.widget.CardView;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Listener.RFIDDataDelegate;
@@ -30,6 +34,7 @@ import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.Arrays;
@@ -73,7 +78,26 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_signal);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnBack), (v, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            ViewGroup.MarginLayoutParams p = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            p.topMargin = bars.top + (int)(12 * getResources().getDisplayMetrics().density);
+            v.setLayoutParams(p);
+            return insets;
+        });
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnStopSearch), (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams p = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            int dp10 = (int)(10 * getResources().getDisplayMetrics().density);
+            p.bottomMargin = bars.bottom + dp10;
+            v.setLayoutParams(p);
+            return insets;
+        });
         selectedItem = (TagModel.SearchItemDto) getIntent().getSerializableExtra("SELECTED_ITEM");
         selectedDetail = (TagModel.TagDetailDto) getIntent().getSerializableExtra("SELECTED_DETAIL");
 
