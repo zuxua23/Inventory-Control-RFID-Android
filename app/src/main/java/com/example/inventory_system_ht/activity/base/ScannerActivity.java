@@ -57,7 +57,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     // ─── Network ──────────────────────────────────────────────────────────────
-
     public boolean isNetworkConnected() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
@@ -69,7 +68,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     // ─── UI Feedback ──────────────────────────────────────────────────────────
-
     private int getTopInset() {
         View decorView = getWindow().getDecorView();
         WindowInsetsCompat insets = androidx.core.view.ViewCompat.getRootWindowInsets(decorView);
@@ -81,15 +79,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
         }
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         return resourceId > 0 ? getResources().getDimensionPixelSize(resourceId) : 0;
-    }
-
-    private int getBottomInset() {
-        View decorView = getWindow().getDecorView();
-        WindowInsetsCompat insets = androidx.core.view.ViewCompat.getRootWindowInsets(decorView);
-        if (insets != null) {
-            return insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
-        }
-        return 0;
     }
 
     public void showSagaFeedback(String pesan, boolean isSuccess) {
@@ -135,8 +124,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
                         .withEndAction(() -> root.removeView(bannerView)).start(), 2000);
     }
 
-
-    // Banner overlay via WindowManager — muncul di atas dialog sekalipun
     public void showBannerOverlay(String pesan, int type) {
         View bannerView = getLayoutInflater().inflate(R.layout.layout_message_banner, null);
         ImageView dot = bannerView.findViewById(R.id.dotIndicator);
@@ -221,7 +208,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     // ─── Loading Dialog ───────────────────────────────────────────────────────
-
     public void showLoading() {
         if (loadingDialog == null) {
             loadingDialog = new Dialog(this);
@@ -243,7 +229,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     // ─── API Error Handling ───────────────────────────────────────────────────
-
     public void handleApiError(int statusCode) {
         hideLoading();
         if (statusCode == 401) {
@@ -294,7 +279,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     // ─── Scan Feedback ────────────────────────────────────────────────────────
-
     public void playScanFeedback(int type) {
         if (toneGen == null) toneGen = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
         if (vibrator == null) vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
@@ -320,25 +304,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     // ─── RFID Hardware ────────────────────────────────────────────────────────
-
-    public void applyRfidPower(int dbm) {
-        CommScanner scanner = getScannerInstance();
-        if (scanner == null || scanner.getRFIDScanner() == null) {
-            showError("RFID not connected");
-            return;
-        }
-        int safePower = Math.max(4, Math.min(30, dbm));
-        try {
-            RFIDScannerSettings settings = scanner.getRFIDScanner().getSettings();
-            settings.scan.powerLevelRead = safePower;
-            settings.scan.powerLevelWrite = safePower;
-            scanner.getRFIDScanner().setSettings(settings);
-            showSuccess("Power: " + safePower + " dBm");
-        } catch (Exception e) {
-            showError("Set power failed");
-        }
-    }
-
     public void updateReaderBattery(ImageView ivBattery) {
         if (ivBattery == null) return;
         CommScanner scanner = getScannerInstance();
@@ -370,57 +335,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         return bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
     }
 
-    // ─── Dropdown Popup ───────────────────────────────────────────────────────
-
-    protected void showPowerDropdownPopup(View anchor, List<String> items, TextView tvPowerLevel) {
-        View popupView = getLayoutInflater().inflate(R.layout.dropdown_popup, null);
-        RecyclerView rv = popupView.findViewById(R.id.rvDropdown);
-        rv.setLayoutManager(new LinearLayoutManager(this));
-        rv.setNestedScrollingEnabled(true);
-
-        rv.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-            @Override
-            public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-                View v = getLayoutInflater().inflate(R.layout.item_dropdown, parent, false);
-                return new RecyclerView.ViewHolder(v) {};
-            }
-
-            @Override
-            public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-                TextView tv = holder.itemView.findViewById(R.id.tvDropdownItem);
-                tv.setText(items.get(position));
-                holder.itemView.setOnClickListener(v -> {
-                    String selected = items.get(position);
-                    tvPowerLevel.setText(selected);
-                    try { applyRfidPower(parsePower(selected, 20)); }
-                    catch (NumberFormatException ignored) {}
-                    if (activePowerPopup != null) activePowerPopup.dismiss();
-                });
-            }
-
-            @Override
-            public int getItemCount() { return items.size(); }
-        });
-
-        int itemHeightPx = (int)(56 * getResources().getDisplayMetrics().density);
-        int maxHeight = itemHeightPx * 4;
-
-        PopupWindow popup = new PopupWindow(
-                popupView, anchor.getWidth(), ViewGroup.LayoutParams.WRAP_CONTENT, true);
-        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        popup.setElevation(16f);
-        popup.setOutsideTouchable(true);
-
-        popupView.measure(
-                View.MeasureSpec.makeMeasureSpec(anchor.getWidth(), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-        popup.setHeight(Math.min(popupView.getMeasuredHeight(), maxHeight));
-        popup.showAsDropDown(anchor, 0, 6);
-        activePowerPopup = popup;
-    }
-
     // ─── Utility ──────────────────────────────────────────────────────────────
-
     protected int parsePower(String text, int defaultVal) {
         try { return Integer.parseInt(text.replace(" dBm", "").trim()); }
         catch (NumberFormatException e) { return defaultVal; }

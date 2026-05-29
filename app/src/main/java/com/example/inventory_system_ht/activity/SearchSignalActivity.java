@@ -44,17 +44,13 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
 
     private TagModel.SearchItemDto selectedItem;
     private TagModel.TagDetailDto selectedDetail;
-
     private LinearLayout containerSignalBars;
     private TextView tvItemTitle, tvRssiValue;
     private Spinner spinnerPower;
     private BottomSheetDialog currentDialog;
-
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean tagFoundNotified = false;
-
     private static final int NO_SIGNAL_TIMEOUT_MS = 8000;
-
     private final List<String> powerList = Arrays.asList(
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
     );
@@ -267,33 +263,4 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         }
     }
 
-    private void showTagDetailBottomSheet(TagModel.TagDetailDto detail) {
-        if (currentDialog != null && currentDialog.isShowing()) currentDialog.dismiss();
-
-        currentDialog = new BottomSheetDialog(this);
-        View view = LayoutInflater.from(this).inflate(R.layout.dialog_tag_detail, null);
-
-        ((TextView) view.findViewById(R.id.tvDetailItemName)).setText(detail.getItemName());
-        ((TextView) view.findViewById(R.id.tvDetailTagId)).setText(detail.getTagId());
-        ((TextView) view.findViewById(R.id.tvDetailEpc)).setText(detail.getEpcTag());
-        ((TextView) view.findViewById(R.id.tvDetailLocation)).setText(detail.getLocation());
-
-        TextView tvStatus = view.findViewById(R.id.tvDetailStatus);
-        CardView cvStatus = view.findViewById(R.id.cvDetailStatus);
-        tvStatus.setText(detail.getStatus());
-        cvStatus.setCardBackgroundColor(statusColor(detail.getStatus()));
-        view.findViewById(R.id.btnSearchSignal).setVisibility(View.GONE);
-
-        currentDialog.setContentView(view);
-        currentDialog.show();
-    }
-
-    private int statusColor(String status) {
-        if (status == null) return Color.parseColor("#9E9E9E");
-        switch (status.toUpperCase()) {
-            case "STOCK IN": return Color.parseColor("#28a745");
-            case "PREPARATION": return Color.parseColor("#ffc107");
-            default: return Color.parseColor("#9E9E9E");
-        }
-    }
-}
+   }
