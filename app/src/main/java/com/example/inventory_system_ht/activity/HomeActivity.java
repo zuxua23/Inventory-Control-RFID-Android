@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.inventory_system_ht.util.LogManager;
@@ -30,7 +29,7 @@ import com.example.inventory_system_ht.R;
 
 public class HomeActivity extends ScannerActivity {
 
-    private LinearLayout btnStockIn, btnStockPrep, btnStockTaking, btnTagRegis, btnSearchItem;
+    private androidx.cardview.widget.CardView btnStockIn, btnStockPrep, btnStockTaking, btnTagRegis, btnSearchItem;
     private TextView tvNamaOperator, tvRoleOperator;
     private ImageButton btnLogout;
     private PrefManager prefManager;
