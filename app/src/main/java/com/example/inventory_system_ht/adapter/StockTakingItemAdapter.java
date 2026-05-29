@@ -22,7 +22,7 @@ public class StockTakingItemAdapter
         void onItemClick(StockTakingModel.SessionItem item, int position);
     }
 
-    private static final int COLOR_PENDING = Color.parseColor("#1565C0");
+    private static final int COLOR_PENDING = Color.parseColor("#0181CC");
     private static final int COLOR_DONE = Color.parseColor("#01C470");
 
     private final List<StockTakingModel.SessionItem> list;
