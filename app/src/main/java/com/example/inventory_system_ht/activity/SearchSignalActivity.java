@@ -41,7 +41,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class SearchSignalActivity extends ScannerActivity implements RFIDDataDelegate {
-
     private TagModel.SearchItemDto selectedItem;
     private TagModel.TagDetailDto selectedDetail;
     private LinearLayout containerSignalBars;

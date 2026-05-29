@@ -10,10 +10,8 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 public class PrefManager {
-
     private SharedPreferences securePref;
     private final SharedPreferences pref;
-
     private static final String PREF_NAME = "InventoryPrefsBase";
     private static final String SECURE_PREF = "InventoryPrefsSecure";
     private static final String KEY_BASE_URL = "base_url_api";

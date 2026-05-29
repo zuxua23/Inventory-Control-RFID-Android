@@ -38,13 +38,11 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class StockTakingListActivity extends ScannerActivity {
-
     private View tvEmpty;
     private RecyclerView rvSessions;
     private com.facebook.shimmer.ShimmerFrameLayout shimmerLayout;
     private ApiService api;
     private String token;
-
     private final List<StockTakingModel.ActiveRes> sessionList = new ArrayList<>();
     private SessionAdapter adapter;
 

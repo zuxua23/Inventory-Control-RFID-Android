@@ -8,7 +8,6 @@ import com.densowave.scannersdk.Listener.RFIDDataDelegate;
 import com.densowave.scannersdk.RFID.RFIDScanner;
 
 public class RfidBulkHelper {
-
     private static final String TAG = "RfidBulkHelper";
 
     public static boolean openInventory(CommScanner scanner, RFIDDataDelegate delegate, int powerDbm) {

@@ -42,7 +42,6 @@ import java.util.List;
 import retrofit2.Call;
 
 public class StockPrepActivity extends ScannerActivity implements BarcodeDataDelegate {
-
     private RecyclerView rvTags;
     private DeliveryOrderAdapter adapter;
     private View tvEmpty;

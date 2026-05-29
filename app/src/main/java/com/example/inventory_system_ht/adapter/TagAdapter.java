@@ -14,7 +14,6 @@ import com.example.inventory_system_ht.R;
 import java.util.List;
 
 public class TagAdapter extends RecyclerView.Adapter<TagAdapter.TagVH> {
-
     private final List<TagLocalEntity> list;
     private OnItemClickListener listener;
     private int lastScannedPosition = -1;

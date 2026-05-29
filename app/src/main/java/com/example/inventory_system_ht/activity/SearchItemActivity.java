@@ -52,7 +52,6 @@ import retrofit2.Response;
 
 public class SearchItemActivity extends ScannerActivity
         implements BarcodeDataDelegate, RFIDDataDelegate {
-
     private EditText etSearchItem;
     private RecyclerView rvTags;
     private View tvEmpty;

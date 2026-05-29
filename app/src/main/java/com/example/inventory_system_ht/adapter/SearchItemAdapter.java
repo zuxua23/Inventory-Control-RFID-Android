@@ -16,11 +16,9 @@ import com.example.inventory_system_ht.R;
 import java.util.List;
 
 public class SearchItemAdapter extends RecyclerView.Adapter<SearchItemAdapter.VH> {
-
     private final List<TagModel.SearchItemDto> list;
     private OnItemClickListener listener;
     private int lastScannedPosition = -1;
-
     public interface OnItemClickListener {
         void onItemClick(TagModel.SearchItemDto item);
     }

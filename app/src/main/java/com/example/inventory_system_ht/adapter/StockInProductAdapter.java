@@ -14,9 +14,7 @@ import com.example.inventory_system_ht.R;
 import java.util.List;
 
 public class StockInProductAdapter extends RecyclerView.Adapter<StockInProductAdapter.ViewHolder> {
-
     private List<ItemModel.SumProduct> list;
-
     public StockInProductAdapter(List<ItemModel.SumProduct> list) {
         this.list = list;
     }

@@ -48,19 +48,16 @@ import java.util.Locale;
 public class LogActivity extends ScannerActivity {
 
     public static final String EXTRA_MENU = "extra_menu";
-
     private EditText etSearch;
     private Spinner spinnerLevel, spinnerAction, spinnerMenu, spinnerDate;
     private RecyclerView rvLogs;
     private View tvEmpty;
     private TextView tvLogCount;
     private ImageView btnBack;
-
     private LogAdapter adapter;
     private final List<AppLogEntity> logList = new ArrayList<>();
     private AppDatabase db;
     private final Handler handler = new Handler(Looper.getMainLooper());
-
     private final List<String> levelOptions = Arrays.asList("All Levels", "INFO", "WARNING", "ERROR");
     private final List<String> actionOptions = Arrays.asList("All Actions", "OPEN", "SCAN", "READ", "SUBMIT", "DELETE", "CREATE", "LOGIN", "LOGOUT");
     private final List<String> menuOptions = Arrays.asList("All Modules", "Home", "Stock In", "Stock Preparation", "Stock Taking", "Tag Registration", "Search Item", "Search Signal", "Login");
@@ -68,9 +65,7 @@ public class LogActivity extends ScannerActivity {
     private ArrayAdapter<String> dateAdapter;
     private long pickedFromTime = 0;
     private long pickedToTime = 0;
-
     private boolean isInitializing = false;
-
     private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss MM/dd/yyyy", Locale.getDefault());
 
     @Override

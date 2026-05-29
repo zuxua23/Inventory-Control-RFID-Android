@@ -15,7 +15,6 @@ import com.example.inventory_system_ht.util.ScannerManager;
 
 public class MyApplication extends Application
         implements ScannerAcceptStatusListener, ScannerStatusListener {
-
     @Override
     public void onCreate() {
         super.onCreate();

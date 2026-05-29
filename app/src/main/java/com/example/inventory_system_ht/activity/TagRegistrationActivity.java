@@ -71,7 +71,6 @@ import retrofit2.Call;
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 public class TagRegistrationActivity extends ScannerActivity
         implements RFIDDataDelegate, BarcodeDataDelegate {
-
     private EditText resultScan;
     private TextView tvScanned;
     private Switch switchRfid;
@@ -79,13 +78,11 @@ public class TagRegistrationActivity extends ScannerActivity
     private RecyclerView rvTags;
     private Spinner spinnerPower;
     private FloatingActionButton fabScanCamera;
-
     private TagRegistrationAdapter adapter;
     private List<TagLocalEntity> registeredTagList;
     private View tvEmpty;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private AppDatabase db;
-
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
     ));

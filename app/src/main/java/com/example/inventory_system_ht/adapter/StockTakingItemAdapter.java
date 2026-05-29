@@ -17,14 +17,11 @@ import java.util.List;
 
 public class StockTakingItemAdapter
         extends RecyclerView.Adapter<StockTakingItemAdapter.VH> {
-
     public interface OnItemClickListener {
         void onItemClick(StockTakingModel.SessionItem item, int position);
     }
-
     private static final int COLOR_PENDING = Color.parseColor("#0181CC");
     private static final int COLOR_DONE = Color.parseColor("#01C470");
-
     private final List<StockTakingModel.SessionItem> list;
     private OnItemClickListener listener;
 

@@ -24,7 +24,6 @@ import java.util.List;
 import retrofit2.Response;
 
 public class SyncWorker extends Worker {
-
     private static final String TAG = "SyncWorker";
 
     public SyncWorker(@NonNull Context context, @NonNull WorkerParameters params) {

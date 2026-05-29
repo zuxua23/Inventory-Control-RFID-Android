@@ -3,7 +3,6 @@ package com.example.inventory_system_ht.util;
 import com.densowave.scannersdk.Common.CommScanner;
 
 public class ScannerManager {
-
     private static ScannerManager instance;
     private CommScanner scanner;
 

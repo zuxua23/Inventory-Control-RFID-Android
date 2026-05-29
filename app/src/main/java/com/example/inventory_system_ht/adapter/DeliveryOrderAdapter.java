@@ -15,7 +15,6 @@ public class DeliveryOrderAdapter extends RecyclerView.Adapter<DeliveryOrderAdap
     public interface OnItemClickListener {
         void onItemClick(DeliveryOrderEntity item);
     }
-
     private final List<DeliveryOrderEntity> doList;
     private final OnItemClickListener listener;
 

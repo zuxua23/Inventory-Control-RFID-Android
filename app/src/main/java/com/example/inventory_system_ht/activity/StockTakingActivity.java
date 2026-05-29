@@ -69,7 +69,6 @@ import retrofit2.Response;
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 public class StockTakingActivity extends ScannerActivity
         implements BarcodeDataDelegate, RFIDDataDelegate {
-
     private Switch switchRfid;
     private CardView btnSave, btnRefresh;
     private EditText resultScan;
@@ -77,13 +76,11 @@ public class StockTakingActivity extends ScannerActivity
     private TextView tvRemark, tvLocation, tvQty, tvSyncStatus;
     private Spinner spinnerPower;
     private FloatingActionButton fabScanCamera;
-
     private ApiService api;
     private AppDatabase db;
     private String token;
     private String sttId = "";
     private String remark = "";
-
     private final List<StockTakingModel.SessionItem> sessionItems = new ArrayList<>();
     private final Map<String, Integer> epcIndexMap = new HashMap<>();
     private final List<String> powerList = Arrays.asList(

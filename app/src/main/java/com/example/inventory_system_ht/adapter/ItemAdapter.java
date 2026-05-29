@@ -14,10 +14,8 @@ import com.example.inventory_system_ht.R;
 import java.util.List;
 
 public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
-
     private final List<ItemModel.Item> itemList;
     private OnItemClickListener listener;
-
     public interface OnItemClickListener {
         void onItemClick(ItemModel.Item item);
     }

@@ -9,11 +9,9 @@ public class LogManager {
     private static final String TAG = "LogManager";
     private static LogManager instance;
     private final Context appContext;
-
     public static final String INFO = "INFO";
     public static final String WARNING = "WARNING";
     public static final String ERROR = "ERROR";
-
     public static final String ACTION_OPEN = "OPEN";
     public static final String ACTION_SCAN = "SCAN";
     public static final String ACTION_READ = "READ";

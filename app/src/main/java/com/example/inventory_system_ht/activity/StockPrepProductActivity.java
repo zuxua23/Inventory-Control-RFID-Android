@@ -90,7 +90,6 @@ import retrofit2.Response;
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 public class StockPrepProductActivity extends ScannerActivity
         implements BarcodeDataDelegate, RFIDDataDelegate {
-
     private EditText resultScan;
     private TextView tvScanned, tvNoDo, tvDateDo;
     private Switch switchRfid;
@@ -98,15 +97,12 @@ public class StockPrepProductActivity extends ScannerActivity
     private Spinner spinnerLocation, spinnerPower;
     private Button btnListProduct, btnSumProduct;
     private com.google.android.material.floatingactionbutton.FloatingActionButton fabScanCamera;
-
     private TagAdapter adapter;
     private StockPrepProductAdapter sumAdapter;
     private List<TagLocalEntity> scannedList;
     private List<ItemModel.SumProduct> sumProductList = new ArrayList<>();
-
     private final Map<String, Integer> requiredQtyMap = new HashMap<>();
     private final Map<String, String> itemNameMap = new HashMap<>();
-
     private final Set<String> scannedRawSet = new HashSet<>();
     private final Set<String> scannedEpcSet = new HashSet<>();
     private int scanCount = 0;
@@ -115,18 +111,15 @@ public class StockPrepProductActivity extends ScannerActivity
     private String selectedLocationId = "";
     private String currentDoId = "";
     private String currentDoNo = "";
-
     private final Handler handler = new Handler(Looper.getMainLooper());
     private ApiService api;
     private String token;
     private AppDao appDao;
-
     private List<LocationModel> masterLocationList = new ArrayList<>();
     private final List<String> locationList = new ArrayList<>();
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
     ));
-
     private ArrayAdapter<String> locationSpinnerAdapter;
 
     @Override

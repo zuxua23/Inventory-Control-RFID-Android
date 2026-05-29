@@ -41,20 +41,16 @@ public class BarcodeCameraActivity extends AppCompatActivity {
     public static final String EXTRA_BARCODE = "barcode";
     public static final int RESULT_PERMISSION_DENIED = 1001;
     private static final int REQ_CAMERA = 42;
-
     private PreviewView previewView;
     private View cornerOverlay;
     private ImageView btnTorch;
     private boolean torchOn = false;
-
     private ExecutorService cameraExecutor;
     private BarcodeScanner barcodeScanner;
     private androidx.camera.core.Camera camera;
     private final AtomicBoolean handled = new AtomicBoolean(false);
-
     private Preview preview;
     private ImageAnalysis imageAnalysis;
-
     private String currentUserId;
 
     @Override

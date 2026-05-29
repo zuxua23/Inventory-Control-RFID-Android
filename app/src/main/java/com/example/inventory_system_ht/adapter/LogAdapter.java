@@ -18,11 +18,9 @@ import java.util.List;
 import java.util.Locale;
 
 public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
-
     public interface OnItemClickListener {
         void onItemClick(AppLogEntity log);
     }
-
     private final List<AppLogEntity> logs;
     private OnItemClickListener listener;
     private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss MM/dd/yyyy", Locale.getDefault());

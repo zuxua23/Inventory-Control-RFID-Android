@@ -75,7 +75,6 @@ import retrofit2.Response;
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 public class StockInActivity extends ScannerActivity
         implements BarcodeDataDelegate, RFIDDataDelegate {
-
     private ImageView btnBack;
     private Button btnClear, btnSave, btnListProduct, btnSumProduct;
     private Switch switchRfid;
@@ -85,7 +84,6 @@ public class StockInActivity extends ScannerActivity
     private RecyclerView rvTags;
     private Spinner spinnerLocation, spinnerPower;
     private FloatingActionButton fabScanCamera;
-
     private ItemAdapter adapter;
     private StockInProductAdapter sumAdapter;
     private final List<ItemModel.Item> scannedItemsList = new ArrayList<>();
@@ -95,12 +93,9 @@ public class StockInActivity extends ScannerActivity
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
     ));
-
     private ArrayAdapter<String> locationSpinnerAdapter;
-
     private final Handler handler = new Handler(Looper.getMainLooper());
     private AppDatabase db;
-
     private int totalScanCount = 0;
     private boolean isListProductTab = true;
     private String selectedLocation = "";
