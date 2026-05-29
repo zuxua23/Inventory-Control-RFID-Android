@@ -46,7 +46,8 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
 
     private RecyclerView rvTags;
     private DeliveryOrderAdapter adapter;
-    private TextView tvEmpty;
+    private View tvEmpty;
+    private com.facebook.shimmer.ShimmerFrameLayout shimmerLayout;
     private List<DeliveryOrderEntity> doList;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private AppDao appDao;
@@ -124,9 +125,13 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
         rvTags = findViewById(R.id.rvTags);
         doList = new ArrayList<>();
         tvEmpty = findViewById(R.id.tvEmpty);
+        shimmerLayout = findViewById(R.id.shimmerLayout);
         adapter = new DeliveryOrderAdapter(doList, this::openDetailDO);
         rvTags.setLayoutManager(new LinearLayoutManager(this));
         rvTags.setAdapter(adapter);
+
+        rvTags.setVisibility(View.GONE);
+        shimmerLayout.startShimmer();
     }
 
     private void setupListeners() {
@@ -140,6 +145,9 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
             List<DeliveryOrderEntity> data = appDao.getAllDO();
             runOnUiThread(() -> {
                 hideLoading();
+                shimmerLayout.stopShimmer();
+                shimmerLayout.setVisibility(View.GONE);
+                rvTags.setVisibility(View.VISIBLE);
                 doList.clear();
                 if (data != null && !data.isEmpty()) {
                     doList.addAll(data);

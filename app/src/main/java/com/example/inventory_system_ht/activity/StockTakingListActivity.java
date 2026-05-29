@@ -39,7 +39,9 @@ import retrofit2.Response;
 
 public class StockTakingListActivity extends ScannerActivity {
 
-    private TextView tvEmpty;
+    private View tvEmpty;
+    private RecyclerView rvSessions;
+    private com.facebook.shimmer.ShimmerFrameLayout shimmerLayout;
     private ApiService api;
     private String token;
 
@@ -94,8 +96,12 @@ public class StockTakingListActivity extends ScannerActivity {
     }
 
     private void initViews() {
-        RecyclerView rvSessions = findViewById(R.id.rvTags);
+        rvSessions = findViewById(R.id.rvTags);
         tvEmpty = findViewById(R.id.tvEmpty);
+        shimmerLayout = findViewById(R.id.shimmerLayout);
+
+        rvSessions.setVisibility(View.GONE);
+        shimmerLayout.startShimmer();
 
         adapter = new SessionAdapter(sessionList, session -> {
             Intent i = new Intent(this, StockTakingActivity.class);
@@ -138,6 +144,10 @@ public class StockTakingListActivity extends ScannerActivity {
                 hideLoading();
                 String resJson = "{\"http_code\":" + response.code() + ",\"found\":"
                         + (response.body() != null) + "}";
+                shimmerLayout.stopShimmer();
+                shimmerLayout.setVisibility(View.GONE);
+                rvSessions.setVisibility(View.VISIBLE);
+
                 sessionList.clear();
                 if (response.isSuccessful() && response.body() != null) {
                     LogManager.get(StockTakingListActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
@@ -165,6 +175,9 @@ public class StockTakingListActivity extends ScannerActivity {
                         "Stock Taking", "Session",
                         "Load session error: " + t.getMessage(),
                         userId, reqJson, resJson);
+                shimmerLayout.stopShimmer();
+                shimmerLayout.setVisibility(View.GONE);
+                rvSessions.setVisibility(View.VISIBLE);
                 handleFailure(t);
                 tvEmpty.setVisibility(View.VISIBLE);
                 adapter.notifyDataSetChanged();

@@ -1,211 +1,200 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_white">
+    android:background="@color/blue_theme">
 
-    <LinearLayout
+    <!-- Settings button (top-end) — also used for window insets via layout_header id -->
+    <ImageButton
+        android:id="@+id/btnSetting"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
+        android:src="@drawable/ic_setting"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        app:tint="@color/white"
+        android:contentDescription="@string/desc_settings_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Hidden anchor for WindowInsets top padding (preserves inset handling) -->
+    <View
         android:id="@+id/layout_header"
         android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:visibility="invisible"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- App logo -->
+    <ImageView
+        android:id="@+id/ivLogo"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:src="@drawable/ic_box"
+        app:tint="@color/white"
+        android:importantForAccessibility="no"
+        android:layout_marginBottom="14dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tvAppName" />
+
+    <!-- App name -->
+    <TextView
+        android:id="@+id/tvAppName"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:orientation="vertical">
+        android:text="@string/Title_login"
+        android:textColor="@color/white"
+        android:textSize="26sp"
+        android:fontFamily="@font/raleway_extra_bold"
+        android:layout_marginBottom="6dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tvTagline" />
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="10dp">
+    <!-- Tagline -->
+    <TextView
+        android:id="@+id/tvTagline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_tagline"
+        android:textColor="#B3FFFFFF"
+        android:textSize="13sp"
+        android:fontFamily="@font/raleway_regular"
+        android:layout_marginBottom="36dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/cardLogin" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="50dp"
-                android:layout_centerInParent="true"
-                android:text="@string/Title_login"
-                android:textColor="#7A7C7D"
-                android:fontFamily="@font/raleway_extra_bold"
-                android:textSize="20sp"
-                android:gravity="center"
-                android:textStyle="bold"
-                tools:ignore="RelativeOverlap" />
-
-            <ImageButton
-                android:id="@+id/btnSetting"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:src="@drawable/ic_setting"
-                android:background="@drawable/bg_btn_setting"
-                android:stateListAnimator="@null"
-                app:tint="#7A7C7D"
-                android:contentDescription="@string/desc_settings_button" />
-
-        </RelativeLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.01dp"
-            android:background="#7A7C7D" />
-    </LinearLayout>
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/layout_header"
-        android:fillViewport="true"
-        android:scrollbars="none">
+    <!-- Login Card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardLogin"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="24dp"
+        app:cardBackgroundColor="@color/bg_white"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="12dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintVertical_bias="0.58">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:paddingHorizontal="15dp">
-            <Space
+            android:padding="24dp">
+
+            <TextView
                 android:layout_width="wrap_content"
-                android:layout_height="10dp"/>
-            <ImageView
-                android:layout_width="160dp"
-                android:layout_height="132dp"
-                android:layout_marginBottom="10dp"
-                android:padding="16dp"
-                android:src="@drawable/ic_box"
-                app:tint="@color/blue_theme"
-                android:importantForAccessibility="no" />
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/blue_theme"
-                android:elevation="6dp"
-                app:cardCornerRadius="20dp">
+                android:layout_marginBottom="4dp"
+                android:text="@string/title_welcome_back"
+                android:fontFamily="@font/raleway_semi_bold"
+                android:textColor="@color/blue_theme"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:text="@string/subtitle_sign_in"
+                android:textColor="@color/text_grey"
+                android:fontFamily="@font/raleway_light"
+                android:textSize="13sp" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="15dp"
-                        tools:ignore="UselessParent">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="@string/label_username"
+                android:fontFamily="@font/raleway_bold"
+                android:textColor="@color/text_dark"
+                android:textSize="12sp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="8dp"
-                            android:text="@string/title_welcome_back"
-                            android:fontFamily="@font/raleway_semi_bold"
-                            android:textColor="@color/bg_white"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
+            <EditText
+                android:id="@+id/etUsername"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/bg_edit_text"
+                android:drawablePadding="12dp"
+                android:hint="@string/hint_username"
+                android:textSize="14sp"
+                android:fontFamily="@font/raleway_regular"
+                android:imeOptions="actionNext"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/black"
+                android:paddingHorizontal="16dp"
+                android:textColorHint="@color/text_grey"
+                android:autofillHints="username" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="24dp"
-                            android:text="@string/subtitle_sign_in"
-                            android:textColor="@color/bg_white"
-                            android:fontFamily="@font/raleway_light"
-                            android:textSize="14sp"
-                            tools:ignore="TextContrastCheck"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="@string/label_password"
+                android:fontFamily="@font/raleway_bold"
+                android:textColor="@color/text_dark"
+                android:textSize="12sp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="8dp"
-                            android:text="@string/label_username"
-                            android:fontFamily="@font/raleway_bold"
-                            android:textColor="@color/bg_white"
-                            android:textSize="12sp"
-                            tools:ignore="TextContrastCheck"/>
+            <EditText
+                android:id="@+id/etPassword"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:fontFamily="@font/raleway_regular"
+                android:layout_marginBottom="32dp"
+                android:background="@drawable/bg_edit_text"
+                android:drawablePadding="12dp"
+                android:textSize="14sp"
+                android:hint="@string/hint_password"
+                android:imeOptions="actionDone"
+                android:inputType="textPassword"
+                android:maxLines="1"
+                android:textColor="@color/black"
+                android:paddingHorizontal="16dp"
+                android:textColorHint="@color/text_grey"
+                android:autofillHints="password" />
 
-                        <EditText
-                            android:id="@+id/etUsername"
-                            android:layout_width="match_parent"
-                            android:layout_height="50dp"
-                            android:layout_marginBottom="20dp"
-                            android:background="@drawable/bg_edit_text"
-                            android:drawablePadding="12dp"
-                            android:hint="@string/hint_username"
-                            android:textSize="14sp"
-                            android:fontFamily="@font/raleway_regular"
-                            android:imeOptions="actionNext"
-                            android:inputType="text"
-                            android:maxLines="1"
-                            android:textColor="@color/black"
-                            android:paddingHorizontal="16dp"
-                            android:textColorHint="@color/text_grey"
-                            android:autofillHints="username" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="8dp"
-                            android:text="@string/label_password"
-                            android:fontFamily="@font/raleway_bold"
-                            android:textColor="@color/bg_white"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            tools:ignore="TextContrastCheck"/>
-
-                        <EditText
-                            android:id="@+id/etPassword"
-                            android:layout_width="match_parent"
-                            android:layout_height="50dp"
-                            android:fontFamily="@font/raleway_regular"
-                            android:layout_marginBottom="32dp"
-                            android:background="@drawable/bg_edit_text"
-                            android:drawablePadding="12dp"
-                            android:textSize="14sp"
-                            android:hint="@string/hint_password"
-                            android:imeOptions="actionDone"
-                            android:inputType="textPassword"
-                            android:maxLines="1"
-                            android:textColor="@color/black"
-                            android:paddingHorizontal="16dp"
-                            android:textColorHint="@color/text_grey"
-                            android:autofillHints="password" />
-
-                        <Button
-                            android:id="@+id/btnLogin"
-                            android:layout_width="150dp"
-                            android:layout_height="50dp"
-                            android:backgroundTint="@color/green_button"
-                            android:text="@string/action_sign_in"
-                            android:textAllCaps="false"
-                            android:gravity="center"
-                            android:layout_gravity="center"
-                            android:fontFamily="@font/raleway_bold"
-                            android:stateListAnimator="@null"
-                            android:textColor="@color/white"
-                            android:textSize="18sp"
-                            app:cornerRadius="20dp"
-                            tools:ignore="TextContrastCheck" />
-
-                    </LinearLayout>
-                </FrameLayout>
-            </androidx.cardview.widget.CardView>
-
+            <Button
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:backgroundTint="@color/green_button"
+                android:text="@string/action_sign_in"
+                android:textAllCaps="false"
+                android:gravity="center"
+                android:fontFamily="@font/raleway_bold"
+                android:stateListAnimator="@null"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                app:cornerRadius="20dp"
+                tools:ignore="TextContrastCheck" />
         </LinearLayout>
-    </ScrollView>
+    </androidx.cardview.widget.CardView>
 
+    <!-- FAB Log -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardFabLog"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         app:cardCornerRadius="28dp"
         app:cardElevation="8dp"
-        app:strokeColor="#F57C00"
-        app:strokeWidth="3dp">
+        app:strokeColor="@color/warning_orange"
+        app:strokeWidth="3dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabLog"
@@ -214,11 +203,10 @@
             android:contentDescription="Activity Log"
             android:src="@drawable/ic_log"
             app:fabSize="mini"
-            app:tint="#F57C00"
+            app:tint="@color/warning_orange"
             app:backgroundTint="@color/white"
             app:borderWidth="0dp"
             app:elevation="0dp" />
-
     </com.google.android.material.card.MaterialCardView>
 
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

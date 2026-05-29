@@ -55,6 +55,7 @@ public class SearchItemActivity extends ScannerActivity
 
     private EditText etSearchItem;
     private RecyclerView rvTags;
+    private View tvEmpty;
     private SearchItemAdapter adapter;
     private List<TagModel.SearchItemDto> allItemList;
     private List<TagModel.SearchItemDto> filteredList;
@@ -144,6 +145,7 @@ public class SearchItemActivity extends ScannerActivity
     private void initViews() {
         etSearchItem = findViewById(R.id.searchItem);
         rvTags = findViewById(R.id.rvTags);
+        tvEmpty = findViewById(R.id.tvEmpty);
 
         allItemList = new ArrayList<>();
         filteredList = new ArrayList<>();
@@ -151,6 +153,11 @@ public class SearchItemActivity extends ScannerActivity
         adapter = new SearchItemAdapter(filteredList);
         rvTags.setLayoutManager(new LinearLayoutManager(this));
         rvTags.setAdapter(adapter);
+    }
+
+    private void updateEmptyState() {
+        if (tvEmpty != null)
+            tvEmpty.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
     private void setupListeners() {
@@ -186,6 +193,7 @@ public class SearchItemActivity extends ScannerActivity
         filteredList.clear();
         filteredList.addAll(allItemList);
         adapter.notifyDataSetChanged();
+        updateEmptyState();
     }
 
     private void saveToLocal(List<TagModel.SearchItemDto> items) {
@@ -226,6 +234,7 @@ public class SearchItemActivity extends ScannerActivity
                     filteredList.clear();
                     filteredList.addAll(allItemList);
                     adapter.notifyDataSetChanged();
+                    updateEmptyState();
                 } else {
                     LogManager.get(SearchItemActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
                             "Search Item", "Item List", "Fetch items failed: HTTP " + response.code(),
@@ -366,6 +375,7 @@ public class SearchItemActivity extends ScannerActivity
             }
         }
         adapter.notifyDataSetChanged();
+        updateEmptyState();
     }
 
     private void moveScannedItemToTop(String code) {

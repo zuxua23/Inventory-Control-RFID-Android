@@ -179,19 +179,35 @@
             app:layout_constraintTop_toBottomOf="@id/scrollFilters"
             app:layout_constraintStart_toStartOf="parent" />
 
-        <TextView
+        <LinearLayout
             android:id="@+id/tvEmpty"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="No logs found"
-            android:textColor="#4D0181CC"
-            android:textSize="14sp"
-            android:fontFamily="@font/raleway_bold"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp"
             android:visibility="gone"
             app:layout_constraintTop_toBottomOf="@id/tvLogCount"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_box"
+                app:tint="#CCCCCC"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/label_empty_no_logs"
+                android:textColor="#AAAAAA"
+                android:fontFamily="@font/raleway_bold"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvLogs"

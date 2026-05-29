@@ -52,7 +52,8 @@ public class LogActivity extends ScannerActivity {
     private EditText etSearch;
     private Spinner spinnerLevel, spinnerAction, spinnerMenu, spinnerDate;
     private RecyclerView rvLogs;
-    private TextView tvEmpty, tvLogCount;
+    private View tvEmpty;
+    private TextView tvLogCount;
     private ImageView btnBack;
 
     private LogAdapter adapter;

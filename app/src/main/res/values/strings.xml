@@ -92,4 +92,12 @@
     <string name="scan_hint">Point the camera at the barcode</string>
     <string name="desc_close">Tutup</string>
     <string name="desc_torch">Senter</string>
+    <string name="app_tagline">RFID Warehouse Management</string>
+    <string name="label_empty_no_data">No data available</string>
+    <string name="label_empty_scan_hint">Start scanning items</string>
+    <string name="label_empty_no_logs">No logs found</string>
+    <string name="label_empty_no_sessions">No active sessions</string>
+    <string name="label_empty_no_do">No delivery orders</string>
+    <string name="label_empty_no_items">No items found</string>
+    <string name="label_empty_no_tags">No tags scanned yet</string>
 </resources>

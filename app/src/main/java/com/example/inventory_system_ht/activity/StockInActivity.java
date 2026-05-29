@@ -80,7 +80,8 @@ public class StockInActivity extends ScannerActivity
     private Button btnClear, btnSave, btnListProduct, btnSumProduct;
     private Switch switchRfid;
     private EditText resultScan;
-    private TextView tvScanned, tvEmpty;
+    private TextView tvScanned;
+    private View tvEmpty;
     private RecyclerView rvTags;
     private Spinner spinnerLocation, spinnerPower;
     private FloatingActionButton fabScanCamera;

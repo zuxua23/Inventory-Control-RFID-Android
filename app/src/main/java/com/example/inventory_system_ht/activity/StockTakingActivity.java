@@ -392,7 +392,7 @@ public class StockTakingActivity extends ScannerActivity
                     db.appDao().getSessionItemsBySttId(sttId);
             handler.post(() -> {
                 hideLoading();
-                TextView tvEmpty = findViewById(R.id.tvEmpty);
+                View tvEmpty = findViewById(R.id.tvEmpty);
                 if (cached.isEmpty()) {
                     if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
                     showWarning("No cached data, tap Refresh");

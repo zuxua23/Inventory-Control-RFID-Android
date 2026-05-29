@@ -15,4 +15,8 @@
     <color name="blue_theme">#0181CC</color>
     <color name="green_button">#01C470</color>
     <color name="bg_white">#F4F7F9</color>
+    <color name="color_stock_in">#388E3C</color>
+    <color name="color_stock_taking">#D32F2F</color>
+    <color name="color_tag_regist">#12538D</color>
+    <color name="color_search_item">#0288D1</color>
 </resources>

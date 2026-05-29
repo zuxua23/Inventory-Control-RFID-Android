@@ -82,6 +82,7 @@ public class TagRegistrationActivity extends ScannerActivity
 
     private TagRegistrationAdapter adapter;
     private List<TagLocalEntity> registeredTagList;
+    private View tvEmpty;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private AppDatabase db;
 
@@ -202,7 +203,13 @@ public class TagRegistrationActivity extends ScannerActivity
         });
     }
 
+    private void updateEmptyState() {
+        if (tvEmpty != null)
+            tvEmpty.setVisibility(registeredTagList.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
     private void setupRecyclerView() {
+        tvEmpty = findViewById(R.id.tvEmpty);
         rvTags.setItemAnimator(null);
         rvTags.setLayoutManager(new LinearLayoutManager(this));
         registeredTagList = new ArrayList<>();
@@ -274,6 +281,7 @@ public class TagRegistrationActivity extends ScannerActivity
             registeredTagList.clear();
             adapter.notifyDataSetChanged();
             updateCount();
+            updateEmptyState();
         });
 
         btnSubmitRegis.setOnClickListener(v -> {
@@ -302,6 +310,7 @@ public class TagRegistrationActivity extends ScannerActivity
         adapter.notifyItemInserted(0);
         rvTags.scrollToPosition(0);
         updateCount();
+        updateEmptyState();
         playScanFeedback(0);
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Tag Registration", data, "Scanned: " + data, new PrefManager(this).getUserId());
     }
@@ -332,6 +341,7 @@ public class TagRegistrationActivity extends ScannerActivity
                     registeredTagList.clear();
                     adapter.notifyDataSetChanged();
                     updateCount();
+                    updateEmptyState();
                 });
             }).start();
             return;
