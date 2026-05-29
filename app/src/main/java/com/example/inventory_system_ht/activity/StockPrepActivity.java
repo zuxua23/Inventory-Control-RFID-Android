@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -193,7 +192,9 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
                                         r.getDoId(), r.getDoNumber(), "", "", ""));
                             }
                             new Thread(() -> {
-                                try { appDao.deleteAllDO(); } catch (Exception e) { Log.e("StockPrep", "DB clear error", e); }
+                                try { appDao.deleteAllDO(); } catch (Exception e) {
+                                    LogManager.get(StockPrepActivity.this).log(LogManager.ERROR, LogManager.ACTION_DELETE, "Stock Preparation", "DO List", "DB clear error: " + e.getMessage(), new PrefManager(StockPrepActivity.this).getUserId());
+                                }
                                 appDao.insertDOList(entities);
                                 runOnUiThread(() -> {
                                     hideLoading();

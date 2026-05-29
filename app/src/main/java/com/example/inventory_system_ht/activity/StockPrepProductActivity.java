@@ -23,7 +23,6 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.util.Log;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -92,7 +91,6 @@ import retrofit2.Response;
 public class StockPrepProductActivity extends ScannerActivity
         implements BarcodeDataDelegate, RFIDDataDelegate {
 
-    private static final String TAG = "StockPrepProduct";
     private EditText resultScan;
     private TextView tvScanned, tvNoDo, tvDateDo;
     private Switch switchRfid;
@@ -392,7 +390,7 @@ public class StockPrepProductActivity extends ScannerActivity
         findViewById(R.id.btnClear).setOnClickListener(v -> {
             new Thread(() -> {
                 for (TagLocalEntity t : new ArrayList<>(scannedList)) {
-                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { Log.e("StockPrep", "DB delete error", e); }
+                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_DELETE, "Stock Preparation", "DB", "DB delete error: " + e.getMessage(), new PrefManager(StockPrepProductActivity.this).getUserId()); }
                 }
                 runOnUiThread(() -> {
                     scannedList.clear();
@@ -626,7 +624,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     if (!forThis.isEmpty())
                         showWarning("Restored " + forThis.size() + " item(s)");
                 });
-            } catch (Exception e) { Log.e(TAG, "Failed to restore scan session", e); }
+            } catch (Exception e) { LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ, "Stock Preparation", "Session", "Failed to restore scan session: " + e.getMessage(), new PrefManager(StockPrepProductActivity.this).getUserId()); }
         }).start();
     }
 
@@ -842,7 +840,7 @@ public class StockPrepProductActivity extends ScannerActivity
                                 .build());
 
                 for (TagLocalEntity t : new ArrayList<>(scannedList)) {
-                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { Log.e("StockPrep", "DB delete error", e); }
+                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_DELETE, "Stock Preparation", "DB", "DB delete error: " + e.getMessage(), new PrefManager(StockPrepProductActivity.this).getUserId()); }
                 }
 
                 runOnUiThread(() -> {
@@ -875,7 +873,7 @@ public class StockPrepProductActivity extends ScannerActivity
                                     userId, submitReqJson, submitResJson);
                             new Thread(() -> {
                                 for (TagLocalEntity t : new ArrayList<>(scannedList)) {
-                                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { Log.e("StockPrep", "DB delete error", e); }
+                                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_DELETE, "Stock Preparation", "DB", "DB delete error: " + e.getMessage(), new PrefManager(StockPrepProductActivity.this).getUserId()); }
                                 }
                                 runOnUiThread(() -> {
                                     showSuccess("Items saved");
@@ -979,7 +977,7 @@ public class StockPrepProductActivity extends ScannerActivity
         btnYes.setOnClickListener(v -> {
             dialog.dismiss();
             new Thread(() -> {
-                try { appDao.deleteScannedTagByEpc(tag.getEpcTag()); } catch (Exception e) { Log.e("StockPrep", "DB delete error", e); }
+                try { appDao.deleteScannedTagByEpc(tag.getEpcTag()); } catch (Exception e) { LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_DELETE, "Stock Preparation", "DB", "DB delete error: " + e.getMessage(), new PrefManager(StockPrepProductActivity.this).getUserId()); }
                 runOnUiThread(() -> {
                     scannedRawSet.remove(tag.getEpcTag().toUpperCase());
                     scannedEpcSet.remove(tag.getEpcTag().toUpperCase());
