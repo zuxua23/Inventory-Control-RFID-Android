@@ -528,7 +528,12 @@ public class StockTakingActivity extends ScannerActivity
                         db.appDao().markBulkSynced(sttId, foundEpcs);
                         handler.post(this::updateSyncStatus);
                     }
-                } catch (Exception e) { Log.e("StockTaking", "Bulk sync error", e); }
+                } catch (Exception e) {
+                    LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                            "Stock Taking", sttId, "Bulk sync error: " + e.getMessage(),
+                            new PrefManager(StockTakingActivity.this).getUserId());
+                    handler.post(() -> showWarning("Sync failed, will retry"));
+                }
             }
 
             for (ScanQueueEntity q : pending) {
@@ -541,7 +546,12 @@ public class StockTakingActivity extends ScannerActivity
                         api.manualAddStockTaking(token,
                                 new StockTakingModel.ManualAddReq(q.sttId, q.itemId, q.remark)).execute();
                     db.appDao().markSyncedById(q.id);
-                } catch (Exception e) { Log.e("StockTaking", "Queue sync error", e); }
+                } catch (Exception e) {
+                    LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                            "Stock Taking", q.epcTag, "Queue sync error: " + e.getMessage(),
+                            new PrefManager(StockTakingActivity.this).getUserId());
+                    handler.post(() -> showWarning("Sync failed, will retry"));
+                }
             }
             handler.post(this::updateSyncStatus);
             isSyncing.set(false);
@@ -561,7 +571,11 @@ public class StockTakingActivity extends ScannerActivity
                 Response<GeneralResponse> res = api.bulkScanStockTaking(token,
                         new StockTakingModel.BulkScanReq(sttId, foundEpcs)).execute();
                 if (res.isSuccessful()) db.appDao().markBulkSynced(sttId, foundEpcs);
-            } catch (Exception e) { Log.e("StockTaking", "Bulk sync error", e); }
+            } catch (Exception e) {
+                LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                        "Stock Taking", sttId, "Bulk sync error: " + e.getMessage(),
+                        new PrefManager(this).getUserId());
+            }
         }
 
         for (ScanQueueEntity q : pending) {
@@ -574,7 +588,11 @@ public class StockTakingActivity extends ScannerActivity
                     api.manualAddStockTaking(token,
                             new StockTakingModel.ManualAddReq(q.sttId, q.itemId, q.remark)).execute();
                 db.appDao().markSyncedById(q.id);
-            } catch (Exception e) { Log.e("StockTaking", "Queue sync error", e); }
+            } catch (Exception e) {
+                LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                        "Stock Taking", q.epcTag, "Queue sync error: " + e.getMessage(),
+                        new PrefManager(this).getUserId());
+            }
         }
     }
 
