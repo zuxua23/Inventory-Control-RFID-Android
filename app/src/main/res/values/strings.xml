@@ -100,4 +100,10 @@
     <string name="label_empty_no_do">No delivery orders</string>
     <string name="label_empty_no_items">No items found</string>
     <string name="label_empty_no_tags">No tags scanned yet</string>
+    <string name="menu_title">Menu</string>
+    <string name="menu_stock_in_desc">Terima &amp; catat barang masuk</string>
+    <string name="menu_stock_preparation_desc">Siapkan order &amp; picking</string>
+    <string name="menu_tag_registration_desc">Daftarkan RFID tag baru</string>
+    <string name="menu_stock_taking_desc">Hitung &amp; audit stok</string>
+    <string name="menu_search_item_desc">Cari &amp; lacak item</string>
 </resources>
