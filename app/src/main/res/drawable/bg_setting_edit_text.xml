@@ -1,6 +1,5 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- FOCUS -->
     <item android:state_focused="true">
         <shape>
             <solid android:color="@color/white"/>
@@ -16,7 +15,6 @@
         </shape>
     </item>
 
-    <!-- NORMAL -->
     <item>
         <shape>
             <solid android:color="@color/white"/>

@@ -17,6 +17,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.cardview.widget.CardView;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -29,7 +30,7 @@ import com.example.inventory_system_ht.R;
 
 public class HomeActivity extends ScannerActivity {
 
-    private androidx.cardview.widget.CardView btnStockIn, btnStockPrep, btnStockTaking, btnTagRegis, btnSearchItem;
+    private CardView btnStockIn, btnStockPrep, btnStockTaking, btnTagRegis, btnSearchItem;
     private TextView tvNamaOperator, tvRoleOperator;
     private ImageButton btnLogout;
     private PrefManager prefManager;

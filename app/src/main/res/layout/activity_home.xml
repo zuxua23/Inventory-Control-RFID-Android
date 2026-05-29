@@ -11,13 +11,12 @@
         android:layout_width="match_parent"
         android:layout_height="0dp" />
 
-    <!-- ── Header ── -->
     <RelativeLayout
         android:id="@+id/cardRfidSwitch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="20dp"
-        android:paddingBottom="18dp"
+        android:paddingBottom="20dp"
         android:paddingHorizontal="20dp">
 
         <ImageButton
@@ -70,7 +69,6 @@
         </LinearLayout>
     </RelativeLayout>
 
-    <!-- ── Body ── -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -100,7 +98,6 @@
                     android:textColor="@color/white"
                     android:textSize="26sp" />
 
-                <!-- ░░ Stock In ░░ -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/ButtonStockIn"
                     android:layout_width="match_parent"
@@ -167,7 +164,6 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- ░░ Stock Preparation ░░ -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/ButtonStockPreparation"
                     android:layout_width="match_parent"
@@ -234,7 +230,6 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- ░░ Tag Registration ░░ -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/ButtonTagRegis"
                     android:layout_width="match_parent"
@@ -301,7 +296,6 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- ░░ Stock Taking ░░ -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/ButtonStockTaking"
                     android:layout_width="match_parent"
@@ -368,7 +362,6 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- ░░ Search Item ░░ -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/ButtonSearchItem"
                     android:layout_width="match_parent"
@@ -437,7 +430,6 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- ── FAB Activity Log ── -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardFabLog"
             android:layout_width="wrap_content"

@@ -61,10 +61,8 @@
     <string name="label_remove_faq_fill">Delete item from the application</string>
     <string name="label_loading_screen">Loading, please wait...</string>
     <string name="label_title_dialog_manual_add">Manual Add Item</string>
-    <string name="hint_manual_item_id">Masukkan Item ID</string>
+    <string name="hint_manual_item_id">Enter Item ID</string>
     <string name="hint_manual_remark">Notes / Remark</string>
-    <string name="action_batal">Batal</string>
-    <string name="action_simpan">Simpan</string>
     <string name="logo_warning">Logo warning</string>
     <string name="label_register_tags">Register Tags?</string>
     <string name="desc_label">Make sure the scanned tag is correct.</string>
@@ -101,9 +99,9 @@
     <string name="label_empty_no_items">No items found</string>
     <string name="label_empty_no_tags">No tags scanned yet</string>
     <string name="menu_title">Menu</string>
-    <string name="menu_stock_in_desc">Terima &amp; catat barang masuk</string>
+    <string name="menu_stock_in_desc">Receive &amp; record incoming goods</string>
     <string name="menu_stock_preparation_desc">Siapkan order &amp; picking</string>
     <string name="menu_tag_registration_desc">Daftarkan RFID tag baru</string>
-    <string name="menu_stock_taking_desc">Hitung &amp; audit stok</string>
-    <string name="menu_search_item_desc">Cari &amp; lacak item</string>
+    <string name="menu_stock_taking_desc">Register new RFID tag</string>
+    <string name="menu_search_item_desc">Search &amp; track items</string>
 </resources>

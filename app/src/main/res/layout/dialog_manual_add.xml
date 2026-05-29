@@ -9,7 +9,6 @@
     android:elevation="10dp"
     android:layout_margin="16dp"
     app:cardBackgroundColor="@color/white">
-<!--nambahin dropdown tag-->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
