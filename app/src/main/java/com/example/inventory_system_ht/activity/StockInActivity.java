@@ -387,20 +387,6 @@ public class StockInActivity extends ScannerActivity
             }
         });
 
-        spinnerPower.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!switchRfid.isChecked()) return;
-                CommScanner scanner = getScannerInstance();
-                if (scanner != null) {
-                    int power = parsePower(powerList.get(position), 27);
-                    RfidBulkHelper.closeInventory(scanner);
-                    RfidBulkHelper.openInventory(scanner, StockInActivity.this, power);
-                }
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
     }
 
     private void setupBarcodeTextWatcher() {

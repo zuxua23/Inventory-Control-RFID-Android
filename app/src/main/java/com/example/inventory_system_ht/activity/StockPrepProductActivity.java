@@ -351,20 +351,6 @@ public class StockPrepProductActivity extends ScannerActivity
             }
         });
 
-        spinnerPower.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (!switchRfid.isChecked()) return;
-                CommScanner scanner = getScannerInstance();
-                if (scanner != null) {
-                    int power = parsePower(powerList.get(position), 21);
-                    RfidBulkHelper.closeInventory(scanner);
-                    RfidBulkHelper.openInventory(scanner, StockPrepProductActivity.this, power);
-                }
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
     }
 
     private void setupListeners() {
@@ -406,7 +392,7 @@ public class StockPrepProductActivity extends ScannerActivity
         findViewById(R.id.btnClear).setOnClickListener(v -> {
             new Thread(() -> {
                 for (TagLocalEntity t : new ArrayList<>(scannedList)) {
-                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception ignored) {}
+                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { Log.e("StockPrep", "DB delete error", e); }
                 }
                 runOnUiThread(() -> {
                     scannedList.clear();
@@ -856,7 +842,7 @@ public class StockPrepProductActivity extends ScannerActivity
                                 .build());
 
                 for (TagLocalEntity t : new ArrayList<>(scannedList)) {
-                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception ignored) {}
+                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { Log.e("StockPrep", "DB delete error", e); }
                 }
 
                 runOnUiThread(() -> {
@@ -889,7 +875,7 @@ public class StockPrepProductActivity extends ScannerActivity
                                     userId, submitReqJson, submitResJson);
                             new Thread(() -> {
                                 for (TagLocalEntity t : new ArrayList<>(scannedList)) {
-                                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception ignored) {}
+                                    try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { Log.e("StockPrep", "DB delete error", e); }
                                 }
                                 runOnUiThread(() -> {
                                     showSuccess("Items saved");
@@ -993,7 +979,7 @@ public class StockPrepProductActivity extends ScannerActivity
         btnYes.setOnClickListener(v -> {
             dialog.dismiss();
             new Thread(() -> {
-                try { appDao.deleteScannedTagByEpc(tag.getEpcTag()); } catch (Exception ignored) {}
+                try { appDao.deleteScannedTagByEpc(tag.getEpcTag()); } catch (Exception e) { Log.e("StockPrep", "DB delete error", e); }
                 runOnUiThread(() -> {
                     scannedRawSet.remove(tag.getEpcTag().toUpperCase());
                     scannedEpcSet.remove(tag.getEpcTag().toUpperCase());

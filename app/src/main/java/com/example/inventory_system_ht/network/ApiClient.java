@@ -25,7 +25,7 @@ public class ApiClient {
         String baseUrl = prefManager.getBaseUrl();
 
         if (baseUrl == null || baseUrl.isEmpty()) {
-            baseUrl = "http://10.62.9.162/";
+            baseUrl = "http://localhost/";
         }
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
