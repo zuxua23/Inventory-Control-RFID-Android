@@ -120,6 +120,7 @@ public class TagRegistrationActivity extends ScannerActivity
         bindViews();
         setupPowerSpinner();
         setupRecyclerView();
+        updateEmptyState();
         setupSwitchRfid();
         setupBarcodeTextWatcher();
         setupButtonListeners();
