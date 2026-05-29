@@ -5,9 +5,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/blue_theme">
+    android:background="@color/blue_theme"
+    android:paddingTop="10dp">
 
-    <!-- Settings button (top-end) — also used for window insets via layout_header id -->
     <ImageButton
         android:id="@+id/btnSetting"
         android:layout_width="44dp"
@@ -21,7 +21,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Hidden anchor for WindowInsets top padding (preserves inset handling) -->
     <View
         android:id="@+id/layout_header"
         android:layout_width="match_parent"
@@ -30,7 +29,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- App logo -->
     <ImageView
         android:id="@+id/ivLogo"
         android:layout_width="80dp"
@@ -43,7 +41,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/tvAppName" />
 
-    <!-- App name -->
     <TextView
         android:id="@+id/tvAppName"
         android:layout_width="wrap_content"
@@ -57,7 +54,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/tvTagline" />
 
-    <!-- Tagline -->
     <TextView
         android:id="@+id/tvTagline"
         android:layout_width="wrap_content"
@@ -71,7 +67,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/cardLogin" />
 
-    <!-- Login Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardLogin"
         android:layout_width="0dp"
@@ -182,7 +177,6 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- FAB Log -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardFabLog"
         android:layout_width="wrap_content"
