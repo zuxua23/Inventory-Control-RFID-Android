@@ -104,23 +104,10 @@ public class RfidBulkHelper {
                 settings.scan.triggerMode = BarcodeScannerSettings.Scan.TriggerMode.MOMENTARY;
                 settings.scan.lightMode = BarcodeScannerSettings.Scan.LightMode.AUTO;
                 settings.scan.markerMode = BarcodeScannerSettings.Scan.MarkerMode.NORMAL;
-
-                BarcodeScannerSettings.Decode.Symbologies sym = settings.decode.symbologies;
-                sym.qrCode.enabled = true;
-                sym.qrCode.model1.enabled = false;
-                sym.qrCode.model2.enabled = true;
-                sym.microQr.enabled = true;
-                sym.dataMatrix.enabled = true;
-                sym.dataMatrix.square.enabled = true;
-                sym.dataMatrix.rectangle.enabled = true;
-
                 barcode.setSettings(settings);
-                Log.d(TAG, "barcode setSettings ok: qr=" + sym.qrCode.enabled
-                        + " qrM2=" + sym.qrCode.model2.enabled
-                        + " microQr=" + sym.microQr.enabled
-                        + " dm=" + sym.dataMatrix.enabled);
+                Log.d(TAG, "barcode setSettings ok (scan params only)");
             } catch (Exception se) {
-                Log.w(TAG, "barcode setSettings warn: " + se.getMessage(), se);
+                Log.w(TAG, "barcode setSettings warn: " + se.getMessage());
             }
 
             Log.d(TAG, "Barcode reader opened");
