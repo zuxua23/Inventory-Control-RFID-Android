@@ -27,7 +27,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingTop="280dp"
+            android:layout_marginTop="280dp"
             android:text="@string/label_welcome_launch"
             android:fontFamily="@font/raleway_bold"
             android:textColor="#10548F"
