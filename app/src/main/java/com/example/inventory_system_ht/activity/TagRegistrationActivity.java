@@ -7,10 +7,15 @@ import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.core.graphics.Insets;
@@ -41,6 +46,7 @@ import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
+import com.example.inventory_system_ht.util.RfidSettingsManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.util.SyncWorker;
 import com.example.inventory_system_ht.R;
@@ -48,6 +54,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import retrofit2.Call;
@@ -57,11 +64,15 @@ public class TagRegistrationActivity extends ScannerActivity
     private TextView tvScanned;
     private Button btnClear, btnSubmitRegis;
     private RecyclerView rvTags;
+    private Spinner spinnerPower;
     private TagRegistrationAdapter adapter;
     private List<TagLocalEntity> registeredTagList;
     private View tvEmpty;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private AppDatabase db;
+    private final List<String> powerList = new ArrayList<>(Arrays.asList(
+            "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"));
+    private final int[] powerValues = {5, 10, 15, 18, 21, 24, 27, 30};
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -94,6 +105,7 @@ public class TagRegistrationActivity extends ScannerActivity
         db = AppDatabase.getDatabase(this);
 
         bindViews();
+        setupPowerSpinner();
         setupRecyclerView();
         updateEmptyState();
         setupButtonListeners();
@@ -137,6 +149,46 @@ public class TagRegistrationActivity extends ScannerActivity
         btnClear = findViewById(R.id.btnClear);
         btnSubmitRegis = findViewById(R.id.btnSubmitRegis);
         rvTags = findViewById(R.id.rvTags);
+        spinnerPower = findViewById(R.id.spinnerPower);
+    }
+
+    private void setupPowerSpinner() {
+        ArrayAdapter<String> powerAdapter = new ArrayAdapter<String>(this,
+                R.layout.item_spinner_selected, R.id.tvSpinnerSelected, powerList) {
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View view = LayoutInflater.from(getContext()).inflate(R.layout.item_dropdown_loc, parent, false);
+                TextView tv = view.findViewById(R.id.tvDropdownItem);
+                ImageView icon = view.findViewById(R.id.ivDropdownIcon);
+                if (tv != null) tv.setText(getItem(position));
+                if (icon != null) icon.setVisibility(View.GONE);
+                return view;
+            }
+        };
+        spinnerPower.setAdapter(powerAdapter);
+        spinnerPower.setSelection(indexOfPower(new RfidSettingsManager(this).getPower()));
+
+        spinnerPower.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                int power = powerValues[position];
+                RfidSettingsManager mgr = new RfidSettingsManager(TagRegistrationActivity.this);
+                if (power == mgr.getPower()) return;
+                mgr.save(power, mgr.getSession(), mgr.getQFactor());
+                CommScanner scanner = getScannerInstance();
+                if (scanner != null) {
+                    RfidBulkHelper.closeInventory(scanner);
+                    RfidBulkHelper.openInventory(scanner, TagRegistrationActivity.this,
+                            TagRegistrationActivity.this);
+                }
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private int indexOfPower(int p) {
+        for (int i = 0; i < powerValues.length; i++) if (powerValues[i] == p) return i;
+        return 6;
     }
 
     private void updateEmptyState() {
