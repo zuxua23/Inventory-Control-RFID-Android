@@ -102,7 +102,7 @@ public class BarcodeCameraActivity extends AppCompatActivity {
                 startCamera();
             } else {
                 LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
-                        "Camera Scanner", "", "Izin kamera ditolak oleh user", currentUserId);
+                        "Camera Scanner", "", "Camera permission denied by user", currentUserId);
                 setResult(RESULT_PERMISSION_DENIED);
                 finish();
             }
@@ -133,7 +133,7 @@ public class BarcodeCameraActivity extends AppCompatActivity {
                 );
             } catch (Exception e) {
                 LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
-                        "Camera Scanner", "", "Gagal bind camera: " + e.getMessage(), currentUserId);
+                        "Camera Scanner", "", "Failed to bind camera: " + e.getMessage(), currentUserId);
                 finish();
             }
         }, ContextCompat.getMainExecutor(this));
