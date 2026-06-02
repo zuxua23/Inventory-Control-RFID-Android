@@ -104,6 +104,23 @@ public class RfidBulkHelper {
                 settings.scan.triggerMode = BarcodeScannerSettings.Scan.TriggerMode.MOMENTARY;
                 settings.scan.lightMode = BarcodeScannerSettings.Scan.LightMode.AUTO;
                 settings.scan.markerMode = BarcodeScannerSettings.Scan.MarkerMode.NORMAL;
+
+                BarcodeScannerSettings.Decode.Symbologies sym = settings.decode.symbologies;
+                sym.qrCode.enabled = true;
+                sym.microQr.enabled = true;
+                sym.dataMatrix.enabled = true;
+                sym.pdf417.enabled = true;
+                sym.microPdf417.enabled = true;
+                sym.aztec.enabled = true;
+                sym.code128.enabled = true;
+                sym.code39.enabled = true;
+                sym.code93.enabled = true;
+                sym.codabar.enabled = true;
+                sym.ean13upcA.enabled = true;
+                sym.ean8.enabled = true;
+                sym.upcE.enabled = true;
+                sym.itf.enabled = true;
+
                 barcode.setSettings(settings);
             } catch (Exception se) {
                 Log.w(TAG, "barcode setSettings warn: " + se.getMessage());
