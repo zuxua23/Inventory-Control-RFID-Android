@@ -30,7 +30,7 @@ import com.example.inventory_system_ht.R;
 
 public class HomeActivity extends ScannerActivity {
 
-    private CardView btnStockIn, btnStockPrep, btnStockTaking, btnTagRegis, btnSearchItem;
+    private CardView btnStockIn, btnStockPrep, btnStockTaking, btnTagRegis, btnSearchItem, btnSettingRfid;
     private TextView tvNamaOperator, tvRoleOperator;
     private ImageButton btnLogout;
     private PrefManager prefManager;
@@ -99,6 +99,7 @@ public class HomeActivity extends ScannerActivity {
         btnStockTaking = findViewById(R.id.ButtonStockTaking);
         btnTagRegis = findViewById(R.id.ButtonTagRegis);
         btnSearchItem = findViewById(R.id.ButtonSearchItem);
+        btnSettingRfid = findViewById(R.id.ButtonSettingRfid);
         tvNamaOperator = findViewById(R.id.textViewNamaOperator);
         tvRoleOperator = findViewById(R.id.textViewRoleOperator);
         btnLogout = findViewById(R.id.btnLogout);
@@ -113,10 +114,15 @@ public class HomeActivity extends ScannerActivity {
         btnLogout.setOnClickListener(v -> showLogoutDialog());
 
         View.OnClickListener menuClickListener = v -> {
+            int id = v.getId();
+            if (id == R.id.ButtonSettingRfid) {
+                startActivity(new Intent(this, RfidSettingActivity.class));
+                return;
+            }
+
             if (!isNetworkConnected()) showWarning("No internet connection");
 
             Intent intent = null;
-            int id = v.getId();
 
             if (id == R.id.ButtonStockIn) intent = new Intent(this, StockInActivity.class);
             else if (id == R.id.ButtonStockPreparation) intent = new Intent(this, StockPrepActivity.class);
@@ -132,6 +138,7 @@ public class HomeActivity extends ScannerActivity {
         btnStockTaking.setOnClickListener(menuClickListener);
         btnTagRegis.setOnClickListener(menuClickListener);
         btnSearchItem.setOnClickListener(menuClickListener);
+        btnSettingRfid.setOnClickListener(menuClickListener);
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override

@@ -450,13 +450,14 @@
                         <FrameLayout
                             android:layout_width="50dp"
                             android:layout_height="50dp"
-                            android:background="@drawable/bg_tint_blue">
+                            android:background="@drawable/bg_tint_grey">
 
                             <ImageView
                                 android:layout_width="30dp"
                                 android:layout_height="30dp"
                                 android:layout_gravity="center"
                                 android:src="@drawable/ic_setting_rfid"
+                                app:tint="@color/color_setting_grey"
                                 android:importantForAccessibility="no" />
                         </FrameLayout>
 
@@ -472,7 +473,7 @@
                                 android:layout_height="wrap_content"
                                 android:fontFamily="@font/raleway_bold"
                                 android:text="@string/title_setting_rfid"
-                                android:textColor="@color/color_search_item"
+                                android:textColor="@color/color_setting_grey"
                                 android:textSize="16sp" />
 
                             <TextView
@@ -480,7 +481,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:fontFamily="@font/raleway_regular"
-                                android:text="@string/menu_search_item_desc"
+                                android:text="@string/menu_setting_rfid_desc"
                                 android:textColor="#6B7280"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -489,7 +490,7 @@
                             android:layout_width="18dp"
                             android:layout_height="18dp"
                             android:src="@drawable/ic_chevron_right"
-                            app:tint="#990288D1"
+                            app:tint="#99616161"
                             android:importantForAccessibility="no" />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>

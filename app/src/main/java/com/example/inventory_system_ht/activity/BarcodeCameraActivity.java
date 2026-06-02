@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Size;
-import android.view.Surface;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -115,16 +114,12 @@ public class BarcodeCameraActivity extends AppCompatActivity {
         future.addListener(() -> {
             try {
                 ProcessCameraProvider provider = future.get();
-                int targetRotation = Surface.ROTATION_180;
 
-                preview = new Preview.Builder()
-                        .setTargetRotation(targetRotation)
-                        .build();
+                preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
                 imageAnalysis = new ImageAnalysis.Builder()
                         .setTargetResolution(new Size(1280, 720))
-                        .setTargetRotation(targetRotation)
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
                 imageAnalysis.setAnalyzer(cameraExecutor, this::analyze);

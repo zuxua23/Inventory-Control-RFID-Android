@@ -1,8 +1,10 @@
 package com.example.inventory_system_ht.util;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.densowave.scannersdk.Common.CommScanner;
+import com.densowave.scannersdk.Dto.BarcodeScannerSettings;
 import com.densowave.scannersdk.Dto.RFIDScannerSettings;
 import com.densowave.scannersdk.Listener.RFIDDataDelegate;
 import com.densowave.scannersdk.RFID.RFIDScanner;
@@ -10,7 +12,17 @@ import com.densowave.scannersdk.RFID.RFIDScanner;
 public class RfidBulkHelper {
     private static final String TAG = "RfidBulkHelper";
 
+    public static boolean openInventory(CommScanner scanner, RFIDDataDelegate delegate, Context ctx) {
+        RfidSettingsManager s = new RfidSettingsManager(ctx);
+        return openInventory(scanner, delegate, s.getPower(), s.getSession(), s.getQFactor());
+    }
+
     public static boolean openInventory(CommScanner scanner, RFIDDataDelegate delegate, int powerDbm) {
+        return openInventory(scanner, delegate, powerDbm, RfidSettingsManager.DEFAULT_SESSION, RfidSettingsManager.DEFAULT_Q);
+    }
+
+    public static boolean openInventory(CommScanner scanner, RFIDDataDelegate delegate,
+                                        int powerDbm, int session, int qFactor) {
         if (scanner == null) {
             Log.e(TAG, "Scanner is null");
             return false;
@@ -35,19 +47,30 @@ public class RfidBulkHelper {
 
             settings.scan.doubleReading = RFIDScannerSettings.Scan.DoubleReading.PREVENT1;
 
-            settings.scan.sessionFlag = RFIDScannerSettings.Scan.SessionFlag.S1;
+            settings.scan.sessionFlag = sessionFlagOf(session);
+            settings.scan.qParam = (short) Math.max(0, Math.min(15, qFactor));
 
             settings.scan.polarization = RFIDScannerSettings.Scan.Polarization.Both;
 
             rfid.setSettings(settings);
             rfid.openInventory();
 
-            Log.d(TAG, "RFID inventory opened, power=" + safePower + " dBm");
+            Log.d(TAG, "RFID inventory opened, power=" + safePower
+                    + " dBm session=S" + session + " q=" + qFactor);
             return true;
 
         } catch (Exception e) {
             Log.e(TAG, "openInventory failed: " + e.getMessage());
             return false;
+        }
+    }
+
+    private static RFIDScannerSettings.Scan.SessionFlag sessionFlagOf(int s) {
+        switch (s) {
+            case 0: return RFIDScannerSettings.Scan.SessionFlag.S0;
+            case 2: return RFIDScannerSettings.Scan.SessionFlag.S2;
+            case 3: return RFIDScannerSettings.Scan.SessionFlag.S3;
+            default: return RFIDScannerSettings.Scan.SessionFlag.S1;
         }
     }
 
@@ -74,6 +97,13 @@ public class RfidBulkHelper {
             if (barcode == null) return false;
 
             barcode.setDataDelegate(delegate);
+            try {
+                BarcodeScannerSettings settings = barcode.getSettings();
+                settings.scan.triggerMode = BarcodeScannerSettings.Scan.TriggerMode.MOMENTARY;
+                barcode.setSettings(settings);
+            } catch (Exception se) {
+                Log.w(TAG, "barcode setSettings warn: " + se.getMessage());
+            }
             barcode.openReader();
 
             Log.d(TAG, "Barcode reader opened");

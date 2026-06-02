@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_launch">
+
+    <ImageView
+        android:id="@+id/btnBack"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:contentDescription="@string/desc_back"
+        android:padding="4dp"
+        android:src="@drawable/baseline_arrow_back"
+        app:tint="@color/white"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/title_setting_rfid"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        android:fontFamily="@font/raleway_bold"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="12dp"
+        tools:ignore="TextContrastCheck"
+        app:layout_constraintStart_toEndOf="@id/btnBack"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/btnBack"
+        app:layout_constraintBottom_toBottomOf="@id/btnBack" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/whiteContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_white_rounded_top"
+        android:elevation="16dp"
+        android:padding="20dp"
+        app:layout_constraintTop_toBottomOf="@id/btnBack"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/tvPowerLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/raleway_bold"
+            android:text="@string/label_rfid_power"
+            android:textColor="@color/text_dark"
+            android:textSize="16sp"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Spinner
+            android:id="@+id/spinnerPower"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_spinner"
+            android:popupBackground="@drawable/bg_spinner_dropdown"
+            app:layout_constraintTop_toBottomOf="@id/tvPowerLabel" />
+
+        <TextView
+            android:id="@+id/tvSessionLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:fontFamily="@font/raleway_bold"
+            android:text="@string/label_rfid_session"
+            android:textColor="@color/text_dark"
+            android:textSize="16sp"
+            app:layout_constraintTop_toBottomOf="@id/spinnerPower" />
+
+        <Spinner
+            android:id="@+id/spinnerSession"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_spinner"
+            android:popupBackground="@drawable/bg_spinner_dropdown"
+            app:layout_constraintTop_toBottomOf="@id/tvSessionLabel" />
+
+        <TextView
+            android:id="@+id/tvQLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:fontFamily="@font/raleway_bold"
+            android:text="@string/label_rfid_qfactor"
+            android:textColor="@color/text_dark"
+            android:textSize="16sp"
+            app:layout_constraintTop_toBottomOf="@id/spinnerSession" />
+
+        <Spinner
+            android:id="@+id/spinnerQ"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_spinner"
+            android:popupBackground="@drawable/bg_spinner_dropdown"
+            app:layout_constraintTop_toBottomOf="@id/tvQLabel" />
+
+        <Button
+            android:id="@+id/btnSaveSetting"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginBottom="20dp"
+            android:backgroundTint="@color/green_button"
+            android:fontFamily="@font/raleway_bold"
+            android:stateListAnimator="@null"
+            android:text="@string/action_save"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            app:cornerRadius="26dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:ignore="TextContrastCheck" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
