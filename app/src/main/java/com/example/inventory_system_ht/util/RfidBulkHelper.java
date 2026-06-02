@@ -39,7 +39,7 @@ public class RfidBulkHelper {
 
             RFIDScannerSettings settings = rfid.getSettings();
 
-            settings.scan.triggerMode = RFIDScannerSettings.Scan.TriggerMode.CONTINUOUS1;
+            settings.scan.triggerMode = RFIDScannerSettings.Scan.TriggerMode.MOMENTARY;
 
             int safePower = Math.max(4, Math.min(30, powerDbm));
             settings.scan.powerLevelRead  = safePower;
@@ -97,14 +97,17 @@ public class RfidBulkHelper {
             if (barcode == null) return false;
 
             barcode.setDataDelegate(delegate);
+            barcode.openReader();
+
             try {
                 BarcodeScannerSettings settings = barcode.getSettings();
                 settings.scan.triggerMode = BarcodeScannerSettings.Scan.TriggerMode.MOMENTARY;
+                settings.scan.lightMode = BarcodeScannerSettings.Scan.LightMode.AUTO;
+                settings.scan.markerMode = BarcodeScannerSettings.Scan.MarkerMode.NORMAL;
                 barcode.setSettings(settings);
             } catch (Exception se) {
                 Log.w(TAG, "barcode setSettings warn: " + se.getMessage());
             }
-            barcode.openReader();
 
             Log.d(TAG, "Barcode reader opened");
             return true;
