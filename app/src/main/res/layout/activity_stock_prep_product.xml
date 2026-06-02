@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/blue_theme">
+    android:background="@drawable/bg_launch">
 
     <ImageView
         android:id="@+id/btnBack"
@@ -29,7 +29,7 @@
         android:layout_height="wrap_content"
         android:text="@string/menu_stock_preparation"
         android:textColor="@color/white"
-        android:textSize="18sp"
+        android:textSize="16sp"
         android:fontFamily="@font/raleway_bold"
         android:layout_marginStart="10dp"
         app:layout_constraintStart_toEndOf="@id/btnBack"

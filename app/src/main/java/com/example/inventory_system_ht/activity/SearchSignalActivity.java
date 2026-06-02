@@ -15,7 +15,6 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import androidx.cardview.widget.CardView;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -34,7 +33,6 @@ import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
-import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.Arrays;
@@ -159,7 +157,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.item_spinner_selected, R.id.tvSpinnerSelected, powerList) {
             @Override
             public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View view = LayoutInflater.from(getContext()).inflate(R.layout.item_dropdown, parent, false);
+                View view = LayoutInflater.from(getContext()).inflate(R.layout.item_dropdown_loc, parent, false);
                 TextView tv = view.findViewById(R.id.tvDropdownItem);
                 ImageView icon = view.findViewById(R.id.ivDropdownIcon);
                 if (tv != null) tv.setText(getItem(position));

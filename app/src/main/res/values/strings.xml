@@ -89,7 +89,7 @@
     <string name="title_scan_camera">Scan Tag Barcode</string>
     <string name="scan_hint">Point the camera at the barcode</string>
     <string name="desc_close">Tutup</string>
-    <string name="desc_torch">Senter</string>
+    <string name="desc_torch">Torch</string>
     <string name="app_tagline">RFID Warehouse Management</string>
     <string name="label_empty_no_data">No data available</string>
     <string name="label_empty_scan_hint">Start scanning items</string>
@@ -100,8 +100,9 @@
     <string name="label_empty_no_tags">No tags scanned yet</string>
     <string name="menu_title">Menu</string>
     <string name="menu_stock_in_desc">Receive &amp; record incoming goods</string>
-    <string name="menu_stock_preparation_desc">Siapkan order &amp; picking</string>
-    <string name="menu_tag_registration_desc">Daftarkan RFID tag baru</string>
-    <string name="menu_stock_taking_desc">Register new RFID tag</string>
+    <string name="menu_stock_preparation_desc">Prepare order &amp; picking</string>
+    <string name="menu_tag_registration_desc">Register new RFID tag</string>
+    <string name="menu_stock_taking_desc">Taking Your Goods</string>
     <string name="menu_search_item_desc">Search &amp; track items</string>
+    <string name="title_setting_rfid">Setting RFID</string>
 </resources>

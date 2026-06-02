@@ -5,11 +5,14 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
+
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -187,9 +190,24 @@ public class LoginActivity extends ScannerActivity {
             dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
 
-        java.util.function.Consumer<String> dWarn = msg -> showBannerOverlay(msg, 1);
-        java.util.function.Consumer<String> dError = msg -> showBannerOverlay(msg, 2);
-        java.util.function.Consumer<String> dSuccess = msg -> showBannerOverlay(msg, 0);
+        TextView tvSettingStatus = dialog.findViewById(R.id.tvSettingStatus);
+        java.util.function.BiConsumer<String, Integer> showStatus = (msg, type) -> {
+            int color;
+            switch (type) {
+                case 1: color = 0xFFF57C00; break;
+                case 2: color = 0xFFE74C3C; break;
+                default: color = 0xFF4CAF50; break;
+            }
+            tvSettingStatus.setText(msg);
+            tvSettingStatus.setTextColor(color);
+            tvSettingStatus.setVisibility(View.VISIBLE);
+            LogManager.get(LoginActivity.this).log(
+                    type == 2 ? LogManager.ERROR : type == 1 ? LogManager.WARNING : LogManager.INFO,
+                    LogManager.ACTION_MESSAGE, "LoginActivity", "", msg, prefManager.getUserId());
+        };
+        java.util.function.Consumer<String> dWarn = msg -> showStatus.accept(msg, 1);
+        java.util.function.Consumer<String> dError = msg -> showStatus.accept(msg, 2);
+        java.util.function.Consumer<String> dSuccess = msg -> showStatus.accept(msg, 0);
 
         EditText etIpAPI = dialog.findViewById(R.id.etIpAPI);
         Button btnCancel = dialog.findViewById(R.id.btnCancel);

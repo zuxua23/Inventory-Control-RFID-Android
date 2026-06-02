@@ -61,11 +61,21 @@
                 android:stateListAnimator="@null" />
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/tvSettingStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/raleway_bold"
+            android:gravity="center"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
         <LinearLayout
             style="?android:attr/buttonBarStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="16dp"
             android:orientation="horizontal"
             android:weightSum="2">
 

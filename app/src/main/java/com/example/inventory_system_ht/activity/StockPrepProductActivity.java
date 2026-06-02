@@ -29,7 +29,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.work.Constraints;
@@ -68,7 +67,6 @@ import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.util.SyncWorker;
 import com.example.inventory_system_ht.R;
-import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 
@@ -254,7 +252,7 @@ public class StockPrepProductActivity extends ScannerActivity
             }
             @Override
             public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View view = LayoutInflater.from(getContext()).inflate(R.layout.item_dropdown, parent, false);
+                View view = LayoutInflater.from(getContext()).inflate(R.layout.item_dropdown_loc, parent, false);
                 TextView tv = view.findViewById(R.id.tvDropdownItem);
                 ImageView icon = view.findViewById(R.id.ivDropdownIcon);
                 if (tv != null) tv.setText(getItem(position));
@@ -283,7 +281,7 @@ public class StockPrepProductActivity extends ScannerActivity
         ArrayAdapter<String> powerAdapter = new ArrayAdapter<String>(this, R.layout.item_spinner_selected, R.id.tvSpinnerSelected, powerList) {
             @Override
             public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View view = LayoutInflater.from(getContext()).inflate(R.layout.item_dropdown, parent, false);
+                View view = LayoutInflater.from(getContext()).inflate(R.layout.item_dropdown_loc, parent, false);
                 TextView tv = view.findViewById(R.id.tvDropdownItem);
                 ImageView icon = view.findViewById(R.id.ivDropdownIcon);
                 if (tv != null) tv.setText(getItem(position));

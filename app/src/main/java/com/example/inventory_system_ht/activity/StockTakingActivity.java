@@ -52,7 +52,6 @@ import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
-import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -198,7 +197,7 @@ public class StockTakingActivity extends ScannerActivity
         ArrayAdapter<String> powerAdapter = new ArrayAdapter<String>(this, R.layout.item_spinner_selected, R.id.tvSpinnerSelected, powerList) {
             @Override
             public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View view = LayoutInflater.from(getContext()).inflate(R.layout.item_dropdown, parent, false);
+                View view = LayoutInflater.from(getContext()).inflate(R.layout.item_dropdown_loc, parent, false);
                 TextView tv = view.findViewById(R.id.tvDropdownItem);
                 ImageView icon = view.findViewById(R.id.ivDropdownIcon);
                 if (tv != null) tv.setText(getItem(position));
