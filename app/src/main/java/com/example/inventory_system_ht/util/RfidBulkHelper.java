@@ -107,26 +107,18 @@ public class RfidBulkHelper {
 
                 BarcodeScannerSettings.Decode.Symbologies sym = settings.decode.symbologies;
                 sym.qrCode.enabled = true;
-                sym.qrCode.model1.enabled = true;
+                sym.qrCode.model1.enabled = false;
                 sym.qrCode.model2.enabled = true;
                 sym.microQr.enabled = true;
                 sym.dataMatrix.enabled = true;
                 sym.dataMatrix.square.enabled = true;
                 sym.dataMatrix.rectangle.enabled = true;
-                sym.pdf417.enabled = true;
-                sym.microPdf417.enabled = true;
-                sym.aztec.enabled = true;
-                sym.code128.enabled = true;
-                sym.code39.enabled = true;
-                sym.code93.enabled = true;
-                sym.codabar.enabled = true;
-                sym.ean13upcA.enabled = true;
-                sym.ean8.enabled = true;
-                sym.upcE.enabled = true;
-                sym.itf.enabled = true;
 
                 barcode.setSettings(settings);
-                Log.d(TAG, "barcode setSettings ok: qr2D=" + sym.qrCode.model2.enabled);
+                Log.d(TAG, "barcode setSettings ok: qr=" + sym.qrCode.enabled
+                        + " qrM2=" + sym.qrCode.model2.enabled
+                        + " microQr=" + sym.microQr.enabled
+                        + " dm=" + sym.dataMatrix.enabled);
             } catch (Exception se) {
                 Log.w(TAG, "barcode setSettings warn: " + se.getMessage(), se);
             }
