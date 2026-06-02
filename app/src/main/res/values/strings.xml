@@ -88,7 +88,7 @@
     <string name="desc_scan_camera">Scan barcode using camera</string>
     <string name="title_scan_camera">Scan Tag Barcode</string>
     <string name="scan_hint">Point the camera at the barcode</string>
-    <string name="desc_close">Tutup</string>
+    <string name="desc_close">Close</string>
     <string name="desc_torch">Torch</string>
     <string name="app_tagline">RFID Warehouse Management</string>
     <string name="label_empty_no_data">No data available</string>

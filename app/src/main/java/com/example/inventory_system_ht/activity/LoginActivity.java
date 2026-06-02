@@ -105,14 +105,14 @@ public class LoginActivity extends ScannerActivity {
 
         if (username.isEmpty() || password.isEmpty()) {
             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_LOGIN,
-                    "Login", username, "Login attempt: username atau password kosong", "");
+                    "Login", username, "Login attempt: username or password is empty", "");
             showSagaFeedback("Username & password required", 1);
             return;
         }
 
         if (!isNetworkConnected()) {
             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_LOGIN,
-                    "Login", username, "Login attempt: tidak ada koneksi internet", "");
+                    "Login", username, "Login attempt: no internet connection", "");
             showSagaFeedback("No internet connection", 1);
             return;
         }
@@ -159,7 +159,7 @@ public class LoginActivity extends ScannerActivity {
 
         if (token == null || token.isEmpty() || user == null) {
             LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_LOGIN,
-                    "Login", "", "Server response tidak valid setelah login berhasil", "");
+                    "Login", "", "Invalid server response after successful login", "");
             showSagaFeedback("Invalid server response", 2);
             return;
         }
@@ -259,7 +259,7 @@ public class LoginActivity extends ScannerActivity {
 
             prefManager.saveIp(ip);
             LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SETTING,
-                    "Setting", "API URL", "URL API disimpan: " + prefManager.getIp(), prefManager.getUserId());
+                    "Setting", "API URL", "API URL saved: " + prefManager.getIp(), prefManager.getUserId());
             dSuccess.accept("URL saved");
             dialog.dismiss();
         });
