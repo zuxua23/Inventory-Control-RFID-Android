@@ -47,7 +47,7 @@ public class LoginActivity extends ScannerActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.layout_header), (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.layout_root), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(v.getPaddingLeft(), systemBars.top + 10, v.getPaddingRight(), v.getPaddingBottom());
             return insets;
