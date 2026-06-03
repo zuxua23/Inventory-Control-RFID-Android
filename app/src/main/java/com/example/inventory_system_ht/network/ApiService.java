@@ -38,14 +38,14 @@ public interface ApiService {
     Call<TagModel.TagDetailDto> getTagDetail(@Header("Authorization") String token,
                                              @Path("id") String tagId);
 
-    @GET("api/stockin/{code}")
+    @GET("api/stockin")
     Call<TagModel.TagResponse> getTagByCode(@Header("Authorization") String token,
-                                            @Path("code") String code,
+                                            @Query("code") String code,
                                             @Query("scannerType") String scannerType);
 
-    @GET("api/stockin/{code}")
+    @GET("api/stockin/")
     Call<TagModel.TagInfoDto> getTagInfo(@Header("Authorization") String token,
-                                         @Path("code") String code);
+                                         @Query("code") String code);
 
     // ── Stock In ──────────────────────────────────────────────────
     @POST("api/stockin")
