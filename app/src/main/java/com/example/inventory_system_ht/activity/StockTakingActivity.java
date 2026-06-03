@@ -50,6 +50,7 @@ import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
+import com.example.inventory_system_ht.util.RfidSettingsManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -206,7 +207,7 @@ public class StockTakingActivity extends ScannerActivity
             }
         };
         spinnerPower.setAdapter(powerAdapter);
-        spinnerPower.setSelection(6);
+        spinnerPower.setSelection(indexOfPower(new RfidSettingsManager(this).getPower()));
 
         spinnerPower.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override

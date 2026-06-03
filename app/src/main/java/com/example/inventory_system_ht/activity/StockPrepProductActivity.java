@@ -64,6 +64,7 @@ import com.example.inventory_system_ht.network.ErrorParser;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
+import com.example.inventory_system_ht.util.RfidSettingsManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.util.SyncWorker;
 import com.example.inventory_system_ht.R;
@@ -290,7 +291,7 @@ public class StockPrepProductActivity extends ScannerActivity
             }
         };
         spinnerPower.setAdapter(powerAdapter);
-        spinnerPower.setSelection(4);
+        spinnerPower.setSelection(indexOfPower(new RfidSettingsManager(this).getPower()));
 
         spinnerPower.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override

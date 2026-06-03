@@ -31,6 +31,7 @@ import com.example.inventory_system_ht.model.TagModel;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
+import com.example.inventory_system_ht.util.RfidSettingsManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -166,7 +167,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             }
         };
         spinnerPower.setAdapter(adapter);
-        spinnerPower.setSelection(4);
+        spinnerPower.setSelection(indexOfPower(new RfidSettingsManager(this).getPower()));
     }
 
     private void setupListeners() {

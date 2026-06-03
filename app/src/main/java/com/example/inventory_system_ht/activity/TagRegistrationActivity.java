@@ -186,11 +186,6 @@ public class TagRegistrationActivity extends ScannerActivity
         });
     }
 
-    private int indexOfPower(int p) {
-        for (int i = 0; i < powerValues.length; i++) if (powerValues[i] == p) return i;
-        return 6;
-    }
-
     private void updateEmptyState() {
         if (tvEmpty != null)
             tvEmpty.setVisibility(registeredTagList.isEmpty() ? View.VISIBLE : View.GONE);

@@ -340,4 +340,10 @@ public abstract class ScannerActivity extends AppCompatActivity {
         try { return Integer.parseInt(text.replace(" dBm", "").trim()); }
         catch (NumberFormatException e) { return defaultVal; }
     }
+
+    protected int indexOfPower(int p) {
+        int[] values = {5, 10, 15, 18, 21, 24, 27, 30};
+        for (int i = 0; i < values.length; i++) if (values[i] == p) return i;
+        return 6;
+    }
 }
