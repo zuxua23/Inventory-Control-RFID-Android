@@ -44,7 +44,6 @@
         android:layout_marginTop="12dp"
         android:background="@drawable/bg_white_rounded_top"
         android:elevation="16dp"
-        android:paddingTop="10dp"
         android:outlineProvider="background"
         app:layout_constraintTop_toBottomOf="@id/btnBack"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -53,17 +52,16 @@
 
             <LinearLayout
                 android:id="@+id/cardSearch"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:layout_margin="10dp"
                 android:background="@drawable/bg_text_search"
                 android:gravity="center_vertical"
                 android:paddingHorizontal="14dp"
                 android:orientation="horizontal"
-                android:elevation="4dp"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                tools:ignore="MissingConstraints">
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
 
                 <ImageView
                     android:layout_width="24dp"
@@ -77,12 +75,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="35dp"
                     android:layout_marginStart="8dp"
-                    android:background="@android:color/transparent" android:fontFamily="@font/raleway_regular"
+                    android:background="@android:color/transparent"
+                    android:fontFamily="@font/raleway_regular"
                     android:hint="@string/hint_search_item"
                     android:textColor="@color/black"
                     android:textColorHint="@android:color/darker_gray"
-                    android:textSize="14sp"
-                    android:maxLines="1" android:inputType="text"
+                    android:textSize="13sp"
+                    android:maxLines="1"
+                    android:inputType="text"
                     android:imeOptions="actionSearch"
                     android:importantForAutofill="no"
                     tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
