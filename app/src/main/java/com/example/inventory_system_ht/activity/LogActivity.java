@@ -283,12 +283,20 @@ public class LogActivity extends ScannerActivity {
         TextView chip30 = dialog.findViewById(R.id.chip30);
         TextView chip60 = dialog.findViewById(R.id.chip60);
         TextView chip90 = dialog.findViewById(R.id.chip90);
+        TextView chipOther = dialog.findViewById(R.id.chipOther);
+        android.widget.LinearLayout layoutOtherInput = dialog.findViewById(R.id.layoutOtherInput);
+        EditText etCustomDays = dialog.findViewById(R.id.etCustomDays);
 
         List<TextView> chips = Arrays.asList(chipDisabled, chip7, chip14, chip30, chip60, chip90);
         int[] chipValues = {0, 7, 14, 30, 60, 90};
-        final int[] selectedDays = {currentDays};
+
+        // -1 = "Other" mode selected
+        boolean isPreset = false;
+        for (int v : chipValues) { if (v == currentDays) { isPreset = true; break; } }
+        final int[] selectedDays = {isPreset ? currentDays : -1};
 
         Runnable updateChips = () -> {
+            boolean otherSelected = selectedDays[0] == -1;
             for (int i = 0; i < chips.size(); i++) {
                 boolean selected = chipValues[i] == selectedDays[0];
                 chips.get(i).setSelected(selected);
@@ -296,7 +304,16 @@ public class LogActivity extends ScannerActivity {
                         ? getResources().getColor(R.color.white, getTheme())
                         : getResources().getColor(R.color.blue_theme, getTheme()));
             }
+            chipOther.setSelected(otherSelected);
+            chipOther.setTextColor(otherSelected
+                    ? getResources().getColor(R.color.white, getTheme())
+                    : getResources().getColor(R.color.blue_theme, getTheme()));
+            layoutOtherInput.setVisibility(otherSelected ? View.VISIBLE : View.GONE);
         };
+
+        if (!isPreset && currentDays > 0) {
+            etCustomDays.setText(String.valueOf(currentDays));
+        }
         updateChips.run();
 
         for (int i = 0; i < chips.size(); i++) {
@@ -307,9 +324,23 @@ public class LogActivity extends ScannerActivity {
             });
         }
 
+        chipOther.setOnClickListener(v -> {
+            selectedDays[0] = -1;
+            updateChips.run();
+            etCustomDays.requestFocus();
+        });
+
         dialog.findViewById(R.id.btnAutoDeleteCancel).setOnClickListener(v -> dialog.dismiss());
         dialog.findViewById(R.id.btnAutoDeleteSave).setOnClickListener(v -> {
-            pref.edit().putInt("auto_delete_days", selectedDays[0]).apply();
+            int daysToSave;
+            if (selectedDays[0] == -1) {
+                String input = etCustomDays.getText().toString().trim();
+                if (input.isEmpty()) return;
+                daysToSave = Math.max(1, Integer.parseInt(input));
+            } else {
+                daysToSave = selectedDays[0];
+            }
+            pref.edit().putInt("auto_delete_days", daysToSave).apply();
             dialog.dismiss();
         });
 
