@@ -40,6 +40,20 @@
             android:importantForAutofill="no" />
 
         <EditText
+            android:id="@+id/etNewTagId"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@drawable/bg_edit_text"
+            android:hint="New Tag ID"
+            android:paddingHorizontal="16dp"
+            android:fontFamily="@font/raleway_bold"
+            android:textSize="14sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="12dp"
+            android:inputType="text"
+            android:importantForAutofill="no" />
+
+        <EditText
             android:id="@+id/etManualRemark"
             android:layout_width="match_parent"
             android:layout_height="50dp"

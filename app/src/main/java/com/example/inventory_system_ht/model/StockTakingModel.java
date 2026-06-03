@@ -22,9 +22,14 @@ public class StockTakingModel {
     public static class ManualAddReq {
         public String sttId;
         public String itemId;
+        public String newTagId;
         public String remark;
-        public ManualAddReq(String sttId, String itemId, String remark) {
-            this.sttId = sttId; this.itemId = itemId; this.remark = remark;
+
+        public ManualAddReq(String sttId, String itemId, String newTagId, String remark) {
+            this.sttId = sttId;
+            this.itemId = itemId;
+            this.newTagId = newTagId;
+            this.remark = remark;
         }
     }
 

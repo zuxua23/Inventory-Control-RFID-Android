@@ -26,7 +26,7 @@ import com.example.inventory_system_ht.entity.TagLocalEntity;
                 SessionItemEntity.class,
                 StockInScanEntity.class
         },
-        version = 8,
+        version = 9,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {

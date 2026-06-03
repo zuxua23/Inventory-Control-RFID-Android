@@ -75,10 +75,6 @@ public interface ApiService {
     @GET("api/stock-taking/active")
     Call<StockTakingModel.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);
 
-    @GET("api/stock-taking/tags/{sttId}")
-    Call<List<StockTakingModel.SessionItem>> getSessionTags(@Header("Authorization") String token,
-                                                            @Path("sttId") String sttId);
-
     @POST("api/stock-taking/scan")
     Call<GeneralResponse> scanStockTaking(@Header("Authorization") String token,
                                           @Body StockTakingModel.ScanReq request);
@@ -95,9 +91,9 @@ public interface ApiService {
     Call<GeneralResponse> manualAddStockTaking(@Header("Authorization") String token,
                                                @Body StockTakingModel.ManualAddReq request);
 
-    @POST("api/stock-taking/apply-adjustment")
-    Call<GeneralResponse> applyAdjustment(@Header("Authorization") String token,
-                                          @Body StockTakingModel.FinalizeReq request);
+    @POST("api/stock-taking/finalize")
+    Call<GeneralResponse> finalizeStockTaking(@Header("Authorization") String token,
+                                              @Body StockTakingModel.FinalizeReq request);
 
     // ── Location & Item ───────────────────────────────────────────
     @GET("api/location")

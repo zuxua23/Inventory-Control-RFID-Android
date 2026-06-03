@@ -128,9 +128,8 @@ public class LoginActivity extends ScannerActivity {
                     public void onResponse(Call<AuthModel.LoginResponse> call,
                                            Response<AuthModel.LoginResponse> response) {
                         hideLoading();
-                        String resJson = "{\"http_code\":" + response.code() + ",\"success\":"
-                                + (response.body() != null && response.body().isSuccess()) + "}";
-                        if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                        String resJson = "{\"http_code\":" + response.code() + "}";
+                        if (response.isSuccessful() && response.body() != null) {
                             LogManager.get(LoginActivity.this).log(LogManager.INFO, LogManager.ACTION_LOGIN,
                                     "Login", username, "Login success: " + username, "", reqJson, resJson);
                             handleLoginSuccess(response.body());
@@ -155,24 +154,22 @@ public class LoginActivity extends ScannerActivity {
 
     private void handleLoginSuccess(AuthModel.LoginResponse body) {
         String token = body.getToken();
-        AuthModel.UserModel user = body.getUser();
+        String username = body.getUser();
 
-        if (token == null || token.isEmpty() || user == null) {
+        if (token == null || token.isEmpty() || username == null) {
             LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_LOGIN,
                     "Login", "", "Invalid server response after successful login", "");
             showSagaFeedback("Invalid server response", 2);
             return;
         }
 
-        String fullName = (user.getUsrFullname() != null && !user.getUsrFullname().trim().isEmpty())
-                ? user.getUsrFullname()
-                : user.getUsrName();
+        String roleCode = (body.getRoles() != null && !body.getRoles().isEmpty())
+                ? body.getRoles().get(0) : "";
 
         String permissionsJson = new com.google.gson.Gson()
-                .toJson(user.getPermissions() != null ? user.getPermissions() : new java.util.ArrayList<>());
+                .toJson(body.getPermissions() != null ? body.getPermissions() : new java.util.ArrayList<>());
 
-        prefManager.saveUserSession(token, user.getUsrId(), user.getUsrName(), fullName,
-                user.getPrimaryRole(), permissionsJson);
+        prefManager.saveUserSession(token, "", username, username, roleCode, permissionsJson);
 
         Intent intent = new Intent(this, HomeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
