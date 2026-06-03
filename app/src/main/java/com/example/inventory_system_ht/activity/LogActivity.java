@@ -269,29 +269,51 @@ public class LogActivity extends ScannerActivity {
         SharedPreferences pref = getSharedPreferences("log_settings", MODE_PRIVATE);
         int currentDays = pref.getInt("auto_delete_days", 30);
 
-        EditText etDays = new EditText(this);
-        etDays.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        etDays.setHint("Enter days (0 = disabled)");
-        etDays.setText(String.valueOf(currentDays));
-        etDays.setSelection(etDays.getText().length());
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_auto_delete_log);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
 
-        int dp = (int)(16 * getResources().getDisplayMetrics().density);
-        android.widget.LinearLayout container = new android.widget.LinearLayout(this);
-        container.setPadding(dp * 2, dp, dp * 2, 0);
-        container.addView(etDays);
+        TextView chipDisabled = dialog.findViewById(R.id.chipDisabled);
+        TextView chip7 = dialog.findViewById(R.id.chip7);
+        TextView chip14 = dialog.findViewById(R.id.chip14);
+        TextView chip30 = dialog.findViewById(R.id.chip30);
+        TextView chip60 = dialog.findViewById(R.id.chip60);
+        TextView chip90 = dialog.findViewById(R.id.chip90);
 
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("Auto Delete Logs")
-                .setMessage("Set retention period in days. Enter 0 to disable.")
-                .setView(container)
-                .setPositiveButton("Save", (dialog, which) -> {
-                    String input = etDays.getText().toString().trim();
-                    if (!input.isEmpty()) {
-                        pref.edit().putInt("auto_delete_days", Math.max(0, Integer.parseInt(input))).apply();
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        List<TextView> chips = Arrays.asList(chipDisabled, chip7, chip14, chip30, chip60, chip90);
+        int[] chipValues = {0, 7, 14, 30, 60, 90};
+        final int[] selectedDays = {currentDays};
+
+        Runnable updateChips = () -> {
+            for (int i = 0; i < chips.size(); i++) {
+                boolean selected = chipValues[i] == selectedDays[0];
+                chips.get(i).setSelected(selected);
+                chips.get(i).setTextColor(selected
+                        ? getResources().getColor(R.color.white, getTheme())
+                        : getResources().getColor(R.color.blue_theme, getTheme()));
+            }
+        };
+        updateChips.run();
+
+        for (int i = 0; i < chips.size(); i++) {
+            final int dayValue = chipValues[i];
+            chips.get(i).setOnClickListener(v -> {
+                selectedDays[0] = dayValue;
+                updateChips.run();
+            });
+        }
+
+        dialog.findViewById(R.id.btnAutoDeleteCancel).setOnClickListener(v -> dialog.dismiss());
+        dialog.findViewById(R.id.btnAutoDeleteSave).setOnClickListener(v -> {
+            pref.edit().putInt("auto_delete_days", selectedDays[0]).apply();
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
     private void showDetailDialog(AppLogEntity log) {

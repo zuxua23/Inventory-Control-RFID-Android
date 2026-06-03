@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="24dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="10dp"
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp"
+            android:background="@color/blue_theme">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_log"
+                app:tint="@color/white"
+                android:importantForAccessibility="no"
+                android:layout_marginEnd="10dp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Auto Delete Log"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:fontFamily="@font/raleway_bold" />
+
+        </LinearLayout>
+
+        <!-- Content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Set how long activity logs are kept before being automatically deleted."
+                android:textColor="@color/text_grey"
+                android:textSize="12sp"
+                android:fontFamily="@font/raleway_regular"
+                android:lineSpacingMultiplier="1.3"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Chip row 1 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp"
+                android:weightSum="3">
+
+                <TextView
+                    android:id="@+id/chipDisabled"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_day_chip"
+                    android:gravity="center"
+                    android:text="Disabled"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/raleway_bold"
+                    android:textColor="@color/blue_theme"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/chip7"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="3dp"
+                    android:layout_marginEnd="3dp"
+                    android:background="@drawable/bg_day_chip"
+                    android:gravity="center"
+                    android:text="7 Days"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/raleway_bold"
+                    android:textColor="@color/blue_theme"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/chip14"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_day_chip"
+                    android:gravity="center"
+                    android:text="14 Days"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/raleway_bold"
+                    android:textColor="@color/blue_theme"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+            <!-- Chip row 2 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="20dp"
+                android:weightSum="3">
+
+                <TextView
+                    android:id="@+id/chip30"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_day_chip"
+                    android:gravity="center"
+                    android:text="30 Days"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/raleway_bold"
+                    android:textColor="@color/blue_theme"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/chip60"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="3dp"
+                    android:layout_marginEnd="3dp"
+                    android:background="@drawable/bg_day_chip"
+                    android:gravity="center"
+                    android:text="60 Days"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/raleway_bold"
+                    android:textColor="@color/blue_theme"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/chip90"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_day_chip"
+                    android:gravity="center"
+                    android:text="90 Days"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/raleway_bold"
+                    android:textColor="@color/blue_theme"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+            <!-- Action buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <Button
+                    android:id="@+id/btnAutoDeleteCancel"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="Cancel"
+                    android:textAllCaps="false"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/raleway_bold"
+                    android:backgroundTint="@color/white"
+                    android:textColor="@color/blue_theme"
+                    android:stateListAnimator="@null"
+                    app:strokeColor="@color/blue_theme"
+                    app:strokeWidth="1.5dp"
+                    app:cornerRadius="24dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                <Button
+                    android:id="@+id/btnAutoDeleteSave"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Save"
+                    android:textAllCaps="false"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/raleway_bold"
+                    android:backgroundTint="@color/blue_theme"
+                    android:textColor="@color/white"
+                    android:stateListAnimator="@null"
+                    app:cornerRadius="24dp"
+                    style="@style/Widget.MaterialComponents.Button" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
