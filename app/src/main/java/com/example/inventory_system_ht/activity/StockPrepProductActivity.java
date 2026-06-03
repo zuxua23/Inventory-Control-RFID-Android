@@ -95,7 +95,7 @@ public class StockPrepProductActivity extends ScannerActivity
     private RecyclerView rvTags;
     private Spinner spinnerLocation, spinnerPower;
     private Button btnListProduct, btnSumProduct;
-    private com.google.android.material.floatingactionbutton.FloatingActionButton fabScanCamera;
+    private FloatingActionButton fabScanCamera;
     private TagAdapter adapter;
     private StockPrepProductAdapter sumAdapter;
     private List<TagLocalEntity> scannedList;
@@ -120,6 +120,11 @@ public class StockPrepProductActivity extends ScannerActivity
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
     ));
     private ArrayAdapter<String> locationSpinnerAdapter;
+
+    // --- VARIABLES FOR BATCH/BUFFER LOGIC ---
+    private final Set<String> tagBuffer = new HashSet<>();
+    private boolean isProcessingBuffer = false;
+    private static final int BATCH_DELAY_MS = 500;
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -351,23 +356,21 @@ public class StockPrepProductActivity extends ScannerActivity
         });
 
         resultScan.addTextChangedListener(new TextWatcher() {
-            private boolean isProcessing = false;
-
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
             @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (switchRfid.isChecked() || isProcessing) return;
+                if (switchRfid.isChecked()) return; // Hindari bentrok jika sedang RFID
                 String data = s.toString().trim();
                 if (data.length() < 8) return;
 
-                isProcessing = true;
+                // Kosongkan EditText dan proses menggunakan buffer
                 resultScan.removeTextChangedListener(this);
                 resultScan.setText("");
                 resultScan.addTextChangedListener(this);
-                processScan(data);
-                isProcessing = false;
+
+                queueScan(data);
             }
         });
 
@@ -409,7 +412,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     result -> {
                         if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                             String barcode = result.getData().getStringExtra(BarcodeCameraActivity.EXTRA_BARCODE);
-                            if (barcode != null && !barcode.isEmpty()) processScan(barcode);
+                            if (barcode != null && !barcode.isEmpty()) queueScan(barcode);
                         } else if (result.getResultCode() == BarcodeCameraActivity.RESULT_PERMISSION_DENIED) {
                             showError("Camera permission denied");
                         }
@@ -620,161 +623,208 @@ public class StockPrepProductActivity extends ScannerActivity
         }).start();
     }
 
-    private void processScan(String scannedData) {
+    // =========================================================================
+    // NEW BATCHING / BUFFERING LOGIC
+    // Mencegah aplikasi force close akibat API request / UI Update yang terlalu cepat
+    // =========================================================================
+
+    /**
+     * Memasukkan tag ke dalam buffer sementara sebelum di proses bersamaan.
+     */
+    private void queueScan(String scannedData) {
         if (selectedLocationId == null || selectedLocationId.isEmpty()) {
             if (!switchRfid.isChecked()) showWarning("Select location first");
             return;
         }
 
-        boolean isRfid = switchRfid.isChecked();
-        final String key = scannedData.toUpperCase();
+        String key = scannedData.toUpperCase();
 
+        // Skip kalau sudah pernah discan sebelumnya
         if (scannedRawSet.contains(key) || scannedEpcSet.contains(key)) {
-            if (!isRfid) { playScanFeedback(1); showWarning("Already scanned"); }
-            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Preparation", scannedData, "Duplicate scan: " + scannedData, new PrefManager(this).getUserId());
+            if (!switchRfid.isChecked()) { playScanFeedback(1); showWarning("Already scanned"); }
             return;
         }
 
-        scannedRawSet.add(key);
+        synchronized (tagBuffer) {
+            tagBuffer.add(key);
 
-        final TagLocalEntity placeholder = new TagLocalEntity(
-                scannedData, scannedData, "PENDING", "Validating...", currentDoNo, 0);
-        scannedList.add(0, placeholder);
-        if (adapter != null) { adapter.setLastScannedPosition(0); adapter.notifyItemInserted(0); }
-        rvTags.scrollToPosition(0);
-        scanCount++;
+            // Kalau belum ada hitungan mundur jalan, mulai hitung 500ms
+            if (!isProcessingBuffer) {
+                isProcessingBuffer = true;
+                handler.postDelayed(this::processTagBuffer, BATCH_DELAY_MS);
+            }
+        }
+    }
+
+    /**
+     * Mengeksekusi semua tag yang terkumpul di dalam buffer.
+     */
+    private void processTagBuffer() {
+        List<String> batchToProcess = new ArrayList<>();
+        synchronized (tagBuffer) {
+            batchToProcess.addAll(tagBuffer);
+            tagBuffer.clear();
+            isProcessingBuffer = false; // Reset agar scan berikutnya memulai timer baru
+        }
+
+        if (batchToProcess.isEmpty()) return;
+
+        boolean isRfid = switchRfid.isChecked();
+
+        // 1. Update UI dengan "Placeholder" SATU KALI UNTUK SEMUA
+        for (String epc : batchToProcess) {
+            scannedRawSet.add(epc); // Cegah tag ini masuk buffer lagi
+            TagLocalEntity placeholder = new TagLocalEntity(
+                    epc, epc, "PENDING", "Validating...", currentDoNo, 0);
+            scannedList.add(0, placeholder);
+            scanCount++;
+        }
+
         tvScanned.setText("Scanned : " + scanCount);
+        adapter.notifyDataSetChanged();
+        rvTags.scrollToPosition(0);
         playScanFeedback(0);
-        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock Preparation", scannedData, "Scanned: " + scannedData, new PrefManager(this).getUserId());
 
-        if (!isNetworkConnected()) {
-            new Thread(() -> {
-                TagCacheEntity cached = appDao.getTagCacheByKey(key);
-                runOnUiThread(() -> {
+        // 2. Tembak API / Cek DB di Background secara Serial/Bulk
+        validateTagsBulk(batchToProcess, isRfid);
+    }
+
+    /**
+     * Memvalidasi list tag di background.
+     * Eksekusi sengaja dibikin sinkron (.execute()) di dalam Background Thread
+     * supaya tidak membanjiri antrean OkHttp di Main Thread.
+     */
+    private void validateTagsBulk(List<String> codes, boolean isRfid) {
+        new Thread(() -> {
+            List<TagLocalEntity> successfulTags = new ArrayList<>();
+            List<String> failedCodes = new ArrayList<>();
+            String userId = new PrefManager(this).getUserId();
+
+            for (String code : codes) {
+                if (!isNetworkConnected()) {
+                    // MODE OFFLINE - Cek Room DB Cache
+                    TagCacheEntity cached = appDao.getTagCacheByKey(code);
                     if (cached != null) {
-                        if (!requiredQtyMap.containsKey(cached.itemId)) {
-                            rollbackScan(placeholder, key, "Not part of this DO", isRfid);
-                            return;
-                        }
-                        if (!"ALLOCATED".equals(cached.status)) {
-                            rollbackScan(placeholder, key, "Item not ready to ship", isRfid);
-                            return;
-                        }
-                        if (scannedEpcSet.contains(cached.epcTag.toUpperCase())) {
-                            rollbackScan(placeholder, key, "Already scanned", isRfid);
-                            return;
-                        }
-                        int idx = scannedList.indexOf(placeholder);
-                        if (idx != -1) {
+                        if (!requiredQtyMap.containsKey(cached.itemId) ||
+                                !"ALLOCATED".equals(cached.status) ||
+                                scannedEpcSet.contains(cached.epcTag.toUpperCase())) {
+                            failedCodes.add(code);
+                        } else {
                             TagLocalEntity real = new TagLocalEntity(
                                     cached.epcTag, cached.tagId, cached.itemId,
                                     cached.itemName, currentDoNo, 0);
-                            scannedList.set(idx, real);
-                            scannedEpcSet.add(cached.epcTag.toUpperCase());
-                            buildSumProductList();
-                            if (isListProductTab) adapter.notifyItemChanged(idx);
-                            else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
-                            new Thread(() -> appDao.insertScannedTag(real)).start();
+                            successfulTags.add(real);
+                            appDao.insertScannedTag(real);
                         }
                     } else {
-                        new Thread(() -> appDao.insertScannedTag(placeholder)).start();
-                        if (!isRfid) showWarning("Saved offline");
-                    }
-                });
-            }).start();
-            return;
-        }
-
-        String userId = new PrefManager(this).getUserId();
-        String tagReqJson = "{\"code\":\"" + scannedData + "\"}";
-        api.getTagInfo(token, scannedData, isRfid ? "RFID" : "QR").enqueue(new Callback<TagModel.TagInfoDto>() {
-            @Override
-            public void onResponse(Call<TagModel.TagInfoDto> call,
-                                   Response<TagModel.TagInfoDto> response) {
-                String tagResJson = "{\"http_code\":" + response.code() + ",\"found\":"
-                        + (response.body() != null) + "}";
-                if (response.isSuccessful() && response.body() != null) {
-                    TagModel.TagInfoDto info = response.body();
-                    LogManager.get(StockPrepProductActivity.this).log(LogManager.INFO, LogManager.ACTION_SCAN,
-                            "Stock Preparation", scannedData,
-                            "Tag info resolved: " + info.getItemName() + " | status: " + info.getStatus(),
-                            userId, tagReqJson, tagResJson);
-
-                    new Thread(() -> {
-                        TagCacheEntity cache = new TagCacheEntity();
-                        cache.epcTag = info.getEpcTag();
-                        cache.tagId = info.getTagId();
-                        cache.itemId = info.getItemId();
-                        cache.itemName = info.getItemName();
-                        cache.status = info.getStatus();
-                        cache.cachedAt = System.currentTimeMillis();
-                        appDao.insertTagCache(cache);
-                    }).start();
-
-                    if (!requiredQtyMap.containsKey(info.getItemId())) {
-                        rollbackScan(placeholder, key, "Not part of this DO", isRfid);
-                        return;
-                    }
-                    if (!"ALLOCATED".equals(info.getStatus())) {
-                        rollbackScan(placeholder, key, "Item not ready to ship", isRfid);
-                        return;
-                    }
-                    if (scannedEpcSet.contains(info.getEpcTag().toUpperCase())) {
-                        rollbackScan(placeholder, key, "Already scanned", isRfid);
-                        return;
-                    }
-
-                    int idx = scannedList.indexOf(placeholder);
-                    if (idx != -1) {
-                        TagLocalEntity real = new TagLocalEntity(
-                                info.getEpcTag(), info.getTagId(), info.getItemId(),
-                                info.getItemName(), currentDoNo, 0);
-                        scannedList.set(idx, real);
-                        scannedEpcSet.add(info.getEpcTag().toUpperCase());
-                        buildSumProductList();
-                        if (isListProductTab) adapter.notifyItemChanged(idx);
-                        else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
-                        new Thread(() -> appDao.insertScannedTag(real)).start();
+                        // Kalau offline dan cache gak ada, kita anggap gagal sementara waktu
+                        // atau bisa dimodifikasi sesuai logic perusahaan
+                        failedCodes.add(code);
                     }
                 } else {
-                    LogManager.get(StockPrepProductActivity.this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
-                            "Stock Preparation", scannedData,
-                            "Tag info failed: HTTP " + response.code(),
-                            userId, tagReqJson, tagResJson);
-                    rollbackScan(placeholder, key, null, isRfid);
-                    if (!isRfid) { handleApiErrorFriendly(response); playScanFeedback(2); }
+                    // MODE ONLINE - Tembak API berurutan (Serial Background)
+                    try {
+                        Response<TagModel.TagInfoDto> response = api.getTagInfo(token, code, isRfid ? "RFID" : "QR").execute();
+                        if (response.isSuccessful() && response.body() != null) {
+                            TagModel.TagInfoDto info = response.body();
+
+                            // Simpan cache ke DB
+                            TagCacheEntity cache = new TagCacheEntity();
+                            cache.epcTag = info.getEpcTag();
+                            cache.tagId = info.getTagId();
+                            cache.itemId = info.getItemId();
+                            cache.itemName = info.getItemName();
+                            cache.status = info.getStatus();
+                            cache.cachedAt = System.currentTimeMillis();
+                            appDao.insertTagCache(cache);
+
+                            // Validasi Rule DO
+                            if (!requiredQtyMap.containsKey(info.getItemId()) ||
+                                    !"ALLOCATED".equals(info.getStatus()) ||
+                                    scannedEpcSet.contains(info.getEpcTag().toUpperCase())) {
+                                failedCodes.add(code);
+                            } else {
+                                TagLocalEntity real = new TagLocalEntity(
+                                        info.getEpcTag(), info.getTagId(), info.getItemId(),
+                                        info.getItemName(), currentDoNo, 0);
+                                successfulTags.add(real);
+                                appDao.insertScannedTag(real);
+                            }
+                        } else {
+                            failedCodes.add(code);
+                        }
+                    } catch (Exception e) {
+                        LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN, "Stock Preparation", code, "Tag API error: " + e.getMessage(), userId);
+                        failedCodes.add(code);
+                    }
                 }
             }
 
-            @Override
-            public void onFailure(Call<TagModel.TagInfoDto> call, Throwable t) {
-                String tagResJson = "{\"error\":\"" + t.getMessage() + "\"}";
-                LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
-                        "Stock Preparation", scannedData,
-                        "Tag info error: " + t.getMessage(),
-                        userId, tagReqJson, tagResJson);
-                rollbackScan(placeholder, key, null, isRfid);
-                if (!isRfid) { handleFailure(t); playScanFeedback(2); }
-            }
-        });
+            // 3. Setelah semua tag dalam batch selesai divalidasi, kembalikan UI ke MainThread
+            runOnUiThread(() -> {
+                boolean isUiModified = false;
+
+                // Update Placeholder yang BERHASIL
+                for (TagLocalEntity real : successfulTags) {
+                    for (int i = 0; i < scannedList.size(); i++) {
+                        TagLocalEntity item = scannedList.get(i);
+                        if ("PENDING".equals(item.getItmId()) && item.getEpcTag().equalsIgnoreCase(real.getEpcTag())) {
+                            scannedList.set(i, real);
+                            scannedEpcSet.add(real.getEpcTag().toUpperCase());
+                            isUiModified = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Hapus Placeholder yang GAGAL/INVALID
+                for (String failedCode : failedCodes) {
+                    for (int i = 0; i < scannedList.size(); i++) {
+                        TagLocalEntity item = scannedList.get(i);
+                        if ("PENDING".equals(item.getItmId()) && item.getEpcTag().equalsIgnoreCase(failedCode)) {
+                            scannedList.remove(i);
+                            scannedRawSet.remove(failedCode.toUpperCase());
+                            scanCount--;
+                            isUiModified = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Refresh Recyclerview satu kali saja
+                if (isUiModified) {
+                    buildSumProductList();
+                    tvScanned.setText("Scanned : " + scanCount);
+                    adapter.notifyDataSetChanged();
+                    if (sumAdapter != null) sumAdapter.updateData(sumProductList);
+                }
+            });
+
+        }).start();
     }
 
-    private void rollbackScan(TagLocalEntity placeholder, String key,
-                              String message, boolean isRfid) {
-        int idx = scannedList.indexOf(placeholder);
-        if (idx != -1) {
-            scannedList.remove(idx);
-            if (isListProductTab) adapter.notifyItemRemoved(idx);
-            else { buildSumProductList(); if (sumAdapter != null) sumAdapter.updateData(sumProductList); }
+    @Override
+    public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
+        for (RFIDData data : event.getRFIDData()) {
+            String epc = RfidBulkHelper.bytesToHex(data.getUII());
+            if (!epc.isEmpty()) {
+                // Jangan pake handler.post lagi di sini, langsung masukkan ke antrean
+                queueScan(epc);
+            }
         }
-        scannedRawSet.remove(key);
-        scanCount = Math.max(0, scanCount - 1);
-        tvScanned.setText("Scanned : " + scanCount);
-        String logMsg = message != null ? message : "API error";
-        String logLevel = "Already scanned".equals(message) ? LogManager.WARNING : LogManager.ERROR;
-        LogManager.get(this).log(logLevel, LogManager.ACTION_SCAN, "Stock Preparation", key, "Scan rejected: " + logMsg, new PrefManager(this).getUserId());
-        if (message != null && !isRfid) { showError(message); playScanFeedback(2); }
     }
+
+    @Override
+    public void onBarcodeDataReceived(CommScanner scanner, BarcodeDataReceivedEvent event) {
+        List<BarcodeData> dataList = event.getBarcodeData();
+        if (!dataList.isEmpty()) {
+            String barcode = new String(dataList.get(0).getData());
+            // Gunakan metode queue agar satu pintu
+            queueScan(barcode);
+        }
+    }
+
+    // =========================================================================
 
     private void confirmSubmit() {
         if (scannedList.isEmpty()) { showWarning("No items scanned"); return; }
@@ -795,7 +845,7 @@ public class StockPrepProductActivity extends ScannerActivity
             dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
         ((TextView) dialog.findViewById(R.id.tvTitle))
-                .setText("Save " + scannedList.size() + " item(s) to \"" + selectedLocation + "\"?");
+                .setText("Save " + scannedList.size() + " item's to \"" + selectedLocation + "\"?");
         Button btnYes = dialog.findViewById(R.id.btnSave);
         btnYes.setText("Save");
         btnYes.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.green_button)));
@@ -1008,23 +1058,6 @@ public class StockPrepProductActivity extends ScannerActivity
         dialog.show();
     }
 
-    @Override
-    public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
-        for (RFIDData data : event.getRFIDData()) {
-            String epc = RfidBulkHelper.bytesToHex(data.getUII());
-            if (!epc.isEmpty()) handler.post(() -> processScan(epc));
-        }
-    }
-
-    @Override
-    public void onBarcodeDataReceived(CommScanner scanner, BarcodeDataReceivedEvent event) {
-        List<BarcodeData> dataList = event.getBarcodeData();
-        if (!dataList.isEmpty()) {
-            String barcode = new String(dataList.get(0).getData());
-            handler.post(() -> processScan(barcode));
-        }
-    }
-
     private void setTabActive(boolean listActive) {
         btnListProduct.setBackgroundTintList(ColorStateList.valueOf(
                 getColor(listActive ? R.color.blue_theme : R.color.white)));
@@ -1042,9 +1075,11 @@ public class StockPrepProductActivity extends ScannerActivity
 
     private String formatToEnglishDate(String rawDate) {
         try {
+            if (rawDate == null || rawDate.isEmpty()) return "";
+            String datePart = rawDate.length() >= 10 ? rawDate.substring(0, 10) : rawDate;
             SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
             SimpleDateFormat out = new SimpleDateFormat("dd MMMM yyyy", Locale.ENGLISH);
-            return out.format(in.parse(rawDate));
+            return out.format(in.parse(datePart));
         } catch (Exception e) { return rawDate; }
     }
 }

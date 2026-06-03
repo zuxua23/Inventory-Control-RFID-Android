@@ -71,7 +71,9 @@ public interface ApiService {
     @GET("api/preparation/do/{id}")
     Call<DOModel.DOResponse> getDoDetailForPrep(@Header("Authorization") String token,
                                                 @Path("id") String id);
-
+    @POST("api/preparation/bulk-info")
+    Call<List<TagModel.TagInfoDto>> getTagsInfoBulk(@Header("Authorization") String token,
+                                                    @Body TagModel.BulkInfoReq request);
     // ── Stock Taking ──────────────────────────────────────────────
     @GET("api/stock-taking/active")
     Call<StockTakingModel.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);

@@ -2,6 +2,7 @@ package com.example.inventory_system_ht.model;
 
 import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
+import java.util.List;
 
 public class TagModel {
 
@@ -37,7 +38,7 @@ public class TagModel {
 
     public static class TagInfoDto {
         @SerializedName("tagId") private String tagId;
-        @SerializedName("epcTag") private String epcTag;
+        @SerializedName("epc") private String epcTag;
         @SerializedName("itemName") private String itemName;
         @SerializedName("itemId") private String itemId;
         @SerializedName("status") private String status;
@@ -61,5 +62,15 @@ public class TagModel {
         public String getItemName() { return itemName; }
         public String getStatus() { return status; }
         public String getLocation() { return location; }
+    }
+
+    public static class BulkInfoReq {
+        private List<String> codes;
+        private String scannerType;
+
+        public BulkInfoReq(List<String> codes, String scannerType) {
+            this.codes = codes;
+            this.scannerType = scannerType;
+        }
     }
 }
