@@ -149,7 +149,7 @@
         <androidx.cardview.widget.CardView
             android:id="@+id/cardScanned"
             android:layout_width="match_parent"
-            android:layout_height="45dp"
+            android:layout_height="47dp"
             android:layout_margin="10dp"
             app:cardCornerRadius="25dp"
             app:cardBackgroundColor="@color/blue_theme"
@@ -173,8 +173,7 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingHorizontal="3dp"
-                android:paddingVertical="3dp">
+                android:paddingHorizontal="4dp">
 
                 <TextView
                     android:id="@+id/tvScanned"
@@ -193,12 +192,11 @@
                 <Spinner
                     android:id="@+id/spinnerPower"
                     android:layout_width="wrap_content"
-                    android:layout_height="38dp"
+                    android:layout_height="40dp"
                     android:visibility="gone"
                     android:background="@drawable/bg_spinner"
                     android:popupBackground="@drawable/bg_spinner_dropdown"
                     android:fontFamily="@font/raleway_bold"
-                    android:textSize="14sp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
