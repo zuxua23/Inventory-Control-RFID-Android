@@ -563,8 +563,8 @@ public class StockInActivity extends ScannerActivity
                                     "Stock In", cleanData, "Tag resolved: " + tag.getItemName(),
                                     userId, tagReqJson, tagResJson);
                             new Thread(() -> db.appDao().insertStockInScan(
-                                    buildEntity(cleanData, tag.getItemId(), tag.getItemName(), true))).start();
-                            runOnUiThread(() -> updateItemInList(cleanData, tag.getItemId(), tag.getItemName()));
+                                    buildEntity(cleanData, null, tag.getItemName(), true))).start();
+                            runOnUiThread(() -> updateItemInList(cleanData, null, tag.getItemName()));
                         } else {
                             runOnUiThread(() -> {
                                 removeItemFromList(cleanData);

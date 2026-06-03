@@ -11,6 +11,7 @@ public class ScanQueueEntity {
     @ColumnInfo(name = "epc_tag") public String epcTag;
     @ColumnInfo(name = "action") public String action;
     @ColumnInfo(name = "item_id") public String itemId;
+    @ColumnInfo(name = "new_tag_id") public String newTagId;
     @ColumnInfo(name = "remark") public String remark;
     @ColumnInfo(name = "is_synced") public boolean isSynced;
     @ColumnInfo(name = "created_at") public long createdAt;

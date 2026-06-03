@@ -51,15 +51,15 @@ public class TagModel {
 
     public static class TagResponse {
         @SerializedName("tagId") private String tagId;
-        @SerializedName("epcTag") private String epcTag;
-        @SerializedName("itemId") private String itemId;
+        @SerializedName("epc") private String epc;
         @SerializedName("itemName") private String itemName;
         @SerializedName("status") private String status;
+        @SerializedName("location") private String location;
 
         public String getTagId() { return tagId; }
-        public String getEpcTag() { return epcTag; }
-        public String getItemId() { return itemId; }
+        public String getEpc() { return epc; }
         public String getItemName() { return itemName; }
         public String getStatus() { return status; }
+        public String getLocation() { return location; }
     }
 }

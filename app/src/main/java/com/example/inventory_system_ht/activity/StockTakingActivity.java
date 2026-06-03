@@ -323,62 +323,10 @@ public class StockTakingActivity extends ScannerActivity
             );
 
     private void loadSessionTagsFromServer() {
-        if (!isNetworkConnected()) {
-            loadSessionTagsFromCache();
-            showWarning("Offline, using cache");
-            return;
-        }
-        showLoading();
-        String userId = new PrefManager(this).getUserId();
-        String reqJson = "{\"sttId\":\"" + sttId + "\"}";
-        api.getSessionTags(token, sttId)
-                .enqueue(new Callback<List<StockTakingModel.SessionItem>>() {
-                    @Override
-                    public void onResponse(Call<List<StockTakingModel.SessionItem>> call,
-                                           Response<List<StockTakingModel.SessionItem>> response) {
-                        hideLoading();
-                        String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
-                                + (response.body() != null ? response.body().size() : 0) + "}";
-                        if (response.isSuccessful() && response.body() != null) {
-                            LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
-                                    "Stock Taking", sttId,
-                                    "Load session tags success: " + response.body().size() + " items",
-                                    userId, reqJson, resJson);
-                            List<StockTakingModel.SessionItem> body = response.body();
-                            sessionItems.clear();
-                            epcIndexMap.clear();
-                            for (StockTakingModel.SessionItem item : body) {
-                                item.state = "PENDING";
-                                if (item.epcTag != null)
-                                    epcIndexMap.put(item.epcTag.toUpperCase(), sessionItems.size());
-                                sessionItems.add(item);
-                            }
-                            adapter.notifyDataSetChanged();
-                            updateInfo();
-                            updateSyncStatus();
-                            saveSessionItemsToCache(body);
-                        } else {
-                            LogManager.get(StockTakingActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
-                                    "Stock Taking", sttId,
-                                    "Load session tags failed: HTTP " + response.code(),
-                                    userId, reqJson, resJson);
-                            showError("Load failed, using cache");
-                            loadSessionTagsFromCache();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<List<StockTakingModel.SessionItem>> call, Throwable t) {
-                        hideLoading();
-                        String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
-                        LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
-                                "Stock Taking", sttId,
-                                "Load session tags error: " + t.getMessage(),
-                                userId, reqJson, resJson);
-                        showError("Load failed, using cache");
-                        loadSessionTagsFromCache();
-                    }
-                });
+        loadSessionTagsFromCache();
+        LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                "Stock Taking", sttId,
+                "loadSessionTagsFromServer: endpoint deprecated, using cache only", "");
     }
 
     private void loadSessionTagsFromCache() {
@@ -454,18 +402,19 @@ public class StockTakingActivity extends ScannerActivity
         playScanFeedback(0);
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Scanned: " + epcOrBarcode, new PrefManager(this).getUserId());
 
-        saveToQueue(item.epcTag, "FOUND", null, null);
+        saveToQueue(item.epcTag, "FOUND", null, null, null);
         if (isNetworkConnected()) syncSingleScan(item.epcTag);
         else updateSyncStatus();
     }
 
-    private void saveToQueue(String epc, String action, String itemId, String remarkText) {
+    private void saveToQueue(String epc, String action, String itemId, String newTagId, String remarkText) {
         new Thread(() -> {
             ScanQueueEntity e = new ScanQueueEntity();
             e.sttId = sttId;
             e.epcTag = epc;
             e.action = action;
             e.itemId = itemId;
+            e.newTagId = newTagId;
             e.remark = remarkText;
             e.isSynced = false;
             e.createdAt = System.currentTimeMillis();
@@ -540,7 +489,7 @@ public class StockTakingActivity extends ScannerActivity
                                 new StockTakingModel.RemoveReq(q.sttId, q.epcTag)).execute();
                     else if ("MANUAL_ADD".equals(q.action))
                         api.manualAddStockTaking(token,
-                                new StockTakingModel.ManualAddReq(q.sttId, q.itemId, q.remark)).execute();
+                                new StockTakingModel.ManualAddReq(q.sttId, q.itemId, q.newTagId, q.remark)).execute();
                     db.appDao().markSyncedById(q.id);
                 } catch (Exception e) {
                     LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
@@ -582,7 +531,7 @@ public class StockTakingActivity extends ScannerActivity
                             new StockTakingModel.RemoveReq(q.sttId, q.epcTag)).execute();
                 else if ("MANUAL_ADD".equals(q.action))
                     api.manualAddStockTaking(token,
-                            new StockTakingModel.ManualAddReq(q.sttId, q.itemId, q.remark)).execute();
+                            new StockTakingModel.ManualAddReq(q.sttId, q.itemId, q.newTagId, q.remark)).execute();
                 db.appDao().markSyncedById(q.id);
             } catch (Exception e) {
                 LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
@@ -607,7 +556,7 @@ public class StockTakingActivity extends ScannerActivity
     private void sendApplyAdjustment() {
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"sttId\":\"" + sttId + "\"}";
-        api.applyAdjustment(token, new StockTakingModel.FinalizeReq(sttId))
+        api.finalizeStockTaking(token, new StockTakingModel.FinalizeReq(sttId))
                 .enqueue(new Callback<GeneralResponse>() {
                     @Override
                     public void onResponse(Call<GeneralResponse> call, Response<GeneralResponse> response) {
@@ -718,7 +667,7 @@ public class StockTakingActivity extends ScannerActivity
     private void showRemoveConfirmDialog(StockTakingModel.SessionItem item, int position) {
         showCustomConfirmDialog("Remove this item? Qty will decrease.", () -> {
             if (item.tagId != null && !item.tagId.isEmpty()) {
-                saveToQueue(item.tagId, "REMOVE", null, null);
+                saveToQueue(item.tagId, "REMOVE", null, null, null);
                 if (isNetworkConnected()) {
                     String userId = new PrefManager(StockTakingActivity.this).getUserId();
                     String removeReqJson = "{\"sttId\":\"" + sttId + "\",\"tagId\":\"" + item.tagId + "\"}";
@@ -767,23 +716,25 @@ public class StockTakingActivity extends ScannerActivity
 
         EditText etItemId = dialog.findViewById(R.id.etManualItemId);
         EditText etRemark = dialog.findViewById(R.id.etManualRemark);
+        EditText etNewTagId = dialog.findViewById(R.id.etNewTagId);
         etItemId.setText(item.itemId != null ? item.itemId : "");
         etItemId.setEnabled(false);
 
         dialog.findViewById(R.id.btnCancelManual).setOnClickListener(v -> dialog.dismiss());
         dialog.findViewById(R.id.btnSaveManual).setOnClickListener(v -> {
-            String remarkText = etRemark.getText().toString().trim();
-            if (remarkText.isEmpty()) {
-                showSagaFeedback(dialogRoot, "Remark cannot be empty", 1);
+            String newTagIdText = etNewTagId.getText().toString().trim();
+            if (newTagIdText.isEmpty()) {
+                showSagaFeedback(dialogRoot, "New Tag ID cannot be empty", 1);
                 return;
             }
+            String remarkText = etRemark.getText().toString().trim();
 
-            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, remarkText);
+            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, newTagIdText, remarkText);
             if (isNetworkConnected()) {
                 String userId = new PrefManager(StockTakingActivity.this).getUserId();
-                String manualReqJson = "{\"sttId\":\"" + sttId + "\",\"itemId\":\"" + item.itemId + "\",\"remark\":\"" + remarkText + "\"}";
+                String manualReqJson = "{\"sttId\":\"" + sttId + "\",\"itemId\":\"" + item.itemId + "\",\"newTagId\":\"" + newTagIdText + "\",\"remark\":\"" + remarkText + "\"}";
                 api.manualAddStockTaking(token,
-                                new StockTakingModel.ManualAddReq(sttId, item.itemId, remarkText))
+                                new StockTakingModel.ManualAddReq(sttId, item.itemId, newTagIdText, remarkText))
                         .enqueue(new Callback<GeneralResponse>() {
                             @Override
                             public void onResponse(Call<GeneralResponse> c, Response<GeneralResponse> r) {
