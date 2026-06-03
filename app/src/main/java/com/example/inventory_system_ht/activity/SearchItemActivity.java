@@ -160,6 +160,10 @@ public class SearchItemActivity extends ScannerActivity
     }
 
     private void setupListeners() {
+        etSearchItem.setOnFocusChangeListener((v, hasFocus) -> {
+            findViewById(R.id.cardSearch).setSelected(hasFocus);
+        });
+
         etSearchItem.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void afterTextChanged(Editable s) {}

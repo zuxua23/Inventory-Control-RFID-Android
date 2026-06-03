@@ -149,6 +149,9 @@ public class LogActivity extends ScannerActivity {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) { loadLogs(); }
         });
+        etSearch.setOnFocusChangeListener((v, hasFocus) -> {
+            findViewById(R.id.cardSearch).setSelected(hasFocus);
+        });
 
         new Thread(() -> {
             SharedPreferences pref = getSharedPreferences("log_settings", MODE_PRIVATE);
@@ -290,7 +293,6 @@ public class LogActivity extends ScannerActivity {
         List<TextView> chips = Arrays.asList(chipDisabled, chip7, chip14, chip30, chip60, chip90);
         int[] chipValues = {0, 7, 14, 30, 60, 90};
 
-        // -1 = "Other" mode selected
         boolean isPreset = false;
         for (int v : chipValues) { if (v == currentDays) { isPreset = true; break; } }
         final int[] selectedDays = {isPreset ? currentDays : -1};
