@@ -105,8 +105,6 @@ public class SearchItemActivity extends ScannerActivity
         if (isNetworkConnected()) fetchData();
         else showWarning("Offline mode");
 
-        etSearchItem.requestFocus();
-
         FloatingActionButton fabLog = findViewById(R.id.fabLog);
         if (fabLog != null) {
             fabLog.setOnClickListener(v -> {
@@ -131,8 +129,6 @@ public class SearchItemActivity extends ScannerActivity
             playScanFeedback(2);
         }
 
-        if (etSearchItem != null)
-            etSearchItem.postDelayed(() -> etSearchItem.requestFocus(), 200);
     }
 
     @Override
@@ -166,10 +162,8 @@ public class SearchItemActivity extends ScannerActivity
 
         etSearchItem.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void afterTextChanged(Editable s) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filter(s.toString());
-            }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) { filter(s.toString()); }
         });
 
         adapter.setOnItemClickListener(this::fetchAndShowDetail);
