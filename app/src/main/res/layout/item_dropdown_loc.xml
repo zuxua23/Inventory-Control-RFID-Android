@@ -12,7 +12,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="48dp"
         android:gravity="center_vertical"
         android:paddingHorizontal="14dp"
         android:background="?android:attr/selectableItemBackground"
@@ -20,8 +20,8 @@
 
         <ImageView
             android:id="@+id/ivDropdownIcon"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:layout_marginEnd="12dp"
             android:contentDescription="@string/icon_location"
             android:src="@drawable/outline_location"
@@ -32,7 +32,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textSize="18sp"
+            android:textSize="12sp"
             android:textColor="@color/black"
             android:fontFamily="@font/raleway_bold" />
 
