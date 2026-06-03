@@ -188,7 +188,11 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
                             List<DeliveryOrderEntity> entities = new ArrayList<>();
                             for (DOModel.DOResponse r : remoteList) {
                                 entities.add(new DeliveryOrderEntity(
-                                        r.getDoId(), r.getDoNumber(), "", "", ""));
+                                        r.getDoId(),
+                                        r.getDoNumber(),
+                                        r.getStatus()      != null ? r.getStatus()      : "",
+                                        r.getCreatedAt()   != null ? r.getCreatedAt()   : "",
+                                        r.getScannerType() != null ? r.getScannerType() : ""));
                             }
                             new Thread(() -> {
                                 try { appDao.deleteAllDO(); } catch (Exception e) {

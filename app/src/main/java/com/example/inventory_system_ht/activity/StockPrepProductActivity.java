@@ -656,7 +656,7 @@ public class StockPrepProductActivity extends ScannerActivity
                             rollbackScan(placeholder, key, "Not part of this DO", isRfid);
                             return;
                         }
-                        if (!"IN_STOCK".equals(cached.status)) {
+                        if (!"ALLOCATED".equals(cached.status)) {
                             rollbackScan(placeholder, key, "Item not ready to ship", isRfid);
                             return;
                         }
@@ -687,7 +687,7 @@ public class StockPrepProductActivity extends ScannerActivity
 
         String userId = new PrefManager(this).getUserId();
         String tagReqJson = "{\"code\":\"" + scannedData + "\"}";
-        api.getTagInfo(token, scannedData).enqueue(new Callback<TagModel.TagInfoDto>() {
+        api.getTagInfo(token, scannedData, isRfid ? "RFID" : "QR").enqueue(new Callback<TagModel.TagInfoDto>() {
             @Override
             public void onResponse(Call<TagModel.TagInfoDto> call,
                                    Response<TagModel.TagInfoDto> response) {
@@ -715,7 +715,7 @@ public class StockPrepProductActivity extends ScannerActivity
                         rollbackScan(placeholder, key, "Not part of this DO", isRfid);
                         return;
                     }
-                    if (!"IN_STOCK".equals(info.getStatus())) {
+                    if (!"ALLOCATED".equals(info.getStatus())) {
                         rollbackScan(placeholder, key, "Item not ready to ship", isRfid);
                         return;
                     }

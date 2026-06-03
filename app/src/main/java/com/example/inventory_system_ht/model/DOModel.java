@@ -28,12 +28,18 @@ public class DOModel {
     }
 
     public static class DOResponse {
-        private String doId;
-        private String doNumber;
-        private List<DODetailResponse> details;
+        @SerializedName("doId")        private String doId;
+        @SerializedName("doNumber")    private String doNumber;
+        @SerializedName("status")      private String status;
+        @SerializedName("createdAt")   private String createdAt;
+        @SerializedName("scannerType") private String scannerType;
+        @SerializedName("details")     private List<DODetailResponse> details;
 
-        public String getDoId() { return doId; }
-        public String getDoNumber() { return doNumber; }
+        public String getDoId()        { return doId; }
+        public String getDoNumber()    { return doNumber; }
+        public String getStatus()      { return status; }
+        public String getCreatedAt()   { return createdAt; }
+        public String getScannerType() { return scannerType; }
         public List<DODetailResponse> getDetails() { return details; }
     }
 }

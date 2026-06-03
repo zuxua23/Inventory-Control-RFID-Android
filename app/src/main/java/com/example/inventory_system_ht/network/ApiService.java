@@ -43,9 +43,10 @@ public interface ApiService {
                                             @Query("code") String code,
                                             @Query("scannerType") String scannerType);
 
-    @GET("api/stockin/")
+    @GET("api/stockin")
     Call<TagModel.TagInfoDto> getTagInfo(@Header("Authorization") String token,
-                                         @Query("code") String code);
+                                         @Query("code") String code,
+                                         @Query("scannerType") String scannerType);
 
     // ── Stock In ──────────────────────────────────────────────────
     @POST("api/stockin")
