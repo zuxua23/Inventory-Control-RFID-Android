@@ -78,11 +78,6 @@ public class RfidSettingActivity extends ScannerActivity {
         });
     }
 
-    private int indexOfPower(int p) {
-        for (int i = 0; i < powerValues.length; i++) if (powerValues[i] == p) return i;
-        return 6;
-    }
-
     private ArrayAdapter<String> buildAdapter(List<String> items) {
         return new ArrayAdapter<String>(this, R.layout.item_spinner_selected, R.id.tvSpinnerSelected, items) {
             @Override
