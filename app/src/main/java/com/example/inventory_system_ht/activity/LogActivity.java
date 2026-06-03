@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -100,6 +101,21 @@ public class LogActivity extends ScannerActivity {
             return insets;
         });
 
+        ImageView btnLogSettings = findViewById(R.id.btnLogSettings);
+        ViewCompat.setOnApplyWindowInsetsListener(btnLogSettings, (v, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            int dp12 = (int)(12 * getResources().getDisplayMetrics().density);
+            params.topMargin = bars.top + dp12;
+            params.rightMargin = (int)(14 * getResources().getDisplayMetrics().density);
+            v.setLayoutParams(params);
+            return insets;
+        });
+        btnLogSettings.setOnClickListener(v -> showAutoDeleteSettingDialog());
+
+
         db = AppDatabase.getDatabase(this);
 
         btnBack = findViewById(R.id.btnBack);
@@ -135,8 +151,12 @@ public class LogActivity extends ScannerActivity {
         });
 
         new Thread(() -> {
-            long cutoff = System.currentTimeMillis() - (30L * 24 * 30 * 30 * 1000);
-            db.appDao().deleteOldLogs(cutoff);
+            SharedPreferences pref = getSharedPreferences("log_settings", MODE_PRIVATE);
+            int days = pref.getInt("auto_delete_days", 30);
+            if (days > 0) {
+                long cutoff = System.currentTimeMillis() - (days * 24L * 60 * 60 * 1000);
+                db.appDao().deleteOldLogs(cutoff);
+            }
         }).start();
 
         loadLogs();
@@ -154,7 +174,7 @@ public class LogActivity extends ScannerActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                 if (isInitializing) return;
-                if (pos == dateOptions.size() - 1 && dateOptions.get(pos).equals("Pick Date...")) {
+                if (pos == dateOptions.size() - 1) {
                     handler.post(() -> showDatePicker());
                 } else {
                     loadLogs();
@@ -244,6 +264,34 @@ public class LogActivity extends ScannerActivity {
                 tvLogCount.setText(logList.size() + " entries");
             });
         }).start();
+    }
+    private void showAutoDeleteSettingDialog() {
+        SharedPreferences pref = getSharedPreferences("log_settings", MODE_PRIVATE);
+        int currentDays = pref.getInt("auto_delete_days", 30);
+
+        EditText etDays = new EditText(this);
+        etDays.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        etDays.setHint("Enter days (0 = disabled)");
+        etDays.setText(String.valueOf(currentDays));
+        etDays.setSelection(etDays.getText().length());
+
+        int dp = (int)(16 * getResources().getDisplayMetrics().density);
+        android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+        container.setPadding(dp * 2, dp, dp * 2, 0);
+        container.addView(etDays);
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Auto Delete Logs")
+                .setMessage("Set retention period in days. Enter 0 to disable.")
+                .setView(container)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String input = etDays.getText().toString().trim();
+                    if (!input.isEmpty()) {
+                        pref.edit().putInt("auto_delete_days", Math.max(0, Integer.parseInt(input))).apply();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void showDetailDialog(AppLogEntity log) {
