@@ -44,7 +44,6 @@ import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.RfidSettingsManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
-import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -72,9 +71,7 @@ public class SearchItemActivity extends ScannerActivity
     private ApiService api;
     private String token;
     private AppDatabase db;
-    private boolean rfidSearchActive = false;
-    private com.google.android.material.floatingactionbutton.FloatingActionButton fabRfid;
-    private com.google.android.material.card.MaterialCardView cardFabRfid;
+    private boolean rfidActive = false;
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -133,30 +130,31 @@ public class SearchItemActivity extends ScannerActivity
     protected void onResume() {
         super.onResume();
         CommScanner scanner = getScannerInstance();
-        updateReaderBattery(findViewById(R.id.ivReaderBattery), rfidSearchActive);
-        if (rfidSearchActive) {
+        rfidShownEpcs.clear();
+        rfidActive = scanner != null && scanner.getRFIDScanner() != null;
+        if (rfidActive) {
             int power = new RfidSettingsManager(this).getPower();
-            RfidBulkHelper.openInventory(scanner, this, power);
+            boolean ok = RfidBulkHelper.openInventory(scanner, this, power);
+            if (!ok) {
+                rfidActive = false;
+                showWarning("RFID unavailable - detail view only");
+            }
         } else {
-            if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
+            showWarning("RFID not connected - detail view only");
         }
+        updateReaderBattery(findViewById(R.id.ivReaderBattery), rfidActive);
 
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");
             playScanFeedback(2);
         }
-
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (rfidSearchActive) {
-            RfidBulkHelper.closeInventory(getScannerInstance());
-        } else {
-            RfidBulkHelper.closeBarcode(getScannerInstance());
-        }
+        if (rfidActive) RfidBulkHelper.closeInventory(getScannerInstance());
     }
 
     private void initViews() {
@@ -165,8 +163,6 @@ public class SearchItemActivity extends ScannerActivity
         tvEmpty = findViewById(R.id.tvEmpty);
         spinnerStatus = findViewById(R.id.spinnerStatus);
         spinnerWarehouse = findViewById(R.id.spinnerWarehouse);
-        fabRfid = findViewById(R.id.fabRfid);
-        cardFabRfid = findViewById(R.id.cardFabRfid);
 
         allItemList = new ArrayList<>();
         filteredList = new ArrayList<>();
@@ -176,37 +172,6 @@ public class SearchItemActivity extends ScannerActivity
         rvTags.setAdapter(adapter);
 
         populateFilters();
-    }
-
-    private void setRfidSearchActive(boolean active) {
-        CommScanner scanner = getScannerInstance();
-        if (active && (scanner == null || scanner.getRFIDScanner() == null)) {
-            showError("RFID reader not connected");
-            playScanFeedback(2);
-            return;
-        }
-        rfidSearchActive = active;
-        rfidShownEpcs.clear();
-        if (active) {
-            etSearchItem.setText("");
-            RfidBulkHelper.closeBarcode(scanner);
-            int power = new RfidSettingsManager(this).getPower();
-            boolean ok = RfidBulkHelper.openInventory(scanner, this, power);
-            if (!ok) {
-                showError("Failed to start RFID");
-                rfidSearchActive = false;
-                return;
-            }
-            if (cardFabRfid != null) cardFabRfid.setStrokeColor(getColor(android.R.color.holo_green_dark));
-            if (fabRfid != null) fabRfid.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.holo_green_dark)));
-            showSuccess("RFID search active - pull trigger to scan");
-        } else {
-            RfidBulkHelper.closeInventory(scanner);
-            if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
-            if (cardFabRfid != null) cardFabRfid.setStrokeColor(getColor(R.color.blue_theme));
-            if (fabRfid != null) fabRfid.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.blue_theme)));
-        }
-        updateReaderBattery(findViewById(R.id.ivReaderBattery), active);
     }
 
     private void updateEmptyState() {
@@ -239,10 +204,6 @@ public class SearchItemActivity extends ScannerActivity
         spinnerWarehouse.setOnItemSelectedListener(filterListener);
 
         adapter.setOnItemClickListener(this::fetchAndShowDetail);
-
-        if (fabRfid != null) {
-            fabRfid.setOnClickListener(v -> setRfidSearchActive(!rfidSearchActive));
-        }
 
         findViewById(R.id.btnRefresh).setOnClickListener(v -> {
             if (!isNetworkConnected()) { showWarning("No internet connection"); return; }
@@ -504,7 +465,6 @@ public class SearchItemActivity extends ScannerActivity
             updateEmptyState();
             rvTags.scrollToPosition(0);
             showSuccess("Found: " + found.getItemName());
-            if (rfidSearchActive) setRfidSearchActive(false);
         } else {
             playScanFeedback(2);
             showError("Tag not registered: " + key);
