@@ -271,7 +271,7 @@ public class TagRegistrationActivity extends ScannerActivity
         updateCount();
         updateEmptyState();
         playScanFeedback(0);
-        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Tag Registration", data, "Scanned: " + data, new PrefManager(this).getUserId());
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Tag Registration", epc, "Scanned: " + epc, new PrefManager(this).getUserId());
     }
 
     private void updateCount() {
