@@ -247,7 +247,7 @@ public class TagRegistrationActivity extends ScannerActivity
         for (String epc : batch) {
             boolean alreadyIn = false;
             for (TagLocalEntity t : registeredTagList) {
-                if (t.getEpcTag().equalsIgnoreCase(epc)) { alreadyIn = true; break; }
+                if (epc.equalsIgnoreCase(t.getEpcTag())) { alreadyIn = true; break; }
             }
             if (!alreadyIn) newEpcs.add(epc);
         }
