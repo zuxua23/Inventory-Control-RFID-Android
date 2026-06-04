@@ -76,8 +76,10 @@ public class TagRegistrationActivity extends ScannerActivity
     private final int[] powerValues = {5, 10, 15, 18, 21, 24, 27, 30};
 
     private final java.util.Set<String> tagBuffer = new java.util.HashSet<>();
-    private static final int BATCH_DELAY_MS = 500;
+    private static final int BATCH_DELAY_MS = 200;
+    private static final int BATCH_MAX_MS = 800;
     private Runnable batchRunnable;
+    private long batchStartTime = 0;
     private int inFlightCount = 0;
     private TextView tvProcessing;
 
@@ -235,12 +237,20 @@ public class TagRegistrationActivity extends ScannerActivity
     }
 
     private void queueScan(String epc) {
+        long now = System.currentTimeMillis();
         synchronized (tagBuffer) {
+            if (tagBuffer.isEmpty()) batchStartTime = now;
             tagBuffer.add(epc.toUpperCase());
         }
-        if (batchRunnable != null) handler.removeCallbacks(batchRunnable);
-        batchRunnable = this::processBatch;
-        handler.postDelayed(batchRunnable, BATCH_DELAY_MS);
+        long elapsed = now - batchStartTime;
+        if (elapsed >= BATCH_MAX_MS) {
+            if (batchRunnable != null) handler.removeCallbacks(batchRunnable);
+            processBatch();
+        } else {
+            if (batchRunnable != null) handler.removeCallbacks(batchRunnable);
+            batchRunnable = this::processBatch;
+            handler.postDelayed(batchRunnable, Math.min(BATCH_DELAY_MS, BATCH_MAX_MS - elapsed));
+        }
     }
 
     private void processBatch() {
