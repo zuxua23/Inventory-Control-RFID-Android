@@ -41,6 +41,7 @@ import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
+import com.example.inventory_system_ht.util.RfidSettingsManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
 import com.google.android.material.card.MaterialCardView;
@@ -71,6 +72,9 @@ public class SearchItemActivity extends ScannerActivity
     private ApiService api;
     private String token;
     private AppDatabase db;
+    private boolean rfidSearchActive = false;
+    private com.google.android.material.floatingactionbutton.FloatingActionButton fabRfid;
+    private com.google.android.material.card.MaterialCardView cardFabRfid;
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -130,7 +134,12 @@ public class SearchItemActivity extends ScannerActivity
         super.onResume();
         CommScanner scanner = getScannerInstance();
         updateReaderBattery(findViewById(R.id.ivReaderBattery));
-        if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
+        if (rfidSearchActive) {
+            int power = new RfidSettingsManager(this).getPower();
+            RfidBulkHelper.openInventory(scanner, this, power);
+        } else {
+            if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
+        }
 
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
@@ -143,7 +152,11 @@ public class SearchItemActivity extends ScannerActivity
     @Override
     protected void onPause() {
         super.onPause();
-        RfidBulkHelper.closeBarcode(getScannerInstance());
+        if (rfidSearchActive) {
+            RfidBulkHelper.closeInventory(getScannerInstance());
+        } else {
+            RfidBulkHelper.closeBarcode(getScannerInstance());
+        }
     }
 
     private void initViews() {
@@ -152,6 +165,8 @@ public class SearchItemActivity extends ScannerActivity
         tvEmpty = findViewById(R.id.tvEmpty);
         spinnerStatus = findViewById(R.id.spinnerStatus);
         spinnerWarehouse = findViewById(R.id.spinnerWarehouse);
+        fabRfid = findViewById(R.id.fabRfid);
+        cardFabRfid = findViewById(R.id.cardFabRfid);
 
         allItemList = new ArrayList<>();
         filteredList = new ArrayList<>();
@@ -161,6 +176,23 @@ public class SearchItemActivity extends ScannerActivity
         rvTags.setAdapter(adapter);
 
         populateFilters();
+    }
+
+    private void setRfidSearchActive(boolean active) {
+        rfidSearchActive = active;
+        CommScanner scanner = getScannerInstance();
+        if (active) {
+            RfidBulkHelper.closeBarcode(scanner);
+            int power = new RfidSettingsManager(this).getPower();
+            RfidBulkHelper.openInventory(scanner, this, power);
+            if (cardFabRfid != null) cardFabRfid.setStrokeColor(getColor(android.R.color.holo_green_dark));
+            if (fabRfid != null) fabRfid.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.holo_green_dark)));
+        } else {
+            RfidBulkHelper.closeInventory(scanner);
+            RfidBulkHelper.openBarcode(scanner, this);
+            if (cardFabRfid != null) cardFabRfid.setStrokeColor(getColor(R.color.blue_theme));
+            if (fabRfid != null) fabRfid.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.blue_theme)));
+        }
     }
 
     private void updateEmptyState() {
@@ -193,6 +225,10 @@ public class SearchItemActivity extends ScannerActivity
         spinnerWarehouse.setOnItemSelectedListener(filterListener);
 
         adapter.setOnItemClickListener(this::fetchAndShowDetail);
+
+        if (fabRfid != null) {
+            fabRfid.setOnClickListener(v -> setRfidSearchActive(!rfidSearchActive));
+        }
 
         findViewById(R.id.btnRefresh).setOnClickListener(v -> {
             if (!isNetworkConnected()) { showWarning("No internet connection"); return; }
@@ -443,6 +479,7 @@ public class SearchItemActivity extends ScannerActivity
             adapter.notifyDataSetChanged();
             rvTags.scrollToPosition(0);
             showSuccess("Found: " + found.getItemName());
+            if (rfidSearchActive) setRfidSearchActive(false);
         } else {
             playScanFeedback(2);
             showError("Item not found");

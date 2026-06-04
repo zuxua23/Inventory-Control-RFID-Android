@@ -870,6 +870,16 @@ public class StockPrepProductActivity extends ScannerActivity
                 showWarning("Some items still validating"); return;
             }
         }
+        for (Map.Entry<String, Integer> entry : requiredQtyMap.entrySet()) {
+            int scannedForItem = 0;
+            for (TagLocalEntity t : scannedList) {
+                if (entry.getKey().equals(t.getItmId())) scannedForItem++;
+            }
+            if (scannedForItem < entry.getValue()) {
+                showWarning("Belum semua item terpenuhi. Scan semua item terlebih dahulu.");
+                return;
+            }
+        }
 
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
