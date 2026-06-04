@@ -643,14 +643,14 @@ public class StockInActivity extends ScannerActivity
                 }
 
                 List<String> notFound = new ArrayList<>();
-                List<String[]> resolved = new ArrayList<>(); // [code, itemName]
+                List<String[]> resolved = new ArrayList<>(); // [code, itemId, itemName]
                 for (String code : codes) {
                     TagModel.TagResponse t = tagMap.get(code.toUpperCase());
                     if (t == null) {
                         notFound.add(code);
                     } else {
-                        resolved.add(new String[]{ code, t.getItemName() });
-                        db.appDao().insertStockInScan(buildEntity(code, null, t.getItemName(), true));
+                        resolved.add(new String[]{ code, t.getItemId(), t.getItemName() });
+                        db.appDao().insertStockInScan(buildEntity(code, t.getItemId(), t.getItemName(), true));
                     }
                 }
 
@@ -667,8 +667,8 @@ public class StockInActivity extends ScannerActivity
                         for (int i = 0; i < scannedItemsList.size(); i++) {
                             ItemModel.Item it = scannedItemsList.get(i);
                             if (it.getEpcTag().equalsIgnoreCase(r[0])) {
-                                it.setItemId(null);
-                                it.setItemName(r[1]);
+                                it.setItemId(r[1]);
+                                it.setItemName(r[2]);
                                 changed = true;
                                 break;
                             }
