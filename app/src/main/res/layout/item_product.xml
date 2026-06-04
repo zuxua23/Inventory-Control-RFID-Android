@@ -28,12 +28,20 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/tvTagId"
+                android:id="@+id/tvEpc"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/white"
                 android:textSize="12sp"
                 android:textStyle="bold"
+                android:fontFamily="@font/raleway_bold"
+                tools:ignore="TextContrastCheck"/>
+            <TextView
+                android:id="@+id/tvTagId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white"
+                android:textSize="12sp"
                 android:fontFamily="@font/raleway_bold"
                 tools:ignore="TextContrastCheck"/>
             <TextView

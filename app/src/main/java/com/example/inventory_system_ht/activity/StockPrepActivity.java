@@ -102,7 +102,7 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
     protected void onResume() {
         super.onResume();
         CommScanner scanner = getScannerInstance();
-        updateReaderBattery(findViewById(R.id.ivReaderBattery));
+        updateReaderBattery(findViewById(R.id.ivReaderBattery), false);
         if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
         loadDataFromLocalDB();
 

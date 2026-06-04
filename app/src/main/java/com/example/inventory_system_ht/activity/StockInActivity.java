@@ -107,6 +107,7 @@ public class StockInActivity extends ScannerActivity
     // ── Batch / buffer logic for barcode scan ────────────────────
     private final Set<String> tagBuffer = new HashSet<>();
     private boolean isProcessingBuffer = false;
+    private String activeScannerType = null;
     private static final int BATCH_DELAY_MS = 300;
 
     // ── In-flight guard for RFID batch ────────────────────────────
@@ -366,6 +367,15 @@ public class StockInActivity extends ScannerActivity
 
     private void setupSwitchRfid() {
         switchRfid.setOnCheckedChangeListener((btn, isChecked) -> {
+            String desired = isChecked ? "RFID" : "QR";
+            if (activeScannerType != null && !activeScannerType.equals(desired)
+                    && !scannedItemsList.isEmpty()) {
+                showWarning("Clear scanned items before switching mode");
+                btn.setOnCheckedChangeListener(null);
+                btn.setChecked(!isChecked);
+                setupSwitchRfid();
+                return;
+            }
             CommScanner scanner = getScannerInstance();
             updateReaderBattery(findViewById(R.id.ivReaderBattery), isChecked);
 
@@ -596,7 +606,7 @@ public class StockInActivity extends ScannerActivity
                                 }
                             }
                             if (!alreadyIn) {
-                                addItemToList(new ItemModel.Item(t.getEpc(), t.getItemId(), t.getItemName(), 1));
+                                addItemToList(new ItemModel.Item(t.getEpc(), t.getTagId(), t.getItemId(), t.getItemName(), 1));
                                 new Thread(() -> db.appDao().insertStockInScan(
                                         buildEntity(t.getEpc(), t.getItemId(), t.getItemName(), true))).start();
                                 added++;
@@ -682,6 +692,7 @@ public class StockInActivity extends ScannerActivity
     private void validateBulkInBackground(List<String> codes) {
         final boolean isRfid = switchRfid.isChecked();
         final String scannerType = isRfid ? "RFID" : "QR";
+        if (activeScannerType == null) activeScannerType = scannerType;
         final String token = "Bearer " + new PrefManager(this).getToken();
         final String userId = new PrefManager(this).getUserId();
 
@@ -740,7 +751,7 @@ public class StockInActivity extends ScannerActivity
                                     "Rejected status=" + status, userId);
                             notFound.add(code);
                         } else {
-                            resolved.add(new String[]{ code, t.getItemId(), t.getItemName() });
+                            resolved.add(new String[]{ code, t.getItemId(), t.getItemName(), t.getEpc(), t.getTagId() });
                             db.appDao().insertStockInScan(buildEntity(code, t.getItemId(), t.getItemName(), true));
                         }
                     }
@@ -761,6 +772,8 @@ public class StockInActivity extends ScannerActivity
                             if (it.getEpcTag().equalsIgnoreCase(r[0])) {
                                 it.setItemId(r[1]);
                                 it.setItemName(r[2]);
+                                if (r.length > 3 && r[3] != null && !r[3].isEmpty()) it.setEpcTag(r[3]);
+                                if (r.length > 4) it.setTagId(r[4]);
                                 changed = true;
                                 break;
                             }
@@ -821,7 +834,9 @@ public class StockInActivity extends ScannerActivity
 
     private void saveToRoomThenSubmit() {
         showLoading();
-        String type = switchRfid.isChecked() ? "RFID" : "QR";
+        String type = activeScannerType != null
+                ? activeScannerType
+                : (switchRfid.isChecked() ? "RFID" : "QR");
 
         new Thread(() -> {
             List<StockInScanEntity> existing = db.appDao().getAllStockInScans();
@@ -947,6 +962,7 @@ public class StockInActivity extends ScannerActivity
         if (isListProductTab) adapter.notifyDataSetChanged();
         else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
         totalScanCount = 0;
+        activeScannerType = null;
         updateScanCount();
         updateEmptyState();
     }

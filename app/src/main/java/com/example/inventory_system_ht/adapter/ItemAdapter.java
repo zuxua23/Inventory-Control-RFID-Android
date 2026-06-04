@@ -44,11 +44,13 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ItemModel.Item item = itemList.get(position);
-        holder.tvTagId.setText(item.getEpcTag());
+        holder.tvEpc.setText("EPC: " + (item.getEpcTag() != null ? item.getEpcTag() : "-"));
+        String tagId = item.getTagId();
+        holder.tvTagId.setText("Tag ID: " + (tagId != null && !tagId.isEmpty() ? tagId : "-"));
         holder.tvProductName.setText(
                 item.getItemName() != null && !item.getItemName().isEmpty()
                         ? item.getItemName()
-                        : item.getItemId()
+                        : (item.getItemId() != null ? item.getItemId() : "")
         );
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onItemClick(item);
@@ -56,10 +58,11 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTagId, tvProductName;
+        TextView tvEpc, tvTagId, tvProductName;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
+            tvEpc = itemView.findViewById(R.id.tvEpc);
             tvTagId = itemView.findViewById(R.id.tvTagId);
             tvProductName = itemView.findViewById(R.id.tvProductName);
         }

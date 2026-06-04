@@ -89,7 +89,7 @@ public class StockTakingListActivity extends ScannerActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        updateReaderBattery(findViewById(R.id.ivReaderBattery));
+        updateReaderBattery(findViewById(R.id.ivReaderBattery), false);
         loadActiveSession();
     }
 

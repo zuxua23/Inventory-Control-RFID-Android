@@ -6,21 +6,30 @@ public class ItemModel {
 
     public static class Item implements Serializable {
         private String epcTag;
+        private String tagId;
         private String itemId;
         private String itemName;
         private int qty;
 
         public Item(String epcTag, String itemId, String itemName, int qty) {
+            this(epcTag, null, itemId, itemName, qty);
+        }
+
+        public Item(String epcTag, String tagId, String itemId, String itemName, int qty) {
             this.epcTag = epcTag;
+            this.tagId = tagId;
             this.itemId = itemId;
             this.itemName = itemName;
             this.qty = qty;
         }
 
         public String getEpcTag() { return epcTag; }
+        public String getTagId() { return tagId; }
         public String getItemId() { return itemId; }
         public String getItemName() { return itemName; }
         public int getQty() { return qty; }
+        public void setEpcTag(String epcTag) { this.epcTag = epcTag; }
+        public void setTagId(String tagId) { this.tagId = tagId; }
         public void setItemId(String itemId) { this.itemId = itemId; }
         public void setItemName(String itemName) { this.itemName = itemName; }
     }

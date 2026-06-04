@@ -76,6 +76,7 @@ public class TagRegistrationActivity extends ScannerActivity
     private final int[] powerValues = {5, 10, 15, 18, 21, 24, 27, 30};
 
     private final java.util.Set<String> inFlightEpcs = new java.util.HashSet<>();
+    private final java.util.Set<String> processedEpcs = new java.util.HashSet<>();
     private int inFlightCount = 0;
     private TextView tvProcessing;
 
@@ -221,6 +222,7 @@ public class TagRegistrationActivity extends ScannerActivity
 
         btnClear.setOnClickListener(v -> {
             registeredTagList.clear();
+            processedEpcs.clear();
             adapter.notifyDataSetChanged();
             updateCount();
             updateEmptyState();
@@ -236,6 +238,7 @@ public class TagRegistrationActivity extends ScannerActivity
         List<String> newEpcs = new ArrayList<>();
         for (String epc : rawEpcs) {
             if (inFlightEpcs.contains(epc)) continue;
+            if (processedEpcs.contains(epc)) continue;
             boolean alreadyIn = false;
             for (TagLocalEntity t : registeredTagList) {
                 if (epc.equalsIgnoreCase(t.getEpcTag())) { alreadyIn = true; break; }
@@ -245,6 +248,8 @@ public class TagRegistrationActivity extends ScannerActivity
         if (newEpcs.isEmpty()) return;
 
         inFlightEpcs.addAll(newEpcs);
+        processedEpcs.addAll(newEpcs);
+        playScanFeedback(0);
 
         if (!isNetworkConnected()) {
             for (String epc : newEpcs) { addTagToList(epc, epc); inFlightEpcs.remove(epc); }
@@ -323,6 +328,7 @@ public class TagRegistrationActivity extends ScannerActivity
                 runOnUiThread(() -> {
                     showWarning(tagIds.size() + " tags saved offline, will sync later");
                     registeredTagList.clear();
+                    processedEpcs.clear();
                     adapter.notifyDataSetChanged();
                     updateCount();
                     updateEmptyState();
@@ -350,6 +356,7 @@ public class TagRegistrationActivity extends ScannerActivity
                             showSuccess(response.body().getMessage());
                             playScanFeedback(0);
                             registeredTagList.clear();
+                            processedEpcs.clear();
                             adapter.notifyDataSetChanged();
                             updateCount();
                         } else {
@@ -412,7 +419,10 @@ public class TagRegistrationActivity extends ScannerActivity
         dialog.findViewById(R.id.btnNo).setOnClickListener(v -> dialog.dismiss());
         btnYes.setOnClickListener(v -> {
             dialog.dismiss();
-            registeredTagList.remove(position);
+            TagLocalEntity removed = registeredTagList.remove(position);
+            if (removed != null && removed.getEpcTag() != null) {
+                processedEpcs.remove(removed.getEpcTag().toUpperCase());
+            }
             adapter.notifyItemRemoved(position);
             adapter.notifyItemRangeChanged(position, registeredTagList.size());
             updateCount();

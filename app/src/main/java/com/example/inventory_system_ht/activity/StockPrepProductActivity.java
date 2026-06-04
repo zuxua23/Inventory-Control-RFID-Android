@@ -638,12 +638,12 @@ public class StockPrepProductActivity extends ScannerActivity
 
     private void queueScan(String scannedData) {
         if (!isDoDetailLoaded) {
-            if (!switchRfid.isChecked()) showWarning("Loading DO details, please wait...");
+            showWarning("Loading DO details, please wait...");
             return;
         }
 
         if (selectedLocationId == null || selectedLocationId.isEmpty()) {
-            if (!switchRfid.isChecked()) showWarning("Select location first");
+            showWarning("Select location first");
             return;
         }
 
