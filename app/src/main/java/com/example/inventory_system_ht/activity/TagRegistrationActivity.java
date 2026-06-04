@@ -75,11 +75,7 @@ public class TagRegistrationActivity extends ScannerActivity
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"));
     private final int[] powerValues = {5, 10, 15, 18, 21, 24, 27, 30};
 
-    private final java.util.Set<String> tagBuffer = new java.util.HashSet<>();
-    private static final int BATCH_DELAY_MS = 200;
-    private static final int BATCH_MAX_MS = 800;
-    private Runnable batchRunnable;
-    private long batchStartTime = 0;
+    private final java.util.Set<String> inFlightEpcs = new java.util.HashSet<>();
     private int inFlightCount = 0;
     private TextView tvProcessing;
 
@@ -236,34 +232,10 @@ public class TagRegistrationActivity extends ScannerActivity
         });
     }
 
-    private void queueScan(String epc) {
-        long now = System.currentTimeMillis();
-        synchronized (tagBuffer) {
-            if (tagBuffer.isEmpty()) batchStartTime = now;
-            tagBuffer.add(epc.toUpperCase());
-        }
-        long elapsed = now - batchStartTime;
-        if (elapsed >= BATCH_MAX_MS) {
-            if (batchRunnable != null) handler.removeCallbacks(batchRunnable);
-            processBatch();
-        } else {
-            if (batchRunnable != null) handler.removeCallbacks(batchRunnable);
-            batchRunnable = this::processBatch;
-            handler.postDelayed(batchRunnable, Math.min(BATCH_DELAY_MS, BATCH_MAX_MS - elapsed));
-        }
-    }
-
-    private void processBatch() {
-        List<String> batch;
-        synchronized (tagBuffer) {
-            if (tagBuffer.isEmpty()) return;
-            batch = new ArrayList<>(tagBuffer);
-            tagBuffer.clear();
-        }
-
-        // Filter out EPCs already in list
+    private void processBatchDirect(List<String> rawEpcs) {
         List<String> newEpcs = new ArrayList<>();
-        for (String epc : batch) {
+        for (String epc : rawEpcs) {
+            if (inFlightEpcs.contains(epc)) continue;
             boolean alreadyIn = false;
             for (TagLocalEntity t : registeredTagList) {
                 if (epc.equalsIgnoreCase(t.getEpcTag())) { alreadyIn = true; break; }
@@ -272,8 +244,10 @@ public class TagRegistrationActivity extends ScannerActivity
         }
         if (newEpcs.isEmpty()) return;
 
+        inFlightEpcs.addAll(newEpcs);
+
         if (!isNetworkConnected()) {
-            for (String epc : newEpcs) addTagToList(epc, epc);
+            for (String epc : newEpcs) { addTagToList(epc, epc); inFlightEpcs.remove(epc); }
             return;
         }
 
@@ -284,6 +258,7 @@ public class TagRegistrationActivity extends ScannerActivity
                 .enqueue(new retrofit2.Callback<List<TagModel.TagInfoDto>>() {
                     @Override
                     public void onResponse(Call<List<TagModel.TagInfoDto>> call, retrofit2.Response<List<TagModel.TagInfoDto>> response) {
+                        inFlightEpcs.removeAll(newEpcs);
                         setProcessing(false);
                         if (!response.isSuccessful() || response.body() == null) return;
                         int added = 0;
@@ -293,22 +268,19 @@ public class TagRegistrationActivity extends ScannerActivity
                                 LogManager.get(TagRegistrationActivity.this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Tag Registration", info.getEpcTag(), "Rejected status=" + status, new PrefManager(TagRegistrationActivity.this).getUserId());
                                 continue;
                             }
-                            // Skip if already in list (race condition guard)
                             boolean alreadyIn = false;
                             for (TagLocalEntity t : registeredTagList) {
                                 if (info.getEpcTag() != null && info.getEpcTag().equalsIgnoreCase(t.getEpcTag())) {
                                     alreadyIn = true; break;
                                 }
                             }
-                            if (!alreadyIn) {
-                                addTagToList(info.getEpcTag(), info.getTagId());
-                                added++;
-                            }
+                            if (!alreadyIn) { addTagToList(info.getEpcTag(), info.getTagId()); added++; }
                         }
                         if (added > 0) playScanFeedback(0);
                     }
                     @Override
                     public void onFailure(Call<List<TagModel.TagInfoDto>> call, Throwable t) {
+                        inFlightEpcs.removeAll(newEpcs);
                         setProcessing(false);
                         for (String epc : newEpcs) addTagToList(epc, epc);
                     }
@@ -450,9 +422,11 @@ public class TagRegistrationActivity extends ScannerActivity
 
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
+        List<String> epcs = new ArrayList<>();
         for (RFIDData data : event.getRFIDData()) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII());
-            if (!epc.isEmpty()) handler.post(() -> queueScan(epc));
+            if (!epc.isEmpty()) epcs.add(epc.toUpperCase());
         }
+        if (!epcs.isEmpty()) handler.post(() -> processBatchDirect(epcs));
     }
 }
