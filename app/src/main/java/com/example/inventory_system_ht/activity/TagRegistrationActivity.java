@@ -78,6 +78,8 @@ public class TagRegistrationActivity extends ScannerActivity
     private final java.util.Set<String> tagBuffer = new java.util.HashSet<>();
     private static final int BATCH_DELAY_MS = 500;
     private Runnable batchRunnable;
+    private int inFlightCount = 0;
+    private TextView tvProcessing;
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -155,6 +157,13 @@ public class TagRegistrationActivity extends ScannerActivity
         btnSubmitRegis = findViewById(R.id.btnSubmitRegis);
         rvTags = findViewById(R.id.rvTags);
         spinnerPower = findViewById(R.id.spinnerPower);
+        tvProcessing = findViewById(R.id.tvProcessing);
+    }
+
+    private void setProcessing(boolean active) {
+        inFlightCount = Math.max(0, inFlightCount + (active ? 1 : -1));
+        if (tvProcessing != null)
+            tvProcessing.setVisibility(inFlightCount > 0 ? View.VISIBLE : View.GONE);
     }
 
     private void setupPowerSpinner() {
@@ -258,27 +267,39 @@ public class TagRegistrationActivity extends ScannerActivity
             return;
         }
 
+        setProcessing(true);
         String token = "Bearer " + new PrefManager(this).getToken();
         ApiClient.getClient(this).create(ApiService.class)
                 .getTagsInfoBulk(token, new TagModel.BulkInfoReq(newEpcs, "RFID"))
                 .enqueue(new retrofit2.Callback<List<TagModel.TagInfoDto>>() {
                     @Override
                     public void onResponse(Call<List<TagModel.TagInfoDto>> call, retrofit2.Response<List<TagModel.TagInfoDto>> response) {
+                        setProcessing(false);
                         if (!response.isSuccessful() || response.body() == null) return;
                         int added = 0;
                         for (TagModel.TagInfoDto info : response.body()) {
                             String status = info.getStatus();
-                            if ("PRINTED".equalsIgnoreCase(status) || "OUT".equalsIgnoreCase(status)) {
+                            if (!"PRINTED".equalsIgnoreCase(status) && !"OUT".equalsIgnoreCase(status)) {
+                                LogManager.get(TagRegistrationActivity.this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Tag Registration", info.getEpcTag(), "Rejected status=" + status, new PrefManager(TagRegistrationActivity.this).getUserId());
+                                continue;
+                            }
+                            // Skip if already in list (race condition guard)
+                            boolean alreadyIn = false;
+                            for (TagLocalEntity t : registeredTagList) {
+                                if (info.getEpcTag() != null && info.getEpcTag().equalsIgnoreCase(t.getEpcTag())) {
+                                    alreadyIn = true; break;
+                                }
+                            }
+                            if (!alreadyIn) {
                                 addTagToList(info.getEpcTag(), info.getTagId());
                                 added++;
-                            } else {
-                                LogManager.get(TagRegistrationActivity.this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Tag Registration", info.getEpcTag(), "Rejected status=" + status, new PrefManager(TagRegistrationActivity.this).getUserId());
                             }
                         }
                         if (added > 0) playScanFeedback(0);
                     }
                     @Override
                     public void onFailure(Call<List<TagModel.TagInfoDto>> call, Throwable t) {
+                        setProcessing(false);
                         for (String epc : newEpcs) addTagToList(epc, epc);
                     }
                 });
