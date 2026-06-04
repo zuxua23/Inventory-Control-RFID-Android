@@ -9,7 +9,10 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.cardview.widget.CardView;
@@ -44,7 +47,9 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -55,9 +60,13 @@ public class SearchItemActivity extends ScannerActivity
     private EditText etSearchItem;
     private RecyclerView rvTags;
     private View tvEmpty;
+    private Spinner spinnerStatus;
+    private Spinner spinnerWarehouse;
     private SearchItemAdapter adapter;
     private List<TagModel.SearchItemDto> allItemList;
     private List<TagModel.SearchItemDto> filteredList;
+    private String selectedStatus = "All";
+    private String selectedWarehouse = "All";
     private final Handler handler = new Handler(Looper.getMainLooper());
     private ApiService api;
     private String token;
@@ -141,6 +150,8 @@ public class SearchItemActivity extends ScannerActivity
         etSearchItem = findViewById(R.id.searchItem);
         rvTags = findViewById(R.id.rvTags);
         tvEmpty = findViewById(R.id.tvEmpty);
+        spinnerStatus = findViewById(R.id.spinnerStatus);
+        spinnerWarehouse = findViewById(R.id.spinnerWarehouse);
 
         allItemList = new ArrayList<>();
         filteredList = new ArrayList<>();
@@ -148,6 +159,8 @@ public class SearchItemActivity extends ScannerActivity
         adapter = new SearchItemAdapter(filteredList);
         rvTags.setLayoutManager(new LinearLayoutManager(this));
         rvTags.setAdapter(adapter);
+
+        populateFilters();
     }
 
     private void updateEmptyState() {
@@ -165,6 +178,19 @@ public class SearchItemActivity extends ScannerActivity
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) { filter(s.toString()); }
         });
+
+        AdapterView.OnItemSelectedListener filterListener = new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+                if (parent.getId() == R.id.spinnerStatus)
+                    selectedStatus = (String) parent.getItemAtPosition(pos);
+                else
+                    selectedWarehouse = (String) parent.getItemAtPosition(pos);
+                filter(etSearchItem.getText().toString());
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        };
+        spinnerStatus.setOnItemSelectedListener(filterListener);
+        spinnerWarehouse.setOnItemSelectedListener(filterListener);
 
         adapter.setOnItemClickListener(this::fetchAndShowDetail);
 
@@ -185,12 +211,11 @@ public class SearchItemActivity extends ScannerActivity
             dto.setEpcTag(e.epcTag);
             dto.setItemName(e.itemName);
             dto.setLocation(e.location);
+            dto.setStatus(e.status);
             allItemList.add(dto);
         }
-        filteredList.clear();
-        filteredList.addAll(allItemList);
-        adapter.notifyDataSetChanged();
-        updateEmptyState();
+        populateFilters();
+        filter(etSearchItem != null ? etSearchItem.getText().toString() : "");
     }
 
     private void saveToLocal(List<TagModel.SearchItemDto> items) {
@@ -203,10 +228,34 @@ public class SearchItemActivity extends ScannerActivity
                 e.epcTag = dto.getEpcTag();
                 e.itemName = dto.getItemName();
                 e.location = dto.getLocation();
+                e.status = dto.getStatus();
                 entities.add(e);
             }
             db.appDao().insertSearchItems(entities);
         }).start();
+    }
+
+    private void populateFilters() {
+        Set<String> statuses = new LinkedHashSet<>();
+        Set<String> warehouses = new LinkedHashSet<>();
+        statuses.add("All");
+        warehouses.add("All");
+        for (TagModel.SearchItemDto item : allItemList) {
+            if (item.getStatus() != null && !item.getStatus().isEmpty())
+                statuses.add(item.getStatus());
+            if (item.getLocation() != null && !item.getLocation().isEmpty()
+                    && !"-".equals(item.getLocation()))
+                warehouses.add(item.getLocation());
+        }
+        ArrayAdapter<String> statusAdapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, new ArrayList<>(statuses));
+        statusAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerStatus.setAdapter(statusAdapter);
+
+        ArrayAdapter<String> warehouseAdapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, new ArrayList<>(warehouses));
+        warehouseAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerWarehouse.setAdapter(warehouseAdapter);
     }
 
     private void fetchData() {
@@ -228,10 +277,8 @@ public class SearchItemActivity extends ScannerActivity
                     saveToLocal(data);
                     allItemList.clear();
                     allItemList.addAll(data);
-                    filteredList.clear();
-                    filteredList.addAll(allItemList);
-                    adapter.notifyDataSetChanged();
-                    updateEmptyState();
+                    populateFilters();
+                    filter(etSearchItem.getText().toString());
                 } else {
                     LogManager.get(SearchItemActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
                             "Search Item", "Item List", "Fetch items failed: HTTP " + response.code(),
@@ -358,18 +405,23 @@ public class SearchItemActivity extends ScannerActivity
     private void filter(String text) {
         filteredList.clear();
         String query = text.toLowerCase().trim();
-        if (query.isEmpty()) {
-            filteredList.addAll(allItemList);
-        } else {
-            for (TagModel.SearchItemDto item : allItemList) {
+        for (TagModel.SearchItemDto item : allItemList) {
+            if (!"All".equals(selectedStatus)) {
+                String itemStatus = item.getStatus() != null ? item.getStatus() : "";
+                if (!selectedStatus.equalsIgnoreCase(itemStatus)) continue;
+            }
+            if (!"All".equals(selectedWarehouse)) {
+                String itemLoc = item.getLocation() != null ? item.getLocation() : "";
+                if (!selectedWarehouse.equalsIgnoreCase(itemLoc)) continue;
+            }
+            if (!query.isEmpty()) {
                 String name = item.getItemName() != null ? item.getItemName().toLowerCase() : "";
-                String epc = item.getEpcTag() != null ? item.getEpcTag().toLowerCase() : "";
                 String tid = item.getTagId() != null ? item.getTagId().toLowerCase() : "";
                 String location = item.getLocation() != null ? item.getLocation().toLowerCase() : "";
-                if (name.contains(query) || epc.contains(query)
-                        || tid.contains(query) || location.contains(query))
-                    filteredList.add(item);
+                if (!name.contains(query) && !tid.contains(query) && !location.contains(query))
+                    continue;
             }
+            filteredList.add(item);
         }
         adapter.notifyDataSetChanged();
         updateEmptyState();

@@ -11,15 +11,18 @@ public class TagModel {
         @SerializedName("epcTag") private String epcTag;
         @SerializedName("itemName") private String itemName;
         @SerializedName("location") private String location;
+        @SerializedName("status") private String status;
 
         public String getTagId() { return tagId; }
         public String getEpcTag() { return epcTag; }
         public String getItemName() { return itemName; }
         public String getLocation() { return location; }
+        public String getStatus() { return status; }
         public void setTagId(String v) { tagId = v; }
         public void setEpcTag(String v) { epcTag = v; }
         public void setItemName(String v) { itemName = v; }
         public void setLocation(String v) { location = v; }
+        public void setStatus(String v) { status = v; }
     }
 
     public static class TagDetailDto implements Serializable {

@@ -11,4 +11,5 @@ public class SearchItemEntity {
     @ColumnInfo(name = "epc_tag") public String epcTag;
     @ColumnInfo(name = "item_name") public String itemName;
     @ColumnInfo(name = "location") public String location;
+    @ColumnInfo(name = "status") public String status;
 }
