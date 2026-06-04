@@ -3,6 +3,7 @@ package com.example.inventory_system_ht.activity.base;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.ColorDrawable;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -12,6 +13,7 @@ import android.widget.TextView;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import java.util.ArrayList;
 import java.util.List;
 import android.app.Dialog;
 import android.content.Context;
@@ -22,6 +24,8 @@ import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.Gravity;
@@ -44,16 +48,74 @@ public abstract class ScannerActivity extends AppCompatActivity {
     private Vibrator vibrator;
     private PopupWindow activePowerPopup;
 
+    // ─── FAB Auto-Fade (like iPhone shortcuts) ────────────────────────────────
+    private static final long FAB_HIDE_DELAY_MS = 5000L;
+    private final Handler fabHideHandler = new Handler(Looper.getMainLooper());
+    private View[] fabAutoHideViews;
+    private boolean fabsCurrentlyVisible = true;
+    private final Runnable fabHideRunnable = () -> {
+        if (fabAutoHideViews == null) return;
+        fabsCurrentlyVisible = false;
+        for (View v : fabAutoHideViews) v.animate().alpha(0.15f).setDuration(500).start();
+    };
+
     protected abstract CommScanner getScannerInstance();
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
     @Override
+    protected void onResume() {
+        super.onResume();
+        setupFabsAutoHideIfPresent();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        fabHideHandler.removeCallbacks(fabHideRunnable);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        fabHideHandler.removeCallbacksAndMessages(null);
         if (toneGen != null) {
             toneGen.release();
             toneGen = null;
         }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) resetFabTimer();
+        return super.dispatchTouchEvent(ev);
+    }
+
+    // ─── FAB Auto-Fade helpers ────────────────────────────────────────────────
+    private void setupFabsAutoHideIfPresent() {
+        View logCard = findViewById(R.id.cardFabLog);
+        View camCard = findViewById(R.id.cardFabCamera);
+        if (logCard == null && camCard == null) return;
+        List<View> views = new ArrayList<>();
+        if (logCard != null) views.add(logCard);
+        if (camCard != null) views.add(camCard);
+        fabAutoHideViews = views.toArray(new View[0]);
+        fabsCurrentlyVisible = true;
+        for (View v : fabAutoHideViews) v.setAlpha(1f);
+        scheduleFabHide();
+    }
+
+    private void scheduleFabHide() {
+        fabHideHandler.removeCallbacks(fabHideRunnable);
+        fabHideHandler.postDelayed(fabHideRunnable, FAB_HIDE_DELAY_MS);
+    }
+
+    private void resetFabTimer() {
+        if (fabAutoHideViews == null) return;
+        if (!fabsCurrentlyVisible) {
+            fabsCurrentlyVisible = true;
+            for (View v : fabAutoHideViews) v.animate().alpha(1f).setDuration(200).start();
+        }
+        scheduleFabHide();
     }
 
     // ─── Network ──────────────────────────────────────────────────────────────
