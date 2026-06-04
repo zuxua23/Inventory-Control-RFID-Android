@@ -129,7 +129,6 @@ public class HomeActivity extends ScannerActivity {
         btnSearchItem.setOnClickListener(menuClickListener);
         btnSettingRfid.setOnClickListener(menuClickListener);
 
-        View fabSpacer = findViewById(R.id.fabSpacer);
         MaterialCardView cardFabLog = findViewById(R.id.cardFabLog);
 
         ViewCompat.setOnApplyWindowInsetsListener(cardFabLog, (v, insets) -> {
@@ -142,8 +141,6 @@ public class HomeActivity extends ScannerActivity {
 
             int fabHeight = (int)(40 * getResources().getDisplayMetrics().density);
             int spacerHeight = fabHeight + bars.bottom + dp16 * 2;
-            fabSpacer.getLayoutParams().height = spacerHeight;
-            fabSpacer.requestLayout();
 
             return insets;
         });
