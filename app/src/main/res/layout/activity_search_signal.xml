@@ -68,27 +68,6 @@
                 android:fontFamily="@font/raleway_bold"
                 tools:ignore="TextContrastCheck" />
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingHorizontal="4dp"
-                android:paddingVertical="4dp">
-
-                <Spinner
-                    android:id="@+id/spinnerPower"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_spinner"
-                    android:popupBackground="@drawable/bg_spinner_dropdown"
-                    android:paddingHorizontal="12dp"
-                    android:fontFamily="@font/raleway_bold"
-                    android:textSize="14sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
         </androidx.cardview.widget.CardView>
 
         <androidx.cardview.widget.CardView
@@ -175,16 +154,17 @@
                 app:elevation="0dp" />
 
         </com.google.android.material.card.MaterialCardView>
+
         <Button
             android:id="@+id/btnStopSearch"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_margin="10dp"
-            android:text="@string/action_stop_searching"
+            android:text="Start Searching"
             android:textAllCaps="false"
             android:textSize="16sp"
             android:elevation="4dp"
-            android:backgroundTint="@color/red"
+            android:backgroundTint="@color/blue_theme"
             android:textColor="@color/white"
             android:fontFamily="@font/raleway_bold"
             android:stateListAnimator="@null"
