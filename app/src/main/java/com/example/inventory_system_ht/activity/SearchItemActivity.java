@@ -133,7 +133,7 @@ public class SearchItemActivity extends ScannerActivity
     protected void onResume() {
         super.onResume();
         CommScanner scanner = getScannerInstance();
-        updateReaderBattery(findViewById(R.id.ivReaderBattery));
+        updateReaderBattery(findViewById(R.id.ivReaderBattery), rfidSearchActive);
         if (rfidSearchActive) {
             int power = new RfidSettingsManager(this).getPower();
             RfidBulkHelper.openInventory(scanner, this, power);
@@ -179,20 +179,34 @@ public class SearchItemActivity extends ScannerActivity
     }
 
     private void setRfidSearchActive(boolean active) {
-        rfidSearchActive = active;
         CommScanner scanner = getScannerInstance();
+        if (active && (scanner == null || scanner.getRFIDScanner() == null)) {
+            showError("RFID reader not connected");
+            playScanFeedback(2);
+            return;
+        }
+        rfidSearchActive = active;
+        rfidShownEpcs.clear();
         if (active) {
+            etSearchItem.setText("");
             RfidBulkHelper.closeBarcode(scanner);
             int power = new RfidSettingsManager(this).getPower();
-            RfidBulkHelper.openInventory(scanner, this, power);
+            boolean ok = RfidBulkHelper.openInventory(scanner, this, power);
+            if (!ok) {
+                showError("Failed to start RFID");
+                rfidSearchActive = false;
+                return;
+            }
             if (cardFabRfid != null) cardFabRfid.setStrokeColor(getColor(android.R.color.holo_green_dark));
             if (fabRfid != null) fabRfid.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.holo_green_dark)));
+            showSuccess("RFID search active - pull trigger to scan");
         } else {
             RfidBulkHelper.closeInventory(scanner);
-            RfidBulkHelper.openBarcode(scanner, this);
+            if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
             if (cardFabRfid != null) cardFabRfid.setStrokeColor(getColor(R.color.blue_theme));
             if (fabRfid != null) fabRfid.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.blue_theme)));
         }
+        updateReaderBattery(findViewById(R.id.ivReaderBattery), active);
     }
 
     private void updateEmptyState() {
@@ -414,14 +428,16 @@ public class SearchItemActivity extends ScannerActivity
         dialog.show();
     }
 
+    private final Set<String> rfidShownEpcs = new LinkedHashSet<>();
+
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
         for (RFIDData data : event.getRFIDData()) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII());
-            handler.post(() -> {
-                etSearchItem.setText(epc);
-                moveScannedItemToTop(epc);
-            });
+            if (epc == null || epc.isEmpty()) continue;
+            final String epcKey = epc.trim().toUpperCase();
+            if (!rfidShownEpcs.add(epcKey)) continue;
+            handler.post(() -> moveScannedItemToTop(epcKey));
         }
     }
 
@@ -465,9 +481,17 @@ public class SearchItemActivity extends ScannerActivity
     }
 
     private void moveScannedItemToTop(String code) {
+        if (allItemList.isEmpty()) {
+            playScanFeedback(2);
+            showError("Item list empty - tap Refresh first");
+            return;
+        }
+        String key = code != null ? code.trim() : "";
         TagModel.SearchItemDto found = null;
         for (TagModel.SearchItemDto item : allItemList) {
-            if (code.equalsIgnoreCase(item.getEpcTag()) || code.equalsIgnoreCase(item.getTagId())) {
+            String itemEpc = item.getEpcTag() != null ? item.getEpcTag().trim() : "";
+            String itemTag = item.getTagId() != null ? item.getTagId().trim() : "";
+            if (key.equalsIgnoreCase(itemEpc) || key.equalsIgnoreCase(itemTag)) {
                 found = item; break;
             }
         }
@@ -477,12 +501,13 @@ public class SearchItemActivity extends ScannerActivity
             filteredList.add(0, found);
             adapter.setLastScannedPosition(0);
             adapter.notifyDataSetChanged();
+            updateEmptyState();
             rvTags.scrollToPosition(0);
             showSuccess("Found: " + found.getItemName());
             if (rfidSearchActive) setRfidSearchActive(false);
         } else {
             playScanFeedback(2);
-            showError("Item not found");
+            showError("Tag not registered: " + key);
         }
     }
 

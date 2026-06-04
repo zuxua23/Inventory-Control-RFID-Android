@@ -219,17 +219,35 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toTopOf="@id/cardFabLog">
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/fabRfid"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:contentDescription="Toggle RFID"
-                android:src="@drawable/ic_setting_rfid"
-                app:tint="#1565C0"
-                app:backgroundTint="@color/white"
-                app:fabSize="mini"
-                app:borderWidth="0dp"
-                app:elevation="0dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="RFID"
+                    android:textColor="#1565C0"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:layout_marginEnd="6dp"/>
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fabRfid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Toggle RFID search mode"
+                    android:src="@drawable/ic_setting_rfid"
+                    app:tint="#1565C0"
+                    app:backgroundTint="@color/white"
+                    app:fabSize="mini"
+                    app:borderWidth="0dp"
+                    app:elevation="0dp" />
+            </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
