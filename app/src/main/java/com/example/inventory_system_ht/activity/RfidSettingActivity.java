@@ -50,7 +50,7 @@ public class RfidSettingActivity extends ScannerActivity {
             return insets;
         });
 
-        for (int i = 0; i <= 15; i++) qList.add(String.valueOf(i));
+        for (int i = 0; i <= 7; i++) qList.add(String.valueOf(i));
 
         spinnerPower = findViewById(R.id.spinnerPower);
         spinnerSession = findViewById(R.id.spinnerSession);
