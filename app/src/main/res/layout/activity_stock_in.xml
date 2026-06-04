@@ -231,6 +231,18 @@
 
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/tvProcessing"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="⏳ Memproses tag..."
+                    android:textColor="@color/blue_theme"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/raleway_bold"
+                    android:visibility="gone"
+                    android:layout_marginBottom="4dp" />
+
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="0dp"

@@ -104,10 +104,15 @@ public class StockInActivity extends ScannerActivity
     private String selectedLocation = "";
     private String selectedLocationId = "";
 
-    // ── Batch / buffer logic for scan ─────────────────────────────
+    // ── Batch / buffer logic for barcode scan ────────────────────
     private final Set<String> tagBuffer = new HashSet<>();
     private boolean isProcessingBuffer = false;
     private static final int BATCH_DELAY_MS = 300;
+
+    // ── In-flight guard for RFID batch ────────────────────────────
+    private final Set<String> inFlightEpcs = new HashSet<>();
+    private int inFlightCount = 0;
+    private TextView tvProcessing;
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -218,6 +223,7 @@ public class StockInActivity extends ScannerActivity
         spinnerPower = findViewById(R.id.spinnerPower);
         tvEmpty = findViewById(R.id.tvEmpty);
         fabScanCamera = findViewById(R.id.fabScanCamera);
+        tvProcessing = findViewById(R.id.tvProcessing);
 
         switchRfid.setChecked(false);
         spinnerPower.setVisibility(View.GONE);
@@ -530,6 +536,84 @@ public class StockInActivity extends ScannerActivity
                 });
     }
 
+    private void setProcessing(boolean active) {
+        inFlightCount = Math.max(0, inFlightCount + (active ? 1 : -1));
+        if (tvProcessing != null)
+            tvProcessing.setVisibility(inFlightCount > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private void processRfidBatch(List<String> rawEpcs) {
+        if (selectedLocationId.isEmpty()) return;
+        List<String> newEpcs = new ArrayList<>();
+        for (String epc : rawEpcs) {
+            if (inFlightEpcs.contains(epc)) continue;
+            boolean alreadyIn = false;
+            for (ItemModel.Item t : scannedItemsList) {
+                if (epc.equalsIgnoreCase(t.getEpcTag())) { alreadyIn = true; break; }
+            }
+            if (!alreadyIn) newEpcs.add(epc);
+        }
+        if (newEpcs.isEmpty()) return;
+
+        inFlightEpcs.addAll(newEpcs);
+
+        if (!isNetworkConnected()) {
+            for (String epc : newEpcs) {
+                addItemToList(new ItemModel.Item(epc, "", "Pending...", 1));
+                inFlightEpcs.remove(epc);
+            }
+            return;
+        }
+
+        setProcessing(true);
+        String token = "Bearer " + new PrefManager(this).getToken();
+        ApiClient.getClient(this).create(ApiService.class)
+                .getStockInTagsInfoBulk(token, new TagModel.BulkInfoReq(newEpcs, "RFID"))
+                .enqueue(new Callback<List<TagModel.TagResponse>>() {
+                    @Override
+                    public void onResponse(Call<List<TagModel.TagResponse>> call,
+                                           Response<List<TagModel.TagResponse>> response) {
+                        inFlightEpcs.removeAll(newEpcs);
+                        setProcessing(false);
+                        if (!response.isSuccessful() || response.body() == null) {
+                            playScanFeedback(2);
+                            return;
+                        }
+                        int added = 0;
+                        for (TagModel.TagResponse t : response.body()) {
+                            String status = t.getStatus();
+                            if (!"PRINTED".equalsIgnoreCase(status) && !"STANDBY".equalsIgnoreCase(status)) {
+                                LogManager.get(StockInActivity.this).log(LogManager.WARNING,
+                                        LogManager.ACTION_SCAN, "Stock In", t.getEpc(),
+                                        "Rejected status=" + status,
+                                        new PrefManager(StockInActivity.this).getUserId());
+                                continue;
+                            }
+                            boolean alreadyIn = false;
+                            for (ItemModel.Item it : scannedItemsList) {
+                                if (t.getEpc() != null && t.getEpc().equalsIgnoreCase(it.getEpcTag())) {
+                                    alreadyIn = true; break;
+                                }
+                            }
+                            if (!alreadyIn) {
+                                addItemToList(new ItemModel.Item(t.getEpc(), t.getItemId(), t.getItemName(), 1));
+                                new Thread(() -> db.appDao().insertStockInScan(
+                                        buildEntity(t.getEpc(), t.getItemId(), t.getItemName(), true))).start();
+                                added++;
+                            }
+                        }
+                        if (added > 0) playScanFeedback(0);
+                    }
+                    @Override
+                    public void onFailure(Call<List<TagModel.TagResponse>> call, Throwable t) {
+                        inFlightEpcs.removeAll(newEpcs);
+                        setProcessing(false);
+                        for (String epc : newEpcs)
+                            addItemToList(new ItemModel.Item(epc, "", "Pending...", 1));
+                    }
+                });
+    }
+
     private void enqueueScan(String scannedData) {
         final String cleanData = scannedData.trim().replace("\r", "").replace("\n", "");
         if (cleanData.isEmpty()) return;
@@ -649,8 +733,16 @@ public class StockInActivity extends ScannerActivity
                     if (t == null) {
                         notFound.add(code);
                     } else {
-                        resolved.add(new String[]{ code, t.getItemId(), t.getItemName() });
-                        db.appDao().insertStockInScan(buildEntity(code, t.getItemId(), t.getItemName(), true));
+                        String status = t.getStatus();
+                        if (!"PRINTED".equalsIgnoreCase(status) && !"STANDBY".equalsIgnoreCase(status)) {
+                            LogManager.get(StockInActivity.this).log(LogManager.WARNING,
+                                    LogManager.ACTION_SCAN, "Stock In", code,
+                                    "Rejected status=" + status, userId);
+                            notFound.add(code);
+                        } else {
+                            resolved.add(new String[]{ code, t.getItemId(), t.getItemName() });
+                            db.appDao().insertStockInScan(buildEntity(code, t.getItemId(), t.getItemName(), true));
+                        }
                     }
                 }
 
@@ -922,10 +1014,12 @@ public class StockInActivity extends ScannerActivity
 
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
+        List<String> epcs = new ArrayList<>();
         for (RFIDData data : event.getRFIDData()) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII());
-            if (!epc.isEmpty()) handler.post(() -> enqueueScan(epc));
+            if (!epc.isEmpty()) epcs.add(epc.toUpperCase());
         }
+        if (!epcs.isEmpty()) handler.post(() -> processRfidBatch(epcs));
     }
 
     @Override
