@@ -802,7 +802,9 @@ public class StockTakingActivity extends ScannerActivity
 
         EditText etItemId = dialog.findViewById(R.id.etManualItemId);
         EditText etRemark = dialog.findViewById(R.id.etManualRemark);
-        EditText etNewTagId = dialog.findViewById(R.id.etNewTagId);
+        // Kita panggil Spinner-nya di sini
+        Spinner spinnerNewTagId = dialog.findViewById(R.id.spinnerNewTagId);
+
         String displayItem;
         if (item.itemCode != null && !item.itemCode.isEmpty()) displayItem = item.itemCode;
         else if (item.itemName != null && !item.itemName.isEmpty()) displayItem = item.itemName;
@@ -810,21 +812,78 @@ public class StockTakingActivity extends ScannerActivity
         etItemId.setText(displayItem);
         etItemId.setEnabled(false);
 
+        // Bikin list untuk nampung data TagId dan map untuk nyimpen DTO aslinya
+        List<String> spinnerTagIds = new ArrayList<>();
+        List<StockTakingModel.AvailableTag> filteredTags = new ArrayList<>();
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, spinnerTagIds);
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerNewTagId.setAdapter(spinnerAdapter);
+
+        // Hit API untuk narik tag yang available
+        if (isNetworkConnected()) {
+            showLoading();
+            api.getAvailableTags(token, sttId).enqueue(new Callback<List<StockTakingModel.AvailableTag>>() {
+                @Override
+                public void onResponse(Call<List<StockTakingModel.AvailableTag>> call, Response<List<StockTakingModel.AvailableTag>> response) {
+                    hideLoading();
+                    if (response.isSuccessful() && response.body() != null) {
+                        for (StockTakingModel.AvailableTag tag : response.body()) {
+                            // Filter tag supaya hanya nampilin tag milik item yang sama
+                            if (tag.itemId != null && tag.itemId.equals(item.itemId)) {
+                                filteredTags.add(tag);
+                                spinnerTagIds.add(tag.tagId); // Nampilin TagId saja sesuai permintaan nomor 11
+                            }
+                        }
+                        spinnerAdapter.notifyDataSetChanged();
+
+                        if (spinnerTagIds.isEmpty()) {
+                            showWarning("Tidak ada tag Standby/Printed untuk item ini.");
+                        }
+                    } else {
+                        showError("Gagal mengambil data tag available.");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<List<StockTakingModel.AvailableTag>> call, Throwable t) {
+                    hideLoading();
+                    showError("Error: " + t.getMessage());
+                }
+            });
+        } else {
+            showWarning("Offline, tidak bisa load tag pengganti.");
+        }
+
         dialog.findViewById(R.id.btnCancelManual).setOnClickListener(v -> dialog.dismiss());
         dialog.findViewById(R.id.btnSaveManual).setOnClickListener(v -> {
-            String newTagIdText = etNewTagId.getText().toString().trim();
-            if (newTagIdText.isEmpty()) {
-                showSagaFeedback(dialogRoot, "New Tag ID cannot be empty", 1);
+            // Pengecekan kalau spinnernya kosong
+            if (spinnerNewTagId.getSelectedItem() == null) {
+                showSagaFeedback(dialogRoot, "Pilih Tag pengganti terlebih dahulu", 1);
                 return;
             }
+
+            // Ambil string TagId yang dipilih
+            String selectedTagId = spinnerNewTagId.getSelectedItem().toString();
             String remarkText = etRemark.getText().toString().trim();
 
-            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, newTagIdText, remarkText);
+            // Cari EpcTag dari tag yang dipilih (kalau BE butuhnya EpcTag, bisa dikirim ini, tapi BE kamu sepertinya nerima NewTagId sebagai string)
+            String selectedEpc = selectedTagId; // Default fallback
+            for (StockTakingModel.AvailableTag tag : filteredTags) {
+                if (tag.tagId.equals(selectedTagId)) {
+                    selectedEpc = tag.epcTag; // Simpen Epc untuk di-log atau disimpan di DB lokal kalau perlu
+                    break;
+                }
+            }
+
+            // Jalankan logika save ke lokal dan API
+            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, selectedTagId, remarkText); // Note: kita kirim selectedTagId ke BE
+
             if (isNetworkConnected()) {
                 String userId = new PrefManager(StockTakingActivity.this).getUserId();
-                String manualReqJson = "{\"sttId\":\"" + sttId + "\",\"itemId\":\"" + item.itemId + "\",\"newTagId\":\"" + newTagIdText + "\",\"remark\":\"" + remarkText + "\"}";
+                String manualReqJson = "{\"sttId\":\"" + sttId + "\",\"itemId\":\"" + item.itemId + "\",\"newTagId\":\"" + selectedTagId + "\",\"remark\":\"" + remarkText + "\"}";
+
                 api.manualAddStockTaking(token,
-                                new StockTakingModel.ManualAddReq(sttId, item.itemId, newTagIdText, remarkText))
+                                new StockTakingModel.ManualAddReq(sttId, item.itemId, selectedTagId, remarkText))
                         .enqueue(new Callback<GeneralResponse>() {
                             @Override
                             public void onResponse(Call<GeneralResponse> c, Response<GeneralResponse> r) {

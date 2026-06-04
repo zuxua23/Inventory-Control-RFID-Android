@@ -81,7 +81,11 @@ public interface ApiService {
     // ── Stock Taking ──────────────────────────────────────────────
     @GET("api/stock-taking/active")
     Call<StockTakingModel.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);
-
+    @GET("api/stock-taking/available-tags/{sttId}")
+    Call<List<StockTakingModel.AvailableTag>> getAvailableTags(
+            @Header("Authorization") String token,
+            @Path("sttId") String sttId
+    );
     @GET("api/stock-taking/tags/{sttId}")
     Call<List<StockTakingModel.SessionItem>> getSessionTags(@Header("Authorization") String token,
                                                             @Path("sttId") String sttId);

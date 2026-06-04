@@ -75,4 +75,11 @@ public class StockTakingModel {
         public transient String state = "PENDING";
         public transient String manualRemark = "";
     }
+    public static class AvailableTag {
+        public String tagId;
+        public String epcTag;
+        public String itemId;
+        public String itemName;
+        public String status;
+    }
 }
