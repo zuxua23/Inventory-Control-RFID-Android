@@ -6,9 +6,9 @@ import java.util.List;
 public class DOModel {
 
     public static class DODetailResponse {
-        private String itemId;
-        private String itemName;
-        private Integer qtyRequired;
+        @SerializedName("itemId") private String itemId;
+        @SerializedName("itemName") private String itemName;
+        @SerializedName("qtyRequired") private Integer qtyRequired;
         private int qtyScanned = 0;
         @SerializedName("tags") private List<DOTagResponse> tags;
 

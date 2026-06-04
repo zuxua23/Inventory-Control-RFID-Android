@@ -110,6 +110,7 @@ public class StockPrepProductActivity extends ScannerActivity
     private String selectedLocationId = "";
     private String currentDoId = "";
     private String currentDoNo = "";
+    private boolean isDoDetailLoaded = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private ApiService api;
     private String token;
@@ -361,11 +362,10 @@ public class StockPrepProductActivity extends ScannerActivity
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (switchRfid.isChecked()) return; // Hindari bentrok jika sedang RFID
+                if (switchRfid.isChecked()) return;
                 String data = s.toString().trim();
                 if (data.length() < 8) return;
 
-                // Kosongkan EditText dan proses menggunakan buffer
                 resultScan.removeTextChangedListener(this);
                 resultScan.setText("");
                 resultScan.addTextChangedListener(this);
@@ -440,7 +440,13 @@ public class StockPrepProductActivity extends ScannerActivity
     }
 
     private void fetchDoDetail() {
-        if (currentDoId == null || currentDoId.isEmpty() || !isNetworkConnected()) return;
+        if (currentDoId == null || currentDoId.isEmpty()) return;
+
+        if (!isNetworkConnected()) {
+            showWarning("Offline: DO details not loaded. Connect to network and reopen.");
+            return;
+        }
+
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"doId\":\"" + currentDoId + "\"}";
         api.getDoDetailForPrep(token, currentDoId).enqueue(new Callback<DOModel.DOResponse>() {
@@ -456,13 +462,15 @@ public class StockPrepProductActivity extends ScannerActivity
                     requiredQtyMap.clear();
                     itemNameMap.clear();
                     DOModel.DOResponse body = response.body();
-                    if (body.getDetails() != null) {
+                    if (body.getDetails() != null && !body.getDetails().isEmpty()) {
                         for (DOModel.DODetailResponse d : body.getDetails()) {
-                            requiredQtyMap.put(d.getItemId(), d.getQtyRequired());
+                            if (d.getItemId() == null) continue;
+                            requiredQtyMap.put(d.getItemId(), d.getQtyRequired() != null ? d.getQtyRequired() : 0);
                             if (d.getItemName() != null && !d.getItemName().isEmpty()) {
                                 itemNameMap.put(d.getItemId(), d.getItemName());
                             }
                         }
+                        isDoDetailLoaded = true;
                     } else {
                         showWarning("DO has no items");
                     }
@@ -488,6 +496,7 @@ public class StockPrepProductActivity extends ScannerActivity
                 LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                         "Stock Preparation", currentDoId, "Fetch DO detail error: " + t.getMessage(),
                         userId, reqJson, resJson);
+                runOnUiThread(() -> showWarning("Failed to load DO details. Please check network and restart."));
                 handleFailure(t);
             }
         });
@@ -624,14 +633,15 @@ public class StockPrepProductActivity extends ScannerActivity
     }
 
     // =========================================================================
-    // NEW BATCHING / BUFFERING LOGIC
-    // Mencegah aplikasi force close akibat API request / UI Update yang terlalu cepat
+    // BATCHING / BUFFERING LOGIC
     // =========================================================================
 
-    /**
-     * Memasukkan tag ke dalam buffer sementara sebelum di proses bersamaan.
-     */
     private void queueScan(String scannedData) {
+        if (!isDoDetailLoaded) {
+            if (!switchRfid.isChecked()) showWarning("Loading DO details, please wait...");
+            return;
+        }
+
         if (selectedLocationId == null || selectedLocationId.isEmpty()) {
             if (!switchRfid.isChecked()) showWarning("Select location first");
             return;
@@ -639,7 +649,6 @@ public class StockPrepProductActivity extends ScannerActivity
 
         String key = scannedData.toUpperCase();
 
-        // Skip kalau sudah pernah discan sebelumnya
         if (scannedRawSet.contains(key) || scannedEpcSet.contains(key)) {
             if (!switchRfid.isChecked()) { playScanFeedback(1); showWarning("Already scanned"); }
             return;
@@ -648,7 +657,6 @@ public class StockPrepProductActivity extends ScannerActivity
         synchronized (tagBuffer) {
             tagBuffer.add(key);
 
-            // Kalau belum ada hitungan mundur jalan, mulai hitung 500ms
             if (!isProcessingBuffer) {
                 isProcessingBuffer = true;
                 handler.postDelayed(this::processTagBuffer, BATCH_DELAY_MS);
@@ -656,23 +664,18 @@ public class StockPrepProductActivity extends ScannerActivity
         }
     }
 
-    /**
-     * Mengeksekusi semua tag yang terkumpul di dalam buffer.
-     */
     private void processTagBuffer() {
         List<String> batchToProcess = new ArrayList<>();
         synchronized (tagBuffer) {
             batchToProcess.addAll(tagBuffer);
             tagBuffer.clear();
-            isProcessingBuffer = false; // Reset agar scan berikutnya memulai timer baru
+            isProcessingBuffer = false;
         }
 
         if (batchToProcess.isEmpty()) return;
 
         boolean isRfid = switchRfid.isChecked();
 
-        // Snapshot jumlah tag yang sudah confirmed (non-PENDING) per item.
-        // Dipakai oleh validateTagsBulk untuk cek over-quota.
         Map<String, Integer> confirmedCount = new HashMap<>();
         for (TagLocalEntity it : scannedList) {
             String iid = it.getItmId();
@@ -680,9 +683,8 @@ public class StockPrepProductActivity extends ScannerActivity
             confirmedCount.merge(iid, 1, Integer::sum);
         }
 
-        // 1. Update UI dengan "Placeholder" SATU KALI UNTUK SEMUA
         for (String epc : batchToProcess) {
-            scannedRawSet.add(epc); // Cegah tag ini masuk buffer lagi
+            scannedRawSet.add(epc);
             TagLocalEntity placeholder = new TagLocalEntity(
                     epc, epc, "PENDING", "Validating...", currentDoNo, 0);
             scannedList.add(0, placeholder);
@@ -694,24 +696,17 @@ public class StockPrepProductActivity extends ScannerActivity
         rvTags.scrollToPosition(0);
         playScanFeedback(0);
 
-        // 2. Tembak API / Cek DB di Background secara Serial/Bulk
         validateTagsBulk(batchToProcess, isRfid, confirmedCount);
     }
 
-    /**
-     * Memvalidasi list tag di background.
-     * Eksekusi sengaja dibikin sinkron (.execute()) di dalam Background Thread
-     * supaya tidak membanjiri antrean OkHttp di Main Thread.
-     *
-     * @param confirmedCount snapshot dari main thread: jumlah tag confirmed per itemId
-     *                       sebelum batch ini diproses. Dipakai untuk over-quota check.
-     */
     private void validateTagsBulk(List<String> codes, boolean isRfid,
                                   Map<String, Integer> confirmedCount) {
         new Thread(() -> {
             List<TagLocalEntity> successfulTags = new ArrayList<>();
             List<String> failedCodes = new ArrayList<>();
             List<String> overQuotaCodes = new ArrayList<>();
+            // Reason map for user-facing feedback
+            Map<String, String> rejectionReasons = new HashMap<>();
             Map<String, Integer> batchAcceptedCount = new HashMap<>();
             String userId = new PrefManager(this).getUserId();
 
@@ -720,15 +715,24 @@ public class StockPrepProductActivity extends ScannerActivity
                 TagLocalEntity candidate = null;
 
                 if (!isNetworkConnected()) {
-                    // MODE OFFLINE - Cek Room DB Cache
                     TagCacheEntity cached = appDao.getTagCacheByKey(code);
                     if (cached == null) {
+                        rejectionReasons.put(code, "Tag not found in cache");
                         failedCodes.add(code);
                         continue;
                     }
-                    if (!requiredQtyMap.containsKey(cached.itemId) ||
-                            !"ALLOCATED".equals(cached.status) ||
-                            scannedEpcSet.contains(cached.epcTag.toUpperCase())) {
+                    if (!"ALLOCATED".equals(cached.status)) {
+                        rejectionReasons.put(code, "Status: " + cached.status + " (need ALLOCATED)");
+                        failedCodes.add(code);
+                        continue;
+                    }
+                    if (!requiredQtyMap.containsKey(cached.itemId)) {
+                        rejectionReasons.put(code, "Item " + cached.itemId + " not in this DO");
+                        failedCodes.add(code);
+                        continue;
+                    }
+                    if (scannedEpcSet.contains(cached.epcTag.toUpperCase())) {
+                        rejectionReasons.put(code, "Already scanned");
                         failedCodes.add(code);
                         continue;
                     }
@@ -737,18 +741,17 @@ public class StockPrepProductActivity extends ScannerActivity
                             cached.epcTag, cached.tagId, cached.itemId,
                             cached.itemName, currentDoNo, 0);
                 } else {
-                    // MODE ONLINE - Tembak API berurutan (Serial Background)
                     try {
                         Response<TagModel.TagInfoDto> response = api.getTagInfo(token, code, isRfid ? "RFID" : "QR").execute();
                         if (!response.isSuccessful() || response.body() == null) {
+                            rejectionReasons.put(code, "Tag not found (HTTP " + response.code() + ")");
                             failedCodes.add(code);
                             continue;
                         }
                         TagModel.TagInfoDto info = response.body();
 
-                        // Simpan cache ke DB
                         TagCacheEntity cache = new TagCacheEntity();
-                        cache.epcTag = info.getEpcTag();
+                        cache.epcTag = info.getEpcTag() != null ? info.getEpcTag() : code;
                         cache.tagId = info.getTagId();
                         cache.itemId = info.getItemId();
                         cache.itemName = info.getItemName();
@@ -756,24 +759,43 @@ public class StockPrepProductActivity extends ScannerActivity
                         cache.cachedAt = System.currentTimeMillis();
                         appDao.insertTagCache(cache);
 
-                        if (!requiredQtyMap.containsKey(info.getItemId()) ||
-                                !"ALLOCATED".equals(info.getStatus()) ||
-                                scannedEpcSet.contains(info.getEpcTag().toUpperCase())) {
+                        if (!"ALLOCATED".equals(info.getStatus())) {
+                            String reason = "Status: " + info.getStatus() + " (need ALLOCATED)";
+                            rejectionReasons.put(code, reason);
+                            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
+                                    "Stock Preparation", code,
+                                    "Tag rejected - " + reason, userId);
+                            failedCodes.add(code);
+                            continue;
+                        }
+                        if (!requiredQtyMap.containsKey(info.getItemId())) {
+                            String reason = "Item " + info.getItemId() + " not in this DO";
+                            rejectionReasons.put(code, reason);
+                            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
+                                    "Stock Preparation", code,
+                                    "Tag rejected - " + reason, userId);
+                            failedCodes.add(code);
+                            continue;
+                        }
+                        if (scannedEpcSet.contains(info.getEpcTag() != null
+                                ? info.getEpcTag().toUpperCase() : code)) {
+                            rejectionReasons.put(code, "Already scanned");
                             failedCodes.add(code);
                             continue;
                         }
                         itemId = info.getItemId();
                         candidate = new TagLocalEntity(
-                                info.getEpcTag(), info.getTagId(), info.getItemId(),
+                                info.getEpcTag() != null ? info.getEpcTag() : code,
+                                info.getTagId(), info.getItemId(),
                                 info.getItemName(), currentDoNo, 0);
                     } catch (Exception e) {
                         LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN, "Stock Preparation", code, "Tag API error: " + e.getMessage(), userId);
+                        rejectionReasons.put(code, "Network error");
                         failedCodes.add(code);
                         continue;
                     }
                 }
 
-                // Over-quota check
                 int already = confirmedCount.getOrDefault(itemId, 0);
                 int acceptedInBatch = batchAcceptedCount.getOrDefault(itemId, 0);
                 int required = requiredQtyMap.getOrDefault(itemId, 0);
@@ -787,11 +809,9 @@ public class StockPrepProductActivity extends ScannerActivity
                 appDao.insertScannedTag(candidate);
             }
 
-            // 3. Setelah semua tag dalam batch selesai divalidasi, kembalikan UI ke MainThread
             runOnUiThread(() -> {
                 boolean isUiModified = false;
 
-                // Update Placeholder yang BERHASIL
                 for (TagLocalEntity real : successfulTags) {
                     for (int i = 0; i < scannedList.size(); i++) {
                         TagLocalEntity item = scannedList.get(i);
@@ -804,7 +824,6 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                 }
 
-                // Hapus Placeholder yang GAGAL/INVALID (termasuk over-quota)
                 List<String> toRemove = new ArrayList<>(failedCodes);
                 toRemove.addAll(overQuotaCodes);
                 for (String code : toRemove) {
@@ -820,7 +839,6 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                 }
 
-                // Refresh Recyclerview satu kali saja
                 if (isUiModified) {
                     buildSumProductList();
                     tvScanned.setText("Scanned : " + scanCount);
@@ -832,6 +850,25 @@ public class StockPrepProductActivity extends ScannerActivity
                     playScanFeedback(2);
                     showWarning(overQuotaCodes.size() + " tag(s) exceed DO quota");
                 }
+
+                // Show rejection reason for non-RFID (one tag at a time)
+                if (!failedCodes.isEmpty() && !switchRfid.isChecked()) {
+                    playScanFeedback(2);
+                    String reason = rejectionReasons.get(failedCodes.get(0));
+                    showWarning(reason != null ? reason : "Tag rejected");
+                } else if (!failedCodes.isEmpty() && switchRfid.isChecked()) {
+                    // For RFID bulk: count tags rejected due to wrong status vs not in DO
+                    long wrongStatus = failedCodes.stream()
+                            .filter(c -> rejectionReasons.containsKey(c) && rejectionReasons.get(c).startsWith("Status:"))
+                            .count();
+                    long notInDo = failedCodes.stream()
+                            .filter(c -> rejectionReasons.containsKey(c) && rejectionReasons.get(c).startsWith("Item"))
+                            .count();
+                    if (notInDo > 0)
+                        showWarning(notInDo + " tag(s) not in this DO's item list");
+                    else if (wrongStatus > 0)
+                        showWarning(wrongStatus + " tag(s) have wrong status (need ALLOCATED)");
+                }
             });
 
         }).start();
@@ -842,7 +879,6 @@ public class StockPrepProductActivity extends ScannerActivity
         for (RFIDData data : event.getRFIDData()) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII());
             if (!epc.isEmpty()) {
-                // Jangan pake handler.post lagi di sini, langsung masukkan ke antrean
                 queueScan(epc);
             }
         }
@@ -853,7 +889,6 @@ public class StockPrepProductActivity extends ScannerActivity
         List<BarcodeData> dataList = event.getBarcodeData();
         if (!dataList.isEmpty()) {
             String barcode = new String(dataList.get(0).getData());
-            // Gunakan metode queue agar satu pintu
             queueScan(barcode);
         }
     }
