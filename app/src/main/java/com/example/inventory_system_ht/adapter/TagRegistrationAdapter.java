@@ -45,7 +45,7 @@ public class TagRegistrationAdapter extends RecyclerView.Adapter<TagRegistration
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         TagLocalEntity item = list.get(position);
-        holder.tvTagId.setText(item.getEpcTag());
+        holder.tvTagId.setText(item.getTagId());
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onItemClick(item);
         });

@@ -230,7 +230,7 @@ public class TagRegistrationActivity extends ScannerActivity
             }
         }
         if (!isNetworkConnected()) {
-            addTagToList(data);
+            addTagToList(data, data);
             return;
         }
         String token = "Bearer " + new PrefManager(this).getToken();
@@ -242,7 +242,8 @@ public class TagRegistrationActivity extends ScannerActivity
                         if (response.isSuccessful() && response.body() != null) {
                             String status = response.body().getStatus();
                             if ("PRINTED".equalsIgnoreCase(status) || "OUT".equalsIgnoreCase(status)) {
-                                addTagToList(data);
+                                String realTagId = response.body().getTagId();
+                                addTagToList(data, realTagId != null ? realTagId : data);
                             } else {
                                 playScanFeedback(2);
                                 showWarning("Tag tidak bisa diregistrasi (status: " + status + ")");
@@ -255,14 +256,14 @@ public class TagRegistrationActivity extends ScannerActivity
                     }
                     @Override
                     public void onFailure(Call<TagModel.TagResponse> call, Throwable t) {
-                        addTagToList(data);
+                        addTagToList(data, data);
                     }
                 });
     }
 
-    private void addTagToList(String data) {
+    private void addTagToList(String epc, String tagId) {
         TagLocalEntity newTag = new TagLocalEntity(
-                data, data, "TAG", "Scanned Item", "STAGING", 0);
+                epc, tagId, "TAG", "Scanned Item", "STAGING", 0);
         registeredTagList.add(0, newTag);
         adapter.setLastScannedPosition(0);
         adapter.notifyItemInserted(0);
