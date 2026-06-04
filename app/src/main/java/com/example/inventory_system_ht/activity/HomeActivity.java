@@ -54,18 +54,6 @@ public class HomeActivity extends ScannerActivity {
             return insets;
         });
 
-        MaterialCardView cardFabLog = findViewById(R.id.cardFabLog);
-        ViewCompat.setOnApplyWindowInsetsListener(cardFabLog, (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-            int dp16 = (int)(16 * getResources().getDisplayMetrics().density);
-            params.bottomMargin = bars.bottom + dp16;
-            params.rightMargin = dp16;
-            v.setLayoutParams(params);
-            return insets;
-        });
-
-
         prefManager = new PrefManager(this);
         if (!prefManager.isSessionValid()) {
             redirectToLogin();
@@ -84,6 +72,7 @@ public class HomeActivity extends ScannerActivity {
                 startActivity(i);
             });
         }
+
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Home", "", "Opened Home", prefManager.getUserId());
     }
 
@@ -139,6 +128,25 @@ public class HomeActivity extends ScannerActivity {
         btnTagRegis.setOnClickListener(menuClickListener);
         btnSearchItem.setOnClickListener(menuClickListener);
         btnSettingRfid.setOnClickListener(menuClickListener);
+
+        View fabSpacer = findViewById(R.id.fabSpacer);
+        MaterialCardView cardFabLog = findViewById(R.id.cardFabLog);
+
+        ViewCompat.setOnApplyWindowInsetsListener(cardFabLog, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            int dp16 = (int)(16 * getResources().getDisplayMetrics().density);
+            params.bottomMargin = bars.bottom + dp16;
+            params.rightMargin = dp16;
+            v.setLayoutParams(params);
+
+            int fabHeight = (int)(40 * getResources().getDisplayMetrics().density);
+            int spacerHeight = fabHeight + bars.bottom + dp16 * 2;
+            fabSpacer.getLayoutParams().height = spacerHeight;
+            fabSpacer.requestLayout();
+
+            return insets;
+        });
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
