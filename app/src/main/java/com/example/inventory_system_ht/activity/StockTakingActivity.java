@@ -73,7 +73,7 @@ public class StockTakingActivity extends ScannerActivity
     private CardView btnSave, btnRefresh;
     private EditText resultScan;
     private RecyclerView rvTags;
-    private TextView tvRemark, tvLocation, tvQty, tvSyncStatus;
+    private TextView tvRemark, tvLocation, tvQty;
     private Spinner spinnerPower;
     private FloatingActionButton fabScanCamera;
     private ApiService api;
@@ -185,7 +185,6 @@ public class StockTakingActivity extends ScannerActivity
         tvRemark = findViewById(R.id.tvRemark);
         tvLocation = findViewById(R.id.tvLocation);
         tvQty = findViewById(R.id.tvQty);
-        tvSyncStatus = findViewById(R.id.tvSyncStatus);
         spinnerPower = findViewById(R.id.spinnerPower);
         fabScanCamera = findViewById(R.id.fabScanCamera);
 
@@ -371,7 +370,6 @@ public class StockTakingActivity extends ScannerActivity
                 applyQueueStateToSessionItems();
                 adapter.notifyDataSetChanged();
                 updateInfo();
-                updateSyncStatus();
             }
 
             @Override
@@ -436,7 +434,6 @@ public class StockTakingActivity extends ScannerActivity
                 adapter.notifyDataSetChanged();
                 applyQueueStateToSessionItems();
                 updateInfo();
-                updateSyncStatus();
             });
         }).start();
     }
@@ -487,7 +484,6 @@ public class StockTakingActivity extends ScannerActivity
 
         saveToQueue(item.epcTag, "FOUND", null, null, null);
         if (isNetworkConnected()) syncSingleScan(item.epcTag);
-        else updateSyncStatus();
     }
 
     private void saveToQueue(String epc, String action, String itemId, String newTagId, String remarkText) {
@@ -502,7 +498,6 @@ public class StockTakingActivity extends ScannerActivity
             e.isSynced = false;
             e.createdAt = System.currentTimeMillis();
             db.appDao().insertScanQueue(e);
-            handler.post(this::updateSyncStatus);
         }).start();
     }
 
@@ -520,7 +515,6 @@ public class StockTakingActivity extends ScannerActivity
                                     userId, reqJson, resJson);
                             new Thread(() -> {
                                 db.appDao().markSyncedByEpc(sttId, epc);
-                                handler.post(StockTakingActivity.this::updateSyncStatus);
                             }).start();
                         } else {
                             LogManager.get(StockTakingActivity.this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
@@ -555,7 +549,6 @@ public class StockTakingActivity extends ScannerActivity
                                 new StockTakingModel.BulkScanReq(sttId, foundEpcs)).execute();
                         if (res.isSuccessful()) {
                             db.appDao().markBulkSynced(sttId, foundEpcs);
-                            handler.post(this::updateSyncStatus);
                         }
                     } catch (Exception e) {
                         LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
@@ -582,7 +575,6 @@ public class StockTakingActivity extends ScannerActivity
                         handler.post(() -> showWarning("Sync failed, will retry"));
                     }
                 }
-                handler.post(this::updateSyncStatus);
             } finally {
                 isSyncing.set(false);
             }
@@ -705,22 +697,6 @@ public class StockTakingActivity extends ScannerActivity
                 locations.add(item.location);
         }
         tvLocation.setText("Location: " + (locations.isEmpty() ? "-" : String.join(", ", locations)));
-    }
-
-    private void updateSyncStatus() {
-        new Thread(() -> {
-            int unsynced = db.appDao().countUnsyncedBySttId(sttId);
-            handler.post(() -> {
-                if (tvSyncStatus == null) return;
-                if (unsynced == 0) {
-                    tvSyncStatus.setText("✅ All synced");
-                    tvSyncStatus.setTextColor(Color.parseColor("#01C470"));
-                } else {
-                    tvSyncStatus.setText("⚠️ " + unsynced + " pending sync");
-                    tvSyncStatus.setTextColor(Color.parseColor("#FFA000"));
-                }
-            });
-        }).start();
     }
 
     private int countScanned() {
@@ -905,7 +881,6 @@ public class StockTakingActivity extends ScannerActivity
                                                 break;
                                             }
                                         }
-                                        handler.post(StockTakingActivity.this::updateSyncStatus);
                                     }).start();
                                 }
                             }
