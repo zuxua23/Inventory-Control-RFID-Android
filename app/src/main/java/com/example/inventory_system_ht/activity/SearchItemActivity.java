@@ -418,7 +418,8 @@ public class SearchItemActivity extends ScannerActivity
                 String name = item.getItemName() != null ? item.getItemName().toLowerCase() : "";
                 String tid = item.getTagId() != null ? item.getTagId().toLowerCase() : "";
                 String location = item.getLocation() != null ? item.getLocation().toLowerCase() : "";
-                if (!name.contains(query) && !tid.contains(query) && !location.contains(query))
+                String epc = item.getEpcTag() != null ? item.getEpcTag().toLowerCase() : "";
+                if (!name.contains(query) && !tid.contains(query) && !location.contains(query) && !epc.contains(query))
                     continue;
             }
             filteredList.add(item);
