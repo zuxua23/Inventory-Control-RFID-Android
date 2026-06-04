@@ -53,6 +53,10 @@ public interface ApiService {
     Call<GeneralResponse> stockIn(@Header("Authorization") String token,
                                   @Body StockInRequest request);
 
+    @POST("api/stockin/bulk-info")
+    Call<List<TagModel.TagResponse>> getStockInTagsInfoBulk(@Header("Authorization") String token,
+                                                            @Body TagModel.BulkInfoReq request);
+
     // ── Stock Preparation ─────────────────────────────────────────
     @POST("api/preparation/bulk")
     Call<GeneralResponse> submitStockPrep(@Header("Authorization") String token,

@@ -671,6 +671,15 @@ public class StockPrepProductActivity extends ScannerActivity
 
         boolean isRfid = switchRfid.isChecked();
 
+        // Snapshot jumlah tag yang sudah confirmed (non-PENDING) per item.
+        // Dipakai oleh validateTagsBulk untuk cek over-quota.
+        Map<String, Integer> confirmedCount = new HashMap<>();
+        for (TagLocalEntity it : scannedList) {
+            String iid = it.getItmId();
+            if (iid == null || "PENDING".equals(iid)) continue;
+            confirmedCount.merge(iid, 1, Integer::sum);
+        }
+
         // 1. Update UI dengan "Placeholder" SATU KALI UNTUK SEMUA
         for (String epc : batchToProcess) {
             scannedRawSet.add(epc); // Cegah tag ini masuk buffer lagi
@@ -686,78 +695,96 @@ public class StockPrepProductActivity extends ScannerActivity
         playScanFeedback(0);
 
         // 2. Tembak API / Cek DB di Background secara Serial/Bulk
-        validateTagsBulk(batchToProcess, isRfid);
+        validateTagsBulk(batchToProcess, isRfid, confirmedCount);
     }
 
     /**
      * Memvalidasi list tag di background.
      * Eksekusi sengaja dibikin sinkron (.execute()) di dalam Background Thread
      * supaya tidak membanjiri antrean OkHttp di Main Thread.
+     *
+     * @param confirmedCount snapshot dari main thread: jumlah tag confirmed per itemId
+     *                       sebelum batch ini diproses. Dipakai untuk over-quota check.
      */
-    private void validateTagsBulk(List<String> codes, boolean isRfid) {
+    private void validateTagsBulk(List<String> codes, boolean isRfid,
+                                  Map<String, Integer> confirmedCount) {
         new Thread(() -> {
             List<TagLocalEntity> successfulTags = new ArrayList<>();
             List<String> failedCodes = new ArrayList<>();
+            List<String> overQuotaCodes = new ArrayList<>();
+            Map<String, Integer> batchAcceptedCount = new HashMap<>();
             String userId = new PrefManager(this).getUserId();
 
             for (String code : codes) {
+                String itemId = null;
+                TagLocalEntity candidate = null;
+
                 if (!isNetworkConnected()) {
                     // MODE OFFLINE - Cek Room DB Cache
                     TagCacheEntity cached = appDao.getTagCacheByKey(code);
-                    if (cached != null) {
-                        if (!requiredQtyMap.containsKey(cached.itemId) ||
-                                !"ALLOCATED".equals(cached.status) ||
-                                scannedEpcSet.contains(cached.epcTag.toUpperCase())) {
-                            failedCodes.add(code);
-                        } else {
-                            TagLocalEntity real = new TagLocalEntity(
-                                    cached.epcTag, cached.tagId, cached.itemId,
-                                    cached.itemName, currentDoNo, 0);
-                            successfulTags.add(real);
-                            appDao.insertScannedTag(real);
-                        }
-                    } else {
-                        // Kalau offline dan cache gak ada, kita anggap gagal sementara waktu
-                        // atau bisa dimodifikasi sesuai logic perusahaan
+                    if (cached == null) {
                         failedCodes.add(code);
+                        continue;
                     }
+                    if (!requiredQtyMap.containsKey(cached.itemId) ||
+                            !"ALLOCATED".equals(cached.status) ||
+                            scannedEpcSet.contains(cached.epcTag.toUpperCase())) {
+                        failedCodes.add(code);
+                        continue;
+                    }
+                    itemId = cached.itemId;
+                    candidate = new TagLocalEntity(
+                            cached.epcTag, cached.tagId, cached.itemId,
+                            cached.itemName, currentDoNo, 0);
                 } else {
                     // MODE ONLINE - Tembak API berurutan (Serial Background)
                     try {
                         Response<TagModel.TagInfoDto> response = api.getTagInfo(token, code, isRfid ? "RFID" : "QR").execute();
-                        if (response.isSuccessful() && response.body() != null) {
-                            TagModel.TagInfoDto info = response.body();
-
-                            // Simpan cache ke DB
-                            TagCacheEntity cache = new TagCacheEntity();
-                            cache.epcTag = info.getEpcTag();
-                            cache.tagId = info.getTagId();
-                            cache.itemId = info.getItemId();
-                            cache.itemName = info.getItemName();
-                            cache.status = info.getStatus();
-                            cache.cachedAt = System.currentTimeMillis();
-                            appDao.insertTagCache(cache);
-
-                            // Validasi Rule DO
-                            if (!requiredQtyMap.containsKey(info.getItemId()) ||
-                                    !"ALLOCATED".equals(info.getStatus()) ||
-                                    scannedEpcSet.contains(info.getEpcTag().toUpperCase())) {
-                                failedCodes.add(code);
-                            } else {
-                                TagLocalEntity real = new TagLocalEntity(
-                                        info.getEpcTag(), info.getTagId(), info.getItemId(),
-                                        info.getItemName(), currentDoNo, 0);
-                                successfulTags.add(real);
-                                appDao.insertScannedTag(real);
-                            }
-                        } else {
+                        if (!response.isSuccessful() || response.body() == null) {
                             failedCodes.add(code);
+                            continue;
                         }
+                        TagModel.TagInfoDto info = response.body();
+
+                        // Simpan cache ke DB
+                        TagCacheEntity cache = new TagCacheEntity();
+                        cache.epcTag = info.getEpcTag();
+                        cache.tagId = info.getTagId();
+                        cache.itemId = info.getItemId();
+                        cache.itemName = info.getItemName();
+                        cache.status = info.getStatus();
+                        cache.cachedAt = System.currentTimeMillis();
+                        appDao.insertTagCache(cache);
+
+                        if (!requiredQtyMap.containsKey(info.getItemId()) ||
+                                !"ALLOCATED".equals(info.getStatus()) ||
+                                scannedEpcSet.contains(info.getEpcTag().toUpperCase())) {
+                            failedCodes.add(code);
+                            continue;
+                        }
+                        itemId = info.getItemId();
+                        candidate = new TagLocalEntity(
+                                info.getEpcTag(), info.getTagId(), info.getItemId(),
+                                info.getItemName(), currentDoNo, 0);
                     } catch (Exception e) {
                         LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN, "Stock Preparation", code, "Tag API error: " + e.getMessage(), userId);
                         failedCodes.add(code);
+                        continue;
                     }
                 }
+
+                // Over-quota check
+                int already = confirmedCount.getOrDefault(itemId, 0);
+                int acceptedInBatch = batchAcceptedCount.getOrDefault(itemId, 0);
+                int required = requiredQtyMap.getOrDefault(itemId, 0);
+                if (already + acceptedInBatch + 1 > required) {
+                    overQuotaCodes.add(code);
+                    continue;
+                }
+
+                batchAcceptedCount.merge(itemId, 1, Integer::sum);
+                successfulTags.add(candidate);
+                appDao.insertScannedTag(candidate);
             }
 
             // 3. Setelah semua tag dalam batch selesai divalidasi, kembalikan UI ke MainThread
@@ -777,13 +804,15 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                 }
 
-                // Hapus Placeholder yang GAGAL/INVALID
-                for (String failedCode : failedCodes) {
+                // Hapus Placeholder yang GAGAL/INVALID (termasuk over-quota)
+                List<String> toRemove = new ArrayList<>(failedCodes);
+                toRemove.addAll(overQuotaCodes);
+                for (String code : toRemove) {
                     for (int i = 0; i < scannedList.size(); i++) {
                         TagLocalEntity item = scannedList.get(i);
-                        if ("PENDING".equals(item.getItmId()) && item.getEpcTag().equalsIgnoreCase(failedCode)) {
+                        if ("PENDING".equals(item.getItmId()) && item.getEpcTag().equalsIgnoreCase(code)) {
                             scannedList.remove(i);
-                            scannedRawSet.remove(failedCode.toUpperCase());
+                            scannedRawSet.remove(code.toUpperCase());
                             scanCount--;
                             isUiModified = true;
                             break;
@@ -797,6 +826,11 @@ public class StockPrepProductActivity extends ScannerActivity
                     tvScanned.setText("Scanned : " + scanCount);
                     adapter.notifyDataSetChanged();
                     if (sumAdapter != null) sumAdapter.updateData(sumProductList);
+                }
+
+                if (!overQuotaCodes.isEmpty()) {
+                    playScanFeedback(2);
+                    showWarning(overQuotaCodes.size() + " tag(s) exceed DO quota");
                 }
             });
 

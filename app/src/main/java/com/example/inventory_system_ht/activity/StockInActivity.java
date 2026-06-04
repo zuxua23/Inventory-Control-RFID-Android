@@ -64,9 +64,12 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -100,6 +103,11 @@ public class StockInActivity extends ScannerActivity
     private boolean isListProductTab = true;
     private String selectedLocation = "";
     private String selectedLocationId = "";
+
+    // ── Batch / buffer logic for scan ─────────────────────────────
+    private final Set<String> tagBuffer = new HashSet<>();
+    private boolean isProcessingBuffer = false;
+    private static final int BATCH_DELAY_MS = 300;
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -524,72 +532,186 @@ public class StockInActivity extends ScannerActivity
 
     private void enqueueScan(String scannedData) {
         final String cleanData = scannedData.trim().replace("\r", "").replace("\n", "");
+        if (cleanData.isEmpty()) return;
+        final String key = cleanData.toUpperCase();
 
-        for (ItemModel.Item t : scannedItemsList) {
-            if (t.getEpcTag().equalsIgnoreCase(cleanData)) {
-                playScanFeedback(1);
-                showWarning("Already scanned");
-                LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock In", cleanData, "Duplicate scan: " + cleanData, new PrefManager(this).getUserId());
-                return;
-            }
-        }
-        if (selectedLocationId.isEmpty()) { showWarning("Select location first"); return; }
-
-        addItemToList(new ItemModel.Item(cleanData, "", "Loading...", 1));
-        playScanFeedback(0);
-        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock In", cleanData, "Scanned: " + cleanData, new PrefManager(this).getUserId());
-
-        if (!isNetworkConnected()) {
-            new Thread(() -> db.appDao().insertStockInScan(
-                    buildEntity(cleanData, "", "Loading...", false))).start();
-            showWarning("Saved offline");
+        if (selectedLocationId.isEmpty()) {
+            if (!switchRfid.isChecked()) showWarning("Select location first");
             return;
         }
 
-        String token = "Bearer " + new PrefManager(this).getToken();
-        String type = switchRfid.isChecked() ? "RFID" : "QR";
-        String userId = new PrefManager(this).getUserId();
-        String tagReqJson = "{\"code\":\"" + cleanData + "\",\"type\":\"" + type + "\"}";
+        for (ItemModel.Item t : scannedItemsList) {
+            if (t.getEpcTag().equalsIgnoreCase(key)) {
+                if (!switchRfid.isChecked()) {
+                    playScanFeedback(1);
+                    showWarning("Already scanned");
+                }
+                LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
+                        "Stock In", cleanData, "Duplicate scan: " + cleanData,
+                        new PrefManager(this).getUserId());
+                return;
+            }
+        }
 
-        ApiClient.getClient(this).create(ApiService.class)
-                .getTagByCode(token, cleanData, type)
-                .enqueue(new Callback<TagModel.TagResponse>() {
-                    @Override
-                    public void onResponse(Call<TagModel.TagResponse> call, Response<TagModel.TagResponse> response) {
-                        String tagResJson = "{\"http_code\":" + response.code() + ",\"found\":"
-                                + (response.body() != null) + "}";
-                        if (response.isSuccessful() && response.body() != null) {
-                            TagModel.TagResponse tag = response.body();
-                            LogManager.get(StockInActivity.this).log(LogManager.INFO, LogManager.ACTION_SCAN,
-                                    "Stock In", cleanData, "Tag resolved: " + tag.getItemName(),
-                                    userId, tagReqJson, tagResJson);
-                            new Thread(() -> db.appDao().insertStockInScan(
-                                    buildEntity(cleanData, null, tag.getItemName(), true))).start();
-                            runOnUiThread(() -> updateItemInList(cleanData, null, tag.getItemName()));
-                        } else {
-                            runOnUiThread(() -> {
-                                removeItemFromList(cleanData);
-                                playScanFeedback(2);
-                                String errMsg = ErrorParser.getMessage(response);
-                                LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
-                                        "Stock In", cleanData, "Scan rejected: " + errMsg,
-                                        userId, tagReqJson, tagResJson);
-                                showError(errMsg);
-                            });
+        synchronized (tagBuffer) {
+            if (!tagBuffer.add(key)) return;
+            if (!isProcessingBuffer) {
+                isProcessingBuffer = true;
+                handler.postDelayed(this::processBuffer, BATCH_DELAY_MS);
+            }
+        }
+    }
+
+    private void processBuffer() {
+        List<String> batch;
+        synchronized (tagBuffer) {
+            batch = new ArrayList<>(tagBuffer);
+            tagBuffer.clear();
+            isProcessingBuffer = false;
+        }
+        if (batch.isEmpty()) return;
+
+        for (String code : batch) {
+            scannedItemsList.add(0, new ItemModel.Item(code, "", "Loading...", 1));
+            totalScanCount++;
+        }
+        if (adapter != null) adapter.setLastScannedPosition(0);
+        if (isListProductTab) {
+            adapter.notifyDataSetChanged();
+        } else {
+            buildSumProductList();
+            if (sumAdapter != null) sumAdapter.updateData(sumProductList);
+        }
+        rvTags.scrollToPosition(0);
+        updateScanCount();
+        updateEmptyState();
+        playScanFeedback(0);
+
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN,
+                "Stock In", String.valueOf(batch.size()),
+                "Buffered scan batch: " + batch.size(),
+                new PrefManager(this).getUserId());
+
+        validateBulkInBackground(batch);
+    }
+
+    private void validateBulkInBackground(List<String> codes) {
+        final boolean isRfid = switchRfid.isChecked();
+        final String scannerType = isRfid ? "RFID" : "QR";
+        final String token = "Bearer " + new PrefManager(this).getToken();
+        final String userId = new PrefManager(this).getUserId();
+
+        if (!isNetworkConnected()) {
+            new Thread(() -> {
+                for (String code : codes)
+                    db.appDao().insertStockInScan(buildEntity(code, "", "Loading...", false));
+            }).start();
+            showWarning("Saved offline (" + codes.size() + ")");
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                Response<List<TagModel.TagResponse>> res = ApiClient.getClient(StockInActivity.this)
+                        .create(ApiService.class)
+                        .getStockInTagsInfoBulk(token,
+                                new TagModel.BulkInfoReq(codes, scannerType))
+                        .execute();
+
+                String resJson = "{\"http_code\":" + res.code()
+                        + ",\"count\":" + (res.body() != null ? res.body().size() : 0) + "}";
+
+                if (!res.isSuccessful() || res.body() == null) {
+                    String err = ErrorParser.getMessage(res);
+                    LogManager.get(StockInActivity.this).log(LogManager.WARNING,
+                            LogManager.ACTION_SCAN, "Stock In",
+                            String.valueOf(codes.size()),
+                            "Bulk validate failed: HTTP " + res.code(),
+                            userId, "{\"count\":" + codes.size() + "}", resJson);
+                    runOnUiThread(() -> {
+                        for (String code : codes) removeItemFromList(code);
+                        playScanFeedback(2);
+                        showError(err);
+                    });
+                    return;
+                }
+
+                Map<String, TagModel.TagResponse> tagMap = new HashMap<>();
+                for (TagModel.TagResponse t : res.body()) {
+                    String matchKey = isRfid ? t.getEpc() : t.getTagId();
+                    if (matchKey != null) tagMap.put(matchKey.toUpperCase(), t);
+                }
+
+                List<String> notFound = new ArrayList<>();
+                List<String[]> resolved = new ArrayList<>(); // [code, itemName]
+                for (String code : codes) {
+                    TagModel.TagResponse t = tagMap.get(code.toUpperCase());
+                    if (t == null) {
+                        notFound.add(code);
+                    } else {
+                        resolved.add(new String[]{ code, t.getItemName() });
+                        db.appDao().insertStockInScan(buildEntity(code, null, t.getItemName(), true));
+                    }
+                }
+
+                LogManager.get(StockInActivity.this).log(LogManager.INFO,
+                        LogManager.ACTION_SCAN, "Stock In",
+                        String.valueOf(codes.size()),
+                        "Bulk validate ok: resolved=" + resolved.size()
+                                + ", notFound=" + notFound.size(),
+                        userId, "{\"count\":" + codes.size() + "}", resJson);
+
+                runOnUiThread(() -> {
+                    boolean changed = false;
+                    for (String[] r : resolved) {
+                        for (int i = 0; i < scannedItemsList.size(); i++) {
+                            ItemModel.Item it = scannedItemsList.get(i);
+                            if (it.getEpcTag().equalsIgnoreCase(r[0])) {
+                                it.setItemId(null);
+                                it.setItemName(r[1]);
+                                changed = true;
+                                break;
+                            }
                         }
                     }
-
-                    @Override
-                    public void onFailure(Call<TagModel.TagResponse> call, Throwable t) {
-                        String tagResJson = "{\"error\":\"" + t.getMessage() + "\"}";
-                        LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
-                                "Stock In", cleanData, "Tag resolve error: " + t.getMessage(),
-                                userId, tagReqJson, tagResJson);
-                        new Thread(() -> db.appDao().insertStockInScan(
-                                buildEntity(cleanData, "", "Loading...", false))).start();
-                        handler.post(() -> showWarning("Saved offline"));
+                    for (String code : notFound) {
+                        for (int i = 0; i < scannedItemsList.size(); i++) {
+                            if (scannedItemsList.get(i).getEpcTag().equalsIgnoreCase(code)) {
+                                scannedItemsList.remove(i);
+                                totalScanCount--;
+                                changed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (changed) {
+                        if (isListProductTab) {
+                            adapter.notifyDataSetChanged();
+                        } else {
+                            buildSumProductList();
+                            if (sumAdapter != null) sumAdapter.updateData(sumProductList);
+                        }
+                        updateScanCount();
+                        updateEmptyState();
+                    }
+                    if (!notFound.isEmpty()) {
+                        playScanFeedback(2);
+                        showError(notFound.size() + " tag(s) not found");
                     }
                 });
+            } catch (Exception e) {
+                LogManager.get(StockInActivity.this).log(LogManager.ERROR,
+                        LogManager.ACTION_SCAN, "Stock In",
+                        String.valueOf(codes.size()),
+                        "Bulk validate error: " + e.getMessage(),
+                        userId);
+                new Thread(() -> {
+                    for (String code : codes)
+                        db.appDao().insertStockInScan(buildEntity(code, "", "Loading...", false));
+                }).start();
+                runOnUiThread(() -> showWarning("Sync error, saved offline"));
+            }
+        }).start();
     }
 
     private StockInScanEntity buildEntity(String epc, String itemId, String itemName, boolean resolved) {
