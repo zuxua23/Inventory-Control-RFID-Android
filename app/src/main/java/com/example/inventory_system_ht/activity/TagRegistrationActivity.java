@@ -41,6 +41,7 @@ import com.example.inventory_system_ht.entity.PendingSubmitEntity;
 import com.example.inventory_system_ht.entity.TagLocalEntity;
 import com.example.inventory_system_ht.model.AuthModel;
 import com.example.inventory_system_ht.model.GeneralResponse;
+import com.example.inventory_system_ht.model.TagModel;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
@@ -228,6 +229,38 @@ public class TagRegistrationActivity extends ScannerActivity
                 return;
             }
         }
+        if (!isNetworkConnected()) {
+            addTagToList(data);
+            return;
+        }
+        String token = "Bearer " + new PrefManager(this).getToken();
+        ApiClient.getClient(this).create(ApiService.class)
+                .getTagByCode(token, data, "RFID")
+                .enqueue(new retrofit2.Callback<TagModel.TagResponse>() {
+                    @Override
+                    public void onResponse(Call<TagModel.TagResponse> call, retrofit2.Response<TagModel.TagResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            String status = response.body().getStatus();
+                            if ("PRINTED".equalsIgnoreCase(status) || "OUT".equalsIgnoreCase(status)) {
+                                addTagToList(data);
+                            } else {
+                                playScanFeedback(2);
+                                showWarning("Tag tidak bisa diregistrasi (status: " + status + ")");
+                                LogManager.get(TagRegistrationActivity.this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Tag Registration", data, "Rejected status=" + status, new PrefManager(TagRegistrationActivity.this).getUserId());
+                            }
+                        } else {
+                            playScanFeedback(2);
+                            showWarning("Tag tidak ditemukan: " + data);
+                        }
+                    }
+                    @Override
+                    public void onFailure(Call<TagModel.TagResponse> call, Throwable t) {
+                        addTagToList(data);
+                    }
+                });
+    }
+
+    private void addTagToList(String data) {
         TagLocalEntity newTag = new TagLocalEntity(
                 data, data, "TAG", "Scanned Item", "STAGING", 0);
         registeredTagList.add(0, newTag);
