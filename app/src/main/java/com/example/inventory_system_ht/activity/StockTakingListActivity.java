@@ -210,7 +210,16 @@ public class StockTakingListActivity extends ScannerActivity {
                     ? "ID: " + s.sttId.substring(0, Math.min(8, s.sttId.length()))
                     + (s.sttId.length() > 8 ? "..." : "")
                     : "-");
-            h.tvLocation.setText(s.location != null ? s.location : "-");
+
+            String locText;
+            if (s.locations != null && !s.locations.isEmpty()) {
+                locText = String.join(", ", s.locations);
+            } else if (s.location != null && !s.location.isEmpty()) {
+                locText = s.location;
+            } else {
+                locText = "-";
+            }
+            h.tvLocation.setText(locText);
             h.itemView.setOnClickListener(v -> click.onClick(s));
         }
 

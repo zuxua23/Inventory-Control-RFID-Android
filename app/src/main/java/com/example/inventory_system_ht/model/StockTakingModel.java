@@ -61,12 +61,15 @@ public class StockTakingModel {
         @SerializedName("remark") public String remark;
         @SerializedName("status") public String status;
         @SerializedName("location") public String location;
+        @SerializedName("locationIds") public List<String> locationIds;
+        @SerializedName("locations") public List<String> locations;
     }
 
     public static class SessionItem implements Serializable {
         @SerializedName("tagId") public String tagId;
         @SerializedName("epcTag") public String epcTag;
         @SerializedName("itemId") public String itemId;
+        @SerializedName("itemCode") public String itemCode;
         @SerializedName("itemName") public String itemName;
         @SerializedName("location") public String location;
         public transient String state = "PENDING";

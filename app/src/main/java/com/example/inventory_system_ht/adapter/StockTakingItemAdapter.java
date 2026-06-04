@@ -48,8 +48,16 @@ public class StockTakingItemAdapter
     public void onBindViewHolder(@NonNull VH h, int position) {
         StockTakingModel.SessionItem item = list.get(position);
 
-        String displayName = (item.itemName != null && !item.itemName.isEmpty())
-                ? item.itemName : (item.itemId != null ? item.itemId : "-");
+        String displayName;
+        if (item.itemName != null && !item.itemName.isEmpty()) {
+            displayName = item.itemName;
+        } else if (item.itemCode != null && !item.itemCode.isEmpty()) {
+            displayName = item.itemCode;
+        } else if (item.itemId != null) {
+            displayName = item.itemId;
+        } else {
+            displayName = "-";
+        }
         h.tvItemName.setText(displayName);
 
         String state = item.state != null ? item.state : "PENDING";

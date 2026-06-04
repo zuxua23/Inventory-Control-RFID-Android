@@ -324,10 +324,91 @@ public class StockTakingActivity extends ScannerActivity
             );
 
     private void loadSessionTagsFromServer() {
-        loadSessionTagsFromCache();
-        LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_READ,
-                "Stock Taking", sttId,
-                "loadSessionTagsFromServer: endpoint deprecated, using cache only", "");
+        showLoading();
+        String userId = new PrefManager(this).getUserId();
+        String reqJson = "{\"sttId\":\"" + sttId + "\"}";
+        api.getSessionTags(token, sttId).enqueue(new Callback<List<StockTakingModel.SessionItem>>() {
+            @Override
+            public void onResponse(Call<List<StockTakingModel.SessionItem>> call,
+                                   Response<List<StockTakingModel.SessionItem>> res) {
+                hideLoading();
+                String resJson = "{\"http_code\":" + res.code()
+                        + ",\"count\":" + (res.body() != null ? res.body().size() : 0) + "}";
+                if (!res.isSuccessful() || res.body() == null) {
+                    LogManager.get(StockTakingActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
+                            "Stock Taking", sttId,
+                            "Load session tags failed: HTTP " + res.code(),
+                            userId, reqJson, resJson);
+                    loadSessionTagsFromCache();
+                    return;
+                }
+
+                List<StockTakingModel.SessionItem> fromServer = res.body();
+                LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
+                        "Stock Taking", sttId,
+                        "Load session tags success: " + fromServer.size(),
+                        userId, reqJson, resJson);
+
+                View tvEmpty = findViewById(R.id.tvEmpty);
+
+                sessionItems.clear();
+                epcIndexMap.clear();
+                for (StockTakingModel.SessionItem item : fromServer) {
+                    if (item == null) continue;
+                    item.state = "PENDING";
+                    if (item.epcTag != null && !item.epcTag.isEmpty())
+                        epcIndexMap.put(item.epcTag.toUpperCase(), sessionItems.size());
+                    sessionItems.add(item);
+                }
+
+                if (sessionItems.isEmpty()) {
+                    if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
+                } else {
+                    if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
+                }
+
+                saveSessionItemsToCache(new ArrayList<>(sessionItems));
+                applyQueueStateToSessionItems();
+                adapter.notifyDataSetChanged();
+                updateInfo();
+                updateSyncStatus();
+            }
+
+            @Override
+            public void onFailure(Call<List<StockTakingModel.SessionItem>> call, Throwable t) {
+                hideLoading();
+                String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
+                LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
+                        "Stock Taking", sttId,
+                        "Load session tags error: " + t.getMessage(),
+                        userId, reqJson, resJson);
+                showWarning("Failed to load tags, using cache");
+                loadSessionTagsFromCache();
+            }
+        });
+    }
+
+    private void applyQueueStateToSessionItems() {
+        new Thread(() -> {
+            List<ScanQueueEntity> queue = db.appDao().getUnsyncedBySttId(sttId);
+            if (queue.isEmpty()) return;
+            handler.post(() -> {
+                for (ScanQueueEntity q : queue) {
+                    if (q.epcTag == null) continue;
+                    Integer idx = epcIndexMap.get(q.epcTag.toUpperCase());
+                    if (idx == null) continue;
+                    StockTakingModel.SessionItem item = sessionItems.get(idx);
+                    if ("FOUND".equals(q.action)) {
+                        item.state = "FOUND";
+                    } else if ("MANUAL_ADD".equals(q.action)) {
+                        item.state = "MANUAL_ADD";
+                        item.manualRemark = q.remark != null ? q.remark : "";
+                    }
+                }
+                adapter.notifyDataSetChanged();
+                updateInfo();
+            });
+        }).start();
     }
 
     private void loadSessionTagsFromCache() {
@@ -353,6 +434,7 @@ public class StockTakingActivity extends ScannerActivity
                     sessionItems.add(item);
                 }
                 adapter.notifyDataSetChanged();
+                applyQueueStateToSessionItems();
                 updateInfo();
                 updateSyncStatus();
             });
@@ -459,48 +541,51 @@ public class StockTakingActivity extends ScannerActivity
         if (!isNetworkConnected()) return;
         if (!isSyncing.compareAndSet(false, true)) return;
         new Thread(() -> {
-            List<ScanQueueEntity> pending = db.appDao().getUnsyncedBySttId(sttId);
-            if (pending.isEmpty()) return;
+            try {
+                List<ScanQueueEntity> pending = db.appDao().getUnsyncedBySttId(sttId);
+                if (pending.isEmpty()) return;
 
-            List<String> foundEpcs = new ArrayList<>();
-            for (ScanQueueEntity q : pending)
-                if ("FOUND".equals(q.action)) foundEpcs.add(q.epcTag);
+                List<String> foundEpcs = new ArrayList<>();
+                for (ScanQueueEntity q : pending)
+                    if ("FOUND".equals(q.action)) foundEpcs.add(q.epcTag);
 
-            if (!foundEpcs.isEmpty()) {
-                try {
-                    Response<GeneralResponse> res = api.bulkScanStockTaking(token,
-                            new StockTakingModel.BulkScanReq(sttId, foundEpcs)).execute();
-                    if (res.isSuccessful()) {
-                        db.appDao().markBulkSynced(sttId, foundEpcs);
-                        handler.post(this::updateSyncStatus);
+                if (!foundEpcs.isEmpty()) {
+                    try {
+                        Response<GeneralResponse> res = api.bulkScanStockTaking(token,
+                                new StockTakingModel.BulkScanReq(sttId, foundEpcs)).execute();
+                        if (res.isSuccessful()) {
+                            db.appDao().markBulkSynced(sttId, foundEpcs);
+                            handler.post(this::updateSyncStatus);
+                        }
+                    } catch (Exception e) {
+                        LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                                "Stock Taking", sttId, "Bulk sync error: " + e.getMessage(),
+                                new PrefManager(StockTakingActivity.this).getUserId());
+                        handler.post(() -> showWarning("Sync failed, will retry"));
                     }
-                } catch (Exception e) {
-                    LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
-                            "Stock Taking", sttId, "Bulk sync error: " + e.getMessage(),
-                            new PrefManager(StockTakingActivity.this).getUserId());
-                    handler.post(() -> showWarning("Sync failed, will retry"));
                 }
-            }
 
-            for (ScanQueueEntity q : pending) {
-                if ("FOUND".equals(q.action)) continue;
-                try {
-                    if ("REMOVE".equals(q.action))
-                        api.removeStockTaking(token,
-                                new StockTakingModel.RemoveReq(q.sttId, q.epcTag)).execute();
-                    else if ("MANUAL_ADD".equals(q.action))
-                        api.manualAddStockTaking(token,
-                                new StockTakingModel.ManualAddReq(q.sttId, q.itemId, q.newTagId, q.remark)).execute();
-                    db.appDao().markSyncedById(q.id);
-                } catch (Exception e) {
-                    LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
-                            "Stock Taking", q.epcTag, "Queue sync error: " + e.getMessage(),
-                            new PrefManager(StockTakingActivity.this).getUserId());
-                    handler.post(() -> showWarning("Sync failed, will retry"));
+                for (ScanQueueEntity q : pending) {
+                    if ("FOUND".equals(q.action)) continue;
+                    try {
+                        if ("REMOVE".equals(q.action))
+                            api.removeStockTaking(token,
+                                    new StockTakingModel.RemoveReq(q.sttId, q.epcTag)).execute();
+                        else if ("MANUAL_ADD".equals(q.action))
+                            api.manualAddStockTaking(token,
+                                    new StockTakingModel.ManualAddReq(q.sttId, q.itemId, q.newTagId, q.remark)).execute();
+                        db.appDao().markSyncedById(q.id);
+                    } catch (Exception e) {
+                        LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
+                                "Stock Taking", q.epcTag, "Queue sync error: " + e.getMessage(),
+                                new PrefManager(StockTakingActivity.this).getUserId());
+                        handler.post(() -> showWarning("Sync failed, will retry"));
+                    }
                 }
+                handler.post(this::updateSyncStatus);
+            } finally {
+                isSyncing.set(false);
             }
-            handler.post(this::updateSyncStatus);
-            isSyncing.set(false);
         }).start();
     }
 
@@ -718,7 +803,11 @@ public class StockTakingActivity extends ScannerActivity
         EditText etItemId = dialog.findViewById(R.id.etManualItemId);
         EditText etRemark = dialog.findViewById(R.id.etManualRemark);
         EditText etNewTagId = dialog.findViewById(R.id.etNewTagId);
-        etItemId.setText(item.itemId != null ? item.itemId : "");
+        String displayItem;
+        if (item.itemCode != null && !item.itemCode.isEmpty()) displayItem = item.itemCode;
+        else if (item.itemName != null && !item.itemName.isEmpty()) displayItem = item.itemName;
+        else displayItem = item.itemId != null ? item.itemId : "";
+        etItemId.setText(displayItem);
         etItemId.setEnabled(false);
 
         dialog.findViewById(R.id.btnCancelManual).setOnClickListener(v -> dialog.dismiss());
