@@ -83,6 +83,7 @@ public class StockTakingActivity extends ScannerActivity
     private String remark = "";
     private final List<StockTakingModel.SessionItem> sessionItems = new ArrayList<>();
     private final Map<String, Integer> epcIndexMap = new HashMap<>();
+    private final Map<String, Integer> tagIdIndexMap = new HashMap<>();
     private final List<String> powerList = Arrays.asList(
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
     );
@@ -90,6 +91,8 @@ public class StockTakingActivity extends ScannerActivity
     private StockTakingItemAdapter adapter;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final AtomicBoolean isSyncing = new AtomicBoolean(false);
+    private int scannedCount = 0;
+    private String cachedLocationsString = "-";
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -276,7 +279,7 @@ public class StockTakingActivity extends ScannerActivity
         btnSave.setOnClickListener(v -> {
             if (sttId.isEmpty()) { showWarning("No active session"); return; }
             showCustomConfirmDialog(
-                    "Submit scan results? Scanned: " + countScanned(),
+                    "Submit scan results? Scanned: " + scannedCount,
                     this::handleSave);
         });
 
@@ -352,13 +355,19 @@ public class StockTakingActivity extends ScannerActivity
 
                 sessionItems.clear();
                 epcIndexMap.clear();
+                tagIdIndexMap.clear();
+                scannedCount = 0;
                 for (StockTakingModel.SessionItem item : fromServer) {
                     if (item == null) continue;
                     item.state = "PENDING";
+                    int pos = sessionItems.size();
                     if (item.epcTag != null && !item.epcTag.isEmpty())
-                        epcIndexMap.put(item.epcTag.toUpperCase(), sessionItems.size());
+                        epcIndexMap.put(item.epcTag.toUpperCase(), pos);
+                    if (item.tagId != null && !item.tagId.isEmpty())
+                        tagIdIndexMap.put(item.tagId.toUpperCase(), pos);
                     sessionItems.add(item);
                 }
+                rebuildLocationsCache();
 
                 if (sessionItems.isEmpty()) {
                     if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
@@ -394,14 +403,18 @@ public class StockTakingActivity extends ScannerActivity
                 for (ScanQueueEntity q : queue) {
                     if (q.epcTag == null) continue;
                     Integer idx = epcIndexMap.get(q.epcTag.toUpperCase());
+                    if (idx == null) idx = tagIdIndexMap.get(q.epcTag.toUpperCase());
                     if (idx == null) continue;
                     StockTakingModel.SessionItem item = sessionItems.get(idx);
+                    boolean wasScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
                     if ("FOUND".equals(q.action)) {
                         item.state = "FOUND";
                     } else if ("MANUAL_ADD".equals(q.action)) {
                         item.state = "MANUAL_ADD";
                         item.manualRemark = q.remark != null ? q.remark : "";
                     }
+                    boolean isNowScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
+                    if (!wasScanned && isNowScanned) scannedCount++;
                 }
                 adapter.notifyDataSetChanged();
                 updateInfo();
@@ -425,12 +438,18 @@ public class StockTakingActivity extends ScannerActivity
                 if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
                 sessionItems.clear();
                 epcIndexMap.clear();
+                tagIdIndexMap.clear();
+                scannedCount = 0;
                 for (SessionItemEntity e : cached) {
                     StockTakingModel.SessionItem item = e.toSessionItem();
+                    int pos = sessionItems.size();
                     if (item.epcTag != null)
-                        epcIndexMap.put(item.epcTag.toUpperCase(), sessionItems.size());
+                        epcIndexMap.put(item.epcTag.toUpperCase(), pos);
+                    if (item.tagId != null && !item.tagId.isEmpty())
+                        tagIdIndexMap.put(item.tagId.toUpperCase(), pos);
                     sessionItems.add(item);
                 }
+                rebuildLocationsCache();
                 adapter.notifyDataSetChanged();
                 applyQueueStateToSessionItems();
                 updateInfo();
@@ -451,14 +470,9 @@ public class StockTakingActivity extends ScannerActivity
     private void processScan(String epcOrBarcode) {
         if (sttId.isEmpty()) { playScanFeedback(2); return; }
 
-        Integer idx = epcIndexMap.get(epcOrBarcode.toUpperCase());
-        if (idx == null) {
-            for (int i = 0; i < sessionItems.size(); i++) {
-                if (epcOrBarcode.equalsIgnoreCase(sessionItems.get(i).tagId)) {
-                    idx = i; break;
-                }
-            }
-        }
+        String key = epcOrBarcode.toUpperCase();
+        Integer idx = epcIndexMap.get(key);
+        if (idx == null) idx = tagIdIndexMap.get(key);
 
         if (idx == null) {
             if (!switchRfid.isChecked()) playScanFeedback(2);
@@ -475,6 +489,7 @@ public class StockTakingActivity extends ScannerActivity
         }
 
         item.state = "FOUND";
+        scannedCount++;
         hasChanges = true;
         adapter.notifyItemChanged(idx);
         rvTags.scrollToPosition(idx);
@@ -484,6 +499,15 @@ public class StockTakingActivity extends ScannerActivity
 
         saveToQueue(item.epcTag, "FOUND", null, null, null);
         if (isNetworkConnected()) syncSingleScan(item.epcTag);
+    }
+
+    private void rebuildLocationsCache() {
+        List<String> locations = new ArrayList<>();
+        for (StockTakingModel.SessionItem item : sessionItems) {
+            if (item.location != null && !item.location.isEmpty() && !locations.contains(item.location))
+                locations.add(item.location);
+        }
+        cachedLocationsString = locations.isEmpty() ? "-" : String.join(", ", locations);
     }
 
     private void saveToQueue(String epc, String action, String itemId, String newTagId, String remarkText) {
@@ -688,22 +712,8 @@ public class StockTakingActivity extends ScannerActivity
     }
 
     private void updateInfo() {
-        int scanned = countScanned();
-        tvQty.setText("Qty: " + scanned + "/" + sessionItems.size());
-
-        List<String> locations = new ArrayList<>();
-        for (StockTakingModel.SessionItem item : sessionItems) {
-            if (item.location != null && !item.location.isEmpty() && !locations.contains(item.location))
-                locations.add(item.location);
-        }
-        tvLocation.setText("Location: " + (locations.isEmpty() ? "-" : String.join(", ", locations)));
-    }
-
-    private int countScanned() {
-        int count = 0;
-        for (StockTakingModel.SessionItem item : sessionItems)
-            if ("FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state)) count++;
-        return count;
+        tvQty.setText("Qty: " + scannedCount + "/" + sessionItems.size());
+        tvLocation.setText("Location: " + cachedLocationsString);
     }
 
     private void showAdjustmentDialog(StockTakingModel.SessionItem item, int position) {
@@ -754,8 +764,17 @@ public class StockTakingActivity extends ScannerActivity
                             });
                 }
             }
+            boolean wasScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
+            if (wasScanned) scannedCount--;
             sessionItems.remove(position);
             epcIndexMap.remove(item.epcTag != null ? item.epcTag.toUpperCase() : "");
+            if (item.tagId != null) tagIdIndexMap.remove(item.tagId.toUpperCase());
+            // Rebuild indices for items shifted after removed position
+            for (int i = position; i < sessionItems.size(); i++) {
+                StockTakingModel.SessionItem si = sessionItems.get(i);
+                if (si.epcTag != null) epcIndexMap.put(si.epcTag.toUpperCase(), i);
+                if (si.tagId != null) tagIdIndexMap.put(si.tagId.toUpperCase(), i);
+            }
             adapter.notifyItemRemoved(position);
             adapter.notifyItemRangeChanged(position, sessionItems.size());
             hasChanges = true;
@@ -778,7 +797,6 @@ public class StockTakingActivity extends ScannerActivity
 
         EditText etItemId = dialog.findViewById(R.id.etManualItemId);
         EditText etRemark = dialog.findViewById(R.id.etManualRemark);
-        // Kita panggil Spinner-nya di sini
         Spinner spinnerNewTagId = dialog.findViewById(R.id.spinnerNewTagId);
 
         String displayItem;
@@ -788,14 +806,12 @@ public class StockTakingActivity extends ScannerActivity
         etItemId.setText(displayItem);
         etItemId.setEnabled(false);
 
-        // Bikin list untuk nampung data TagId dan map untuk nyimpen DTO aslinya
         List<String> spinnerTagIds = new ArrayList<>();
         List<StockTakingModel.AvailableTag> filteredTags = new ArrayList<>();
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, spinnerTagIds);
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerNewTagId.setAdapter(spinnerAdapter);
 
-        // Hit API untuk narik tag yang available
         if (isNetworkConnected()) {
             showLoading();
             api.getAvailableTags(token, sttId).enqueue(new Callback<List<StockTakingModel.AvailableTag>>() {
@@ -804,22 +820,17 @@ public class StockTakingActivity extends ScannerActivity
                     hideLoading();
                     if (response.isSuccessful() && response.body() != null) {
                         for (StockTakingModel.AvailableTag tag : response.body()) {
-                            // Filter tag supaya hanya nampilin tag milik item yang sama
                             if (tag.itemId != null && tag.itemId.equals(item.itemId)) {
                                 filteredTags.add(tag);
-                                spinnerTagIds.add(tag.tagId); // Nampilin TagId saja sesuai permintaan nomor 11
+                                spinnerTagIds.add(tag.tagId);
                             }
                         }
                         spinnerAdapter.notifyDataSetChanged();
-
-                        if (spinnerTagIds.isEmpty()) {
-                            showWarning("Tidak ada tag Standby/Printed untuk item ini.");
-                        }
+                        if (spinnerTagIds.isEmpty()) showWarning("Tidak ada tag Standby/Printed untuk item ini.");
                     } else {
                         showError("Gagal mengambil data tag available.");
                     }
                 }
-
                 @Override
                 public void onFailure(Call<List<StockTakingModel.AvailableTag>> call, Throwable t) {
                     hideLoading();
@@ -832,32 +843,18 @@ public class StockTakingActivity extends ScannerActivity
 
         dialog.findViewById(R.id.btnCancelManual).setOnClickListener(v -> dialog.dismiss());
         dialog.findViewById(R.id.btnSaveManual).setOnClickListener(v -> {
-            // Pengecekan kalau spinnernya kosong
             if (spinnerNewTagId.getSelectedItem() == null) {
                 showSagaFeedback(dialogRoot, "Pilih Tag pengganti terlebih dahulu", 1);
                 return;
             }
-
-            // Ambil string TagId yang dipilih
             String selectedTagId = spinnerNewTagId.getSelectedItem().toString();
             String remarkText = etRemark.getText().toString().trim();
 
-            // Cari EpcTag dari tag yang dipilih (kalau BE butuhnya EpcTag, bisa dikirim ini, tapi BE kamu sepertinya nerima NewTagId sebagai string)
-            String selectedEpc = selectedTagId; // Default fallback
-            for (StockTakingModel.AvailableTag tag : filteredTags) {
-                if (tag.tagId.equals(selectedTagId)) {
-                    selectedEpc = tag.epcTag; // Simpen Epc untuk di-log atau disimpan di DB lokal kalau perlu
-                    break;
-                }
-            }
-
-            // Jalankan logika save ke lokal dan API
-            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, selectedTagId, remarkText); // Note: kita kirim selectedTagId ke BE
+            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, selectedTagId, remarkText);
 
             if (isNetworkConnected()) {
                 String userId = new PrefManager(StockTakingActivity.this).getUserId();
                 String manualReqJson = "{\"sttId\":\"" + sttId + "\",\"itemId\":\"" + item.itemId + "\",\"newTagId\":\"" + selectedTagId + "\",\"remark\":\"" + remarkText + "\"}";
-
                 api.manualAddStockTaking(token,
                                 new StockTakingModel.ManualAddReq(sttId, item.itemId, selectedTagId, remarkText))
                         .enqueue(new Callback<GeneralResponse>() {
@@ -893,8 +890,10 @@ public class StockTakingActivity extends ScannerActivity
                             }
                         });
             }
+            boolean wasScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
             item.state = "MANUAL_ADD";
             item.manualRemark = remarkText;
+            if (!wasScanned) scannedCount++;
             hasChanges = true;
             adapter.notifyItemChanged(position);
             updateInfo();
@@ -958,6 +957,7 @@ public class StockTakingActivity extends ScannerActivity
                 () -> {
                     sessionItems.clear();
                     epcIndexMap.clear();
+                    tagIdIndexMap.clear();
                     hasChanges = false;
                     finish();
                 });
@@ -965,9 +965,17 @@ public class StockTakingActivity extends ScannerActivity
 
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
-        for (RFIDData data : event.getRFIDData()) {
+        List<RFIDData> dataList = event.getRFIDData();
+        if (dataList == null || dataList.isEmpty()) return;
+        List<String> epcs = new ArrayList<>(dataList.size());
+        for (RFIDData data : dataList) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII());
-            if (!epc.isEmpty()) handler.post(() -> processScan(epc));
+            if (!epc.isEmpty()) epcs.add(epc);
+        }
+        if (!epcs.isEmpty()) {
+            handler.post(() -> {
+                for (String epc : epcs) processScan(epc);
+            });
         }
     }
 
