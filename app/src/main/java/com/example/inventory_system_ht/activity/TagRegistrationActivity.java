@@ -137,6 +137,7 @@ public class TagRegistrationActivity extends ScannerActivity
         } else {
             boolean ok = RfidBulkHelper.openInventory(scanner, this, this);
             if (!ok) showError("Failed to start RFID");
+            else playScanFeedback(0);
         }
 
         int bat = getHTBatteryLevel();
@@ -251,7 +252,6 @@ public class TagRegistrationActivity extends ScannerActivity
         if (newEpcs.isEmpty()) return;
 
         inFlightEpcs.addAll(newEpcs);
-        processedEpcs.addAll(newEpcs);
         playScanFeedback(0);
 
         if (!isNetworkConnected()) {
@@ -296,6 +296,7 @@ public class TagRegistrationActivity extends ScannerActivity
     }
 
     private void addTagToList(String epc, String tagId) {
+        processedEpcs.add(epc.toUpperCase());
         TagLocalEntity newTag = new TagLocalEntity(
                 epc, tagId, "TAG", "Scanned Item", "STAGING", 0);
         registeredTagList.add(0, newTag);
