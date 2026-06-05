@@ -7,53 +7,28 @@ import java.util.List;
 
 public class StockTakingModel {
 
-    public static class ScanReq {
+    public static class OperatorSubmitReq {
         public String sttId;
+        public List<OperatorSubmitItem> items;
+
+        public OperatorSubmitReq(String sttId, List<OperatorSubmitItem> items) {
+            this.sttId = sttId;
+            this.items = items;
+        }
+    }
+
+    public static class OperatorSubmitItem {
+        public String action;
         public String epc;
-        public ScanReq(String sttId, String epc) { this.sttId = sttId; this.epc = epc; }
-    }
-
-    public static class RemoveReq {
-        public String sttId;
         public String tagId;
-        public RemoveReq(String sttId, String tagId) { this.sttId = sttId; this.tagId = tagId; }
-    }
-
-    public static class ManualAddReq {
-        public String sttId;
         public String itemId;
         public String newTagId;
         public String remark;
-
-        public ManualAddReq(String sttId, String itemId, String newTagId, String remark) {
-            this.sttId = sttId;
-            this.itemId = itemId;
-            this.newTagId = newTagId;
-            this.remark = remark;
-        }
     }
 
     public static class FinalizeReq {
         public String sttId;
         public FinalizeReq(String sttId) { this.sttId = sttId; }
-    }
-
-    public static class BulkScanReq {
-        public String sttId;
-        public List<BulkItem> items;
-        public BulkScanReq(String sttId, List<String> epcs) {
-            this.sttId = sttId;
-            this.items = new ArrayList<>();
-            for (String epc : epcs) {
-                BulkItem item = new BulkItem();
-                item.epc = epc;
-                this.items.add(item);
-            }
-        }
-    }
-
-    public static class BulkItem {
-        public String epc;
     }
 
     public static class ActiveRes implements Serializable {
@@ -75,6 +50,7 @@ public class StockTakingModel {
         public transient String state = "PENDING";
         public transient String manualRemark = "";
     }
+
     public static class AvailableTag {
         public String tagId;
         public String epcTag;
