@@ -13,6 +13,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.example.inventory_system_ht.util.LogManager;
+import com.example.inventory_system_ht.util.ScannerManager;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -36,7 +37,7 @@ public class HomeActivity extends ScannerActivity {
     private PrefManager prefManager;
 
     @Override
-    protected CommScanner getScannerInstance() { return null; }
+    protected CommScanner getScannerInstance() { return ScannerManager.getInstance().getScanner(); }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

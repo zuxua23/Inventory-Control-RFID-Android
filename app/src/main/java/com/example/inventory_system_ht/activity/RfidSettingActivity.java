@@ -19,6 +19,7 @@ import com.densowave.scannersdk.Common.CommScanner;
 import com.example.inventory_system_ht.R;
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.util.RfidSettingsManager;
+import com.example.inventory_system_ht.util.ScannerManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +34,7 @@ public class RfidSettingActivity extends ScannerActivity {
     private final List<String> qList = new ArrayList<>();
 
     @Override
-    protected CommScanner getScannerInstance() { return null; }
+    protected CommScanner getScannerInstance() { return ScannerManager.getInstance().getScanner(); }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
