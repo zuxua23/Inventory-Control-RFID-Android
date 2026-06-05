@@ -137,7 +137,7 @@ public class TagRegistrationActivity extends ScannerActivity
         } else {
             boolean ok = RfidBulkHelper.openInventory(scanner, this, this);
             if (!ok) showError("Failed to start RFID");
-            else playScanFeedback(0);
+            else playScanFeedback(1);
         }
 
         int bat = getHTBatteryLevel();
@@ -271,6 +271,7 @@ public class TagRegistrationActivity extends ScannerActivity
                         if (!response.isSuccessful() || response.body() == null) return;
                         int added = 0;
                         for (TagModel.TagInfoDto info : response.body()) {
+                            if (info.getEpcTag() == null) continue;
                             String status = info.getStatus();
                             if (!"PRINTED".equalsIgnoreCase(status) && !"OUT".equalsIgnoreCase(status)) {
                                 LogManager.get(TagRegistrationActivity.this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Tag Registration", info.getEpcTag(), "Rejected status=" + status, new PrefManager(TagRegistrationActivity.this).getUserId());
@@ -278,7 +279,7 @@ public class TagRegistrationActivity extends ScannerActivity
                             }
                             boolean alreadyIn = false;
                             for (TagLocalEntity t : registeredTagList) {
-                                if (info.getEpcTag() != null && info.getEpcTag().equalsIgnoreCase(t.getEpcTag())) {
+                                if (info.getEpcTag().equalsIgnoreCase(t.getEpcTag())) {
                                     alreadyIn = true; break;
                                 }
                             }
@@ -296,6 +297,7 @@ public class TagRegistrationActivity extends ScannerActivity
     }
 
     private void addTagToList(String epc, String tagId) {
+        if (epc == null) return;
         processedEpcs.add(epc.toUpperCase());
         TagLocalEntity newTag = new TagLocalEntity(
                 epc, tagId, "TAG", "Scanned Item", "STAGING", 0);
