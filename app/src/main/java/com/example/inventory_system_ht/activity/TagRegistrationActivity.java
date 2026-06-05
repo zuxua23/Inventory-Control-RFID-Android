@@ -140,7 +140,10 @@ public class TagRegistrationActivity extends ScannerActivity
         }
 
         int bat = getHTBatteryLevel();
-        if (bat <= 15) showWarning("Battery low: " + bat + "%");
+        if (bat <= 15) {
+            showWarning("Battery low: " + bat + "%");
+            playScanFeedback(2);
+        }
     }
 
     @Override
@@ -243,7 +246,7 @@ public class TagRegistrationActivity extends ScannerActivity
             for (TagLocalEntity t : registeredTagList) {
                 if (epc.equalsIgnoreCase(t.getEpcTag())) { alreadyIn = true; break; }
             }
-            if (!alreadyIn) newEpcs.add(epc);
+            if (!alreadyIn && !newEpcs.contains(epc)) newEpcs.add(epc);
         }
         if (newEpcs.isEmpty()) return;
 
@@ -395,7 +398,10 @@ public class TagRegistrationActivity extends ScannerActivity
         dialog.findViewById(R.id.btnSave).setOnClickListener(v -> {
             dialog.dismiss();
             List<String> ids = new ArrayList<>();
-            for (TagLocalEntity t : registeredTagList) ids.add(t.getEpcTag());
+            for (TagLocalEntity t : registeredTagList) {
+                String id = (t.getTagId() != null && !t.getTagId().isEmpty()) ? t.getTagId() : t.getEpcTag();
+                ids.add(id);
+            }
             hitApiRegisterTags(ids);
         });
         dialog.show();

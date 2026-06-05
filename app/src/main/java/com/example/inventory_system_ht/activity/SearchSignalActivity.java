@@ -249,7 +249,12 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
                         new PrefManager(SearchSignalActivity.this).getUserId());
                 showSuccess("Tag found! Very close.");
                 playScanFeedback(0);
-                stopScanning();
+                // Stop scanning without resetting signal display so user sees the final RSSI
+                isScanning = false;
+                handler.removeCallbacks(noSignalRunnable);
+                CommScanner sc = getScannerInstance();
+                if (sc != null) RfidBulkHelper.closeInventory(sc);
+                setButtonStartState();
             } else if (finalLevel < 7) {
                 tagFoundNotified = false;
             }

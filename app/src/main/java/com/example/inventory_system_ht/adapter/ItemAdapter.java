@@ -46,7 +46,9 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         ItemModel.Item item = itemList.get(position);
         holder.tvEpc.setText("EPC: " + (item.getEpcTag() != null ? item.getEpcTag() : "-"));
         String tagId = item.getTagId();
-        holder.tvTagId.setText("Tag ID: " + (tagId != null && !tagId.isEmpty() ? tagId : "-"));
+        boolean showTagId = tagId != null && !tagId.isEmpty() && !tagId.equalsIgnoreCase(item.getEpcTag());
+        holder.tvTagId.setVisibility(showTagId ? View.VISIBLE : View.GONE);
+        if (showTagId) holder.tvTagId.setText("Tag ID: " + tagId);
         holder.tvProductName.setText(
                 item.getItemName() != null && !item.getItemName().isEmpty()
                         ? item.getItemName()

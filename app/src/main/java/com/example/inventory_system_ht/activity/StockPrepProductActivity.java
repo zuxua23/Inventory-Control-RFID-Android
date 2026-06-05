@@ -705,7 +705,6 @@ public class StockPrepProductActivity extends ScannerActivity
             List<TagLocalEntity> successfulTags = new ArrayList<>();
             List<String> failedCodes = new ArrayList<>();
             List<String> overQuotaCodes = new ArrayList<>();
-            // Reason map for user-facing feedback
             Map<String, String> rejectionReasons = new HashMap<>();
             Map<String, Integer> batchAcceptedCount = new HashMap<>();
             String userId = new PrefManager(this).getUserId();
@@ -851,13 +850,11 @@ public class StockPrepProductActivity extends ScannerActivity
                     showWarning(overQuotaCodes.size() + " tag(s) exceed DO quota");
                 }
 
-                // Show rejection reason for non-RFID (one tag at a time)
                 if (!failedCodes.isEmpty() && !switchRfid.isChecked()) {
                     playScanFeedback(2);
                     String reason = rejectionReasons.get(failedCodes.get(0));
                     showWarning(reason != null ? reason : "Tag rejected");
                 } else if (!failedCodes.isEmpty() && switchRfid.isChecked()) {
-                    // For RFID bulk: count tags rejected due to wrong status vs not in DO
                     long wrongStatus = failedCodes.stream()
                             .filter(c -> rejectionReasons.containsKey(c) && rejectionReasons.get(c).startsWith("Status:"))
                             .count();
@@ -876,12 +873,12 @@ public class StockPrepProductActivity extends ScannerActivity
 
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
+        List<String> epcs = new ArrayList<>();
         for (RFIDData data : event.getRFIDData()) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII());
-            if (!epc.isEmpty()) {
-                queueScan(epc);
-            }
+            if (!epc.isEmpty()) epcs.add(epc.toUpperCase());
         }
+        if (!epcs.isEmpty()) handler.post(() -> { for (String epc : epcs) queueScan(epc); });
     }
 
     @Override
@@ -889,7 +886,7 @@ public class StockPrepProductActivity extends ScannerActivity
         List<BarcodeData> dataList = event.getBarcodeData();
         if (!dataList.isEmpty()) {
             String barcode = new String(dataList.get(0).getData());
-            queueScan(barcode);
+            handler.post(() -> queueScan(barcode));
         }
     }
 
