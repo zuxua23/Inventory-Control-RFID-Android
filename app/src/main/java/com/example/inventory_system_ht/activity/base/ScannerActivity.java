@@ -388,7 +388,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
 
     public void updateReaderBattery(ImageView ivBattery, boolean switchOn) {
         if (ivBattery == null) return;
-        if (!switchOn) { ivBattery.setVisibility(View.GONE); return; }
         updateReaderBattery(ivBattery);
     }
 
