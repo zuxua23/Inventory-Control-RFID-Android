@@ -26,7 +26,6 @@
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:background="@drawable/bg_tint_logout"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
             android:scaleType="centerInside"
             android:src="@drawable/ic_logout"
             android:elevation="2dp"
