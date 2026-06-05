@@ -22,6 +22,17 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
+        android:id="@+id/ivReaderBattery"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:src="@drawable/ic_battery_indicator"
+        android:visibility="gone"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintEnd_toStartOf="@id/btnSetting"
+        app:layout_constraintTop_toTopOf="@id/btnSetting"
+        app:layout_constraintBottom_toBottomOf="@id/btnSetting" />
+
+    <ImageView
         android:id="@+id/ivLogo"
         android:layout_width="64dp"
         android:layout_height="64dp"
