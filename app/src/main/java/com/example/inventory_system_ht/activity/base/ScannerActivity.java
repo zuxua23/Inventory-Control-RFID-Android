@@ -48,7 +48,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
     private Vibrator vibrator;
     private PopupWindow activePowerPopup;
 
-    // ─── FAB Auto-Fade (like iPhone shortcuts) ────────────────────────────────
+    // ─── FAB Auto-Fade (like iPhone shortcuts) ────────────────────────────────────────────
     private static final long FAB_HIDE_DELAY_MS = 5000L;
     private final Handler fabHideHandler = new Handler(Looper.getMainLooper());
     private View[] fabAutoHideViews;
@@ -59,25 +59,44 @@ public abstract class ScannerActivity extends AppCompatActivity {
         for (View v : fabAutoHideViews) v.animate().alpha(0.15f).setDuration(500).start();
     };
 
+    // ─── Reader Battery Auto-Refresh ───────────────────────────────────────────────────────────
+    private static final long BATTERY_REFRESH_INTERVAL_MS = 30_000L;
+    private final Handler batteryHandler = new Handler(Looper.getMainLooper());
+    private final Runnable batteryRunnable = new Runnable() {
+        @Override
+        public void run() {
+            View v = findViewById(R.id.ivReaderBattery);
+            if (v instanceof ImageView) updateReaderBattery((ImageView) v);
+            batteryHandler.postDelayed(this, BATTERY_REFRESH_INTERVAL_MS);
+        }
+    };
+
     protected abstract CommScanner getScannerInstance();
 
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
+    // ─── Lifecycle ──────────────────────────────────────────────────────────────────────────
     @Override
     protected void onResume() {
         super.onResume();
         setupFabsAutoHideIfPresent();
+        // Auto-update battery indicator if present in this activity's layout
+        View v = findViewById(R.id.ivReaderBattery);
+        if (v instanceof ImageView) updateReaderBattery((ImageView) v);
+        batteryHandler.removeCallbacks(batteryRunnable);
+        batteryHandler.postDelayed(batteryRunnable, BATTERY_REFRESH_INTERVAL_MS);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         fabHideHandler.removeCallbacks(fabHideRunnable);
+        batteryHandler.removeCallbacks(batteryRunnable);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         fabHideHandler.removeCallbacksAndMessages(null);
+        batteryHandler.removeCallbacksAndMessages(null);
         if (toneGen != null) {
             toneGen.release();
             toneGen = null;
@@ -90,7 +109,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         return super.dispatchTouchEvent(ev);
     }
 
-    // ─── FAB Auto-Fade helpers ────────────────────────────────────────────────
+    // ─── FAB Auto-Fade helpers ────────────────────────────────────────────────────────
     private void setupFabsAutoHideIfPresent() {
         View logCard = findViewById(R.id.cardFabLog);
         View camCard = findViewById(R.id.cardFabCamera);
@@ -118,7 +137,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         scheduleFabHide();
     }
 
-    // ─── Network ──────────────────────────────────────────────────────────────
+    // ─── Network ────────────────────────────────────────────────────────────────────────────
     public boolean isNetworkConnected() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
@@ -129,7 +148,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         return false;
     }
 
-    // ─── UI Feedback ──────────────────────────────────────────────────────────
+    // ─── UI Feedback ────────────────────────────────────────────────────────────────────────
     private int getTopInset() {
         View decorView = getWindow().getDecorView();
         WindowInsetsCompat insets = androidx.core.view.ViewCompat.getRootWindowInsets(decorView);
@@ -269,7 +288,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         );
     }
 
-    // ─── Loading Dialog ───────────────────────────────────────────────────────
+    // ─── Loading Dialog ───────────────────────────────────────────────────────────────────────
     public void showLoading() {
         if (loadingDialog == null) {
             loadingDialog = new Dialog(this);
@@ -290,7 +309,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         if (loadingDialog != null && loadingDialog.isShowing()) loadingDialog.dismiss();
     }
 
-    // ─── API Error Handling ───────────────────────────────────────────────────
+    // ─── API Error Handling ───────────────────────────────────────────────────────────────
     public void handleApiError(int statusCode) {
         hideLoading();
         if (statusCode == 401) {
@@ -340,7 +359,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         }
     }
 
-    // ─── Scan Feedback ────────────────────────────────────────────────────────
+    // ─── Scan Feedback ───────────────────────────────────────────────────────────────────────
     public void playScanFeedback(int type) {
         if (toneGen == null) toneGen = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
         if (vibrator == null) vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
@@ -365,7 +384,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         }
     }
 
-    // ─── RFID Hardware ────────────────────────────────────────────────────────
+    // ─── RFID Hardware ──────────────────────────────────────────────────────────────────────
     public void updateReaderBattery(ImageView ivBattery) {
         if (ivBattery == null) return;
         CommScanner scanner = getScannerInstance();
@@ -396,7 +415,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         return bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
     }
 
-    // ─── Utility ──────────────────────────────────────────────────────────────
+    // ─── Utility ───────────────────────────────────────────────────────────────────────────
     protected int parsePower(String text, int defaultVal) {
         try { return Integer.parseInt(text.replace(" dBm", "").trim()); }
         catch (NumberFormatException e) { return defaultVal; }
