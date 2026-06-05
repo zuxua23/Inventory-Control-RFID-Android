@@ -649,8 +649,12 @@ public class StockPrepProductActivity extends ScannerActivity
 
         String key = scannedData.toUpperCase();
 
-        if (scannedRawSet.contains(key) || scannedEpcSet.contains(key)) {
-            if (!switchRfid.isChecked()) { playScanFeedback(1); showWarning("Already scanned"); }
+        if (scannedEpcSet.contains(key)) {
+            playScanFeedback(1);
+            if (!switchRfid.isChecked()) showWarning("Already scanned");
+            return;
+        }
+        if (scannedRawSet.contains(key)) {
             return;
         }
 
@@ -720,8 +724,8 @@ public class StockPrepProductActivity extends ScannerActivity
                         failedCodes.add(code);
                         continue;
                     }
-                    if (!"ALLOCATED".equals(cached.status)) {
-                        rejectionReasons.put(code, "Status: " + cached.status + " (need ALLOCATED)");
+                    if (!"RESERVED".equals(cached.status)) {
+                        rejectionReasons.put(code, "Status: " + cached.status + " (need RESERVED)");
                         failedCodes.add(code);
                         continue;
                     }
@@ -741,13 +745,20 @@ public class StockPrepProductActivity extends ScannerActivity
                             cached.itemName, currentDoNo, 0);
                 } else {
                     try {
-                        Response<TagModel.TagInfoDto> response = api.getTagInfo(token, code, isRfid ? "RFID" : "QR").execute();
-                        if (!response.isSuccessful() || response.body() == null) {
-                            rejectionReasons.put(code, "Tag not found (HTTP " + response.code() + ")");
+                        TagModel.BulkInfoReq req = new TagModel.BulkInfoReq(
+                                Arrays.asList(code), isRfid ? "RFID" : "QR");
+                        Response<List<TagModel.TagInfoDto>> response = api.getTagsInfoBulk(token, req).execute();
+
+                        if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {
+                            rejectionReasons.put(code, "Tag not registered in database");
+                            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
+                                    "Stock Preparation", code,
+                                    "Tag rejected - not registered in database", userId);
                             failedCodes.add(code);
                             continue;
                         }
-                        TagModel.TagInfoDto info = response.body();
+
+                        TagModel.TagInfoDto info = response.body().get(0);
 
                         TagCacheEntity cache = new TagCacheEntity();
                         cache.epcTag = info.getEpcTag() != null ? info.getEpcTag() : code;
@@ -758,8 +769,8 @@ public class StockPrepProductActivity extends ScannerActivity
                         cache.cachedAt = System.currentTimeMillis();
                         appDao.insertTagCache(cache);
 
-                        if (!"ALLOCATED".equals(info.getStatus())) {
-                            String reason = "Status: " + info.getStatus() + " (need ALLOCATED)";
+                        if (!"RESERVED".equals(info.getStatus())) {
+                            String reason = "Status: " + info.getStatus() + " (need RESERVED)";
                             rejectionReasons.put(code, reason);
                             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
                                     "Stock Preparation", code,
@@ -855,6 +866,9 @@ public class StockPrepProductActivity extends ScannerActivity
                     String reason = rejectionReasons.get(failedCodes.get(0));
                     showWarning(reason != null ? reason : "Tag rejected");
                 } else if (!failedCodes.isEmpty() && switchRfid.isChecked()) {
+                    long notRegistered = failedCodes.stream()
+                            .filter(c -> rejectionReasons.containsKey(c) && rejectionReasons.get(c).startsWith("Tag not registered"))
+                            .count();
                     long wrongStatus = failedCodes.stream()
                             .filter(c -> rejectionReasons.containsKey(c) && rejectionReasons.get(c).startsWith("Status:"))
                             .count();
@@ -864,7 +878,9 @@ public class StockPrepProductActivity extends ScannerActivity
                     if (notInDo > 0)
                         showWarning(notInDo + " tag(s) not in this DO's item list");
                     else if (wrongStatus > 0)
-                        showWarning(wrongStatus + " tag(s) have wrong status (need ALLOCATED)");
+                        showWarning(wrongStatus + " tag(s) have wrong status (need RESERVED)");
+                    else if (notRegistered > 0)
+                        showWarning(notRegistered + " tag(s) not registered in database");
                 }
             });
 
