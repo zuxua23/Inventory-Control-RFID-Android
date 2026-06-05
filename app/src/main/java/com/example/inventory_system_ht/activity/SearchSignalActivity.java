@@ -27,7 +27,6 @@ import com.example.inventory_system_ht.model.TagModel;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
-import com.example.inventory_system_ht.util.RfidSettingsManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -42,6 +41,28 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     private boolean tagFoundNotified = false;
     private boolean isScanning = false;
     private static final int NO_SIGNAL_TIMEOUT_MS = 8000;
+
+    // ── Bar animation state ──────────────────────────────────────────────────
+    private int currentBarLevel = 0;
+    private int targetBarLevel = 0;
+    private static final int BAR_ANIM_DELAY_MS = 40;
+
+    private final Runnable barAnimRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (currentBarLevel == targetBarLevel) return;
+            if (currentBarLevel < targetBarLevel) {
+                currentBarLevel++;
+                renderBarLevel(currentBarLevel);
+                handler.postDelayed(this, BAR_ANIM_DELAY_MS);
+            } else {
+                currentBarLevel--;
+                renderBarLevel(currentBarLevel);
+                if (currentBarLevel > targetBarLevel)
+                    handler.postDelayed(this, BAR_ANIM_DELAY_MS / 2);
+            }
+        }
+    };
 
     private final Runnable noSignalRunnable = new Runnable() {
         @Override
@@ -137,11 +158,8 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
 
     private void setupListeners() {
         btnToggleScan.setOnClickListener(v -> {
-            if (isScanning) {
-                stopScanning();
-            } else {
-                startScanning();
-            }
+            if (isScanning) stopScanning();
+            else startScanning();
         });
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
     }
@@ -154,9 +172,9 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         }
         isScanning = true;
         tagFoundNotified = false;
-        int power = new RfidSettingsManager(this).getPower();
+        // Gunakan power minimum (4 dBm) agar hanya tag yang sangat dekat yang terdeteksi
         RfidBulkHelper.closeBarcode(scanner);
-        RfidBulkHelper.openInventory(scanner, this, power);
+        RfidBulkHelper.openInventory(scanner, this, 4);
         handler.removeCallbacks(noSignalRunnable);
         handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
         setButtonStopState();
@@ -165,6 +183,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     private void stopScanning() {
         isScanning = false;
         handler.removeCallbacks(noSignalRunnable);
+        handler.removeCallbacks(barAnimRunnable);
         RfidBulkHelper.closeInventory(getScannerInstance());
         tagFoundNotified = false;
         resetSignalDisplay();
@@ -205,9 +224,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
                 handler.post(() -> {
                     playScanFeedback(0);
                     updateSignalBars(rssi);
-                    if (isScanning) {
-                        handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
-                    }
+                    if (isScanning) handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
                 });
             }
         }
@@ -227,46 +244,52 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         else if (rssi > -90) level = 1;
         else level = 0;
 
-        final int finalLevel = level;
-        handler.post(() -> {
-            tvRssiValue.setText(String.format("%.1f dBm", rssi));
-            int activeColor = (finalLevel >= 8)
-                    ? Color.parseColor("#4CAF50")
-                    : Color.parseColor("#03A9F4");
+        tvRssiValue.setText(String.format("%.1f dBm", rssi));
 
-            for (int i = 0; i < containerSignalBars.getChildCount(); i++) {
-                containerSignalBars.getChildAt(i).setBackgroundColor(
-                        i < finalLevel ? activeColor : Color.parseColor("#E0E0E0"));
-            }
+        // Trigger bar animation
+        targetBarLevel = level;
+        handler.removeCallbacks(barAnimRunnable);
+        handler.post(barAnimRunnable);
 
-            if (finalLevel >= 9 && !tagFoundNotified) {
-                tagFoundNotified = true;
-                String itemName = selectedItem != null ? selectedItem.getItemName() : "-";
-                String epcTag = selectedItem != null ? selectedItem.getEpcTag() : "-";
-                LogManager.get(SearchSignalActivity.this).log(LogManager.INFO, LogManager.ACTION_SCAN,
-                        "Search Signal", epcTag,
-                        "Tag very close: " + itemName + " | RSSI: " + String.format("%.1f", rssi) + " dBm",
-                        new PrefManager(SearchSignalActivity.this).getUserId());
-                showSuccess("Tag found! Very close.");
-                playScanFeedback(0);
-                // Stop scanning without resetting signal display so user sees the final RSSI
-                isScanning = false;
-                handler.removeCallbacks(noSignalRunnable);
-                CommScanner sc = getScannerInstance();
-                if (sc != null) RfidBulkHelper.closeInventory(sc);
-                setButtonStartState();
-            } else if (finalLevel < 7) {
-                tagFoundNotified = false;
-            }
-        });
+        if (level >= 9 && !tagFoundNotified) {
+            tagFoundNotified = true;
+            String itemName = selectedItem != null ? selectedItem.getItemName() : "-";
+            String epcTag  = selectedItem != null ? selectedItem.getEpcTag()  : "-";
+            LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN,
+                    "Search Signal", epcTag,
+                    "Tag very close: " + itemName + " | RSSI: " + String.format("%.1f", rssi) + " dBm",
+                    new PrefManager(this).getUserId());
+            showSuccess("Tag found! Very close.");
+            playScanFeedback(0);
+            isScanning = false;
+            handler.removeCallbacks(noSignalRunnable);
+            CommScanner sc = getScannerInstance();
+            if (sc != null) RfidBulkHelper.closeInventory(sc);
+            setButtonStartState();
+        } else if (level < 7) {
+            tagFoundNotified = false;
+        }
+    }
+
+    private void renderBarLevel(int level) {
+        if (containerSignalBars == null) return;
+        int activeColor = (level >= 8)
+                ? Color.parseColor("#4CAF50")
+                : Color.parseColor("#03A9F4");
+        for (int i = 0; i < containerSignalBars.getChildCount(); i++) {
+            containerSignalBars.getChildAt(i).setBackgroundColor(
+                    i < level ? activeColor : Color.parseColor("#E0E0E0"));
+        }
     }
 
     private void resetSignalDisplay() {
+        handler.removeCallbacks(barAnimRunnable);
+        currentBarLevel = 0;
+        targetBarLevel = 0;
         if (tvRssiValue != null) tvRssiValue.setText("-- dBm");
         if (containerSignalBars != null) {
-            for (int i = 0; i < containerSignalBars.getChildCount(); i++) {
+            for (int i = 0; i < containerSignalBars.getChildCount(); i++)
                 containerSignalBars.getChildAt(i).setBackgroundColor(Color.parseColor("#E0E0E0"));
-            }
         }
     }
 }
