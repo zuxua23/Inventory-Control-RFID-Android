@@ -59,7 +59,8 @@ public class StockTakingItemAdapter
             displayName = "-";
         }
         h.tvItemName.setText(displayName);
-        h.tvTagId.setText(item.tagId != null ? item.tagId : "-");
+        h.tvTagId.setText(item.tagId != null && !item.tagId.isEmpty() ? item.tagId : "-");
+        h.tvEpc.setText(item.epcTag != null && !item.epcTag.isEmpty() ? item.epcTag : "-");
 
         String state = item.state != null ? item.state : "PENDING";
 
@@ -96,13 +97,14 @@ public class StockTakingItemAdapter
 
     static class VH extends RecyclerView.ViewHolder {
         CardView card;
-        TextView tvItemName, tvTagId, tvStatus;
+        TextView tvItemName, tvTagId, tvEpc, tvStatus;
 
         VH(@NonNull View itemView) {
             super(itemView);
             card = (CardView) itemView;
             tvItemName = itemView.findViewById(R.id.tvItemName);
             tvTagId = itemView.findViewById(R.id.tvTagId);
+            tvEpc = itemView.findViewById(R.id.tvEpc);
             tvStatus = itemView.findViewById(R.id.tvStatus);
         }
     }

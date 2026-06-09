@@ -3,6 +3,7 @@ package com.example.inventory_system_ht.activity;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -14,6 +15,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -78,7 +80,7 @@ public class StockTakingActivity extends ScannerActivity
     private RecyclerView rvTags;
     private RecyclerView rvScannedTags;
     private TextView tvRemark, tvLocation, tvQty;
-    private TextView btnTabScanResult, btnTabTakingData;
+    private Button btnTabScanResult, btnTabTakingData;
     private View tvEmpty;
     private Spinner spinnerPower;
     private FloatingActionButton fabScanCamera;
@@ -170,9 +172,7 @@ public class StockTakingActivity extends ScannerActivity
         CommScanner scanner = getScannerInstance();
         updateReaderBattery(findViewById(R.id.ivReaderBattery), switchRfid.isChecked());
         if (!switchRfid.isChecked() && scanner != null) RfidBulkHelper.openBarcode(scanner, this);
-
         checkSessionStatus();
-
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");
@@ -264,9 +264,9 @@ public class StockTakingActivity extends ScannerActivity
             rvScannedTags.setVisibility(View.VISIBLE);
             rvTags.setVisibility(View.GONE);
             if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
-            btnTabScanResult.setBackgroundColor(ContextCompat.getColor(this, R.color.blue_theme));
+            btnTabScanResult.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.blue_theme)));
             btnTabScanResult.setTextColor(Color.WHITE);
-            btnTabTakingData.setBackgroundColor(Color.WHITE);
+            btnTabTakingData.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE));
             btnTabTakingData.setTextColor(ContextCompat.getColor(this, R.color.blue_theme));
         } else {
             rvScannedTags.setVisibility(View.GONE);
@@ -274,9 +274,9 @@ public class StockTakingActivity extends ScannerActivity
             if (tvEmpty != null) {
                 tvEmpty.setVisibility(sessionItems.isEmpty() ? View.VISIBLE : View.GONE);
             }
-            btnTabTakingData.setBackgroundColor(ContextCompat.getColor(this, R.color.blue_theme));
+            btnTabTakingData.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.blue_theme)));
             btnTabTakingData.setTextColor(Color.WHITE);
-            btnTabScanResult.setBackgroundColor(Color.WHITE);
+            btnTabScanResult.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE));
             btnTabScanResult.setTextColor(ContextCompat.getColor(this, R.color.blue_theme));
         }
     }
@@ -385,8 +385,7 @@ public class StockTakingActivity extends ScannerActivity
                         + ",\"count\":" + (res.body() != null ? res.body().size() : 0) + "}";
                 if (!res.isSuccessful() || res.body() == null) {
                     LogManager.get(StockTakingActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
-                            "Stock Taking", sttId,
-                            "Load session tags failed: HTTP " + res.code(),
+                            "Stock Taking", sttId, "Load session tags failed: HTTP " + res.code(),
                             userId, reqJson, resJson);
                     loadSessionTagsFromCache();
                     return;
@@ -394,8 +393,7 @@ public class StockTakingActivity extends ScannerActivity
 
                 List<StockTakingModel.SessionItem> fromServer = res.body();
                 LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
-                        "Stock Taking", sttId,
-                        "Load session tags success: " + fromServer.size(),
+                        "Stock Taking", sttId, "Load session tags success: " + fromServer.size(),
                         userId, reqJson, resJson);
 
                 sessionItems.clear();
@@ -434,8 +432,7 @@ public class StockTakingActivity extends ScannerActivity
                 hideLoading();
                 String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                 LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
-                        "Stock Taking", sttId,
-                        "Load session tags error: " + t.getMessage(),
+                        "Stock Taking", sttId, "Load session tags error: " + t.getMessage(),
                         userId, reqJson, resJson);
                 showWarning("Failed to load tags, using cache");
                 loadSessionTagsFromCache();
@@ -448,29 +445,19 @@ public class StockTakingActivity extends ScannerActivity
             List<ScanQueueEntity> queue = db.appDao().getUnsyncedBySttId(sttId);
             if (queue.isEmpty()) return;
             handler.post(() -> {
-                // Rebuild Tab 1 (Scan Result) from FOUND actions in queue
+                // Rebuild Tab 1 (Scan Result) - only EPC from FOUND actions
                 List<StockTakingModel.ScannedTagItem> queuedScans = new ArrayList<>();
                 for (ScanQueueEntity q : queue) {
                     if (q.epcTag == null || !"FOUND".equals(q.action)) continue;
                     String upperEpc = q.epcTag.toUpperCase();
                     if (scannedEpcSet.contains(upperEpc)) continue;
                     scannedEpcSet.add(upperEpc);
-                    String resolvedName = "-";
-                    String resolvedTagId = q.epcTag;
-                    Integer lookupIdx = epcIndexMap.get(upperEpc);
-                    if (lookupIdx == null) lookupIdx = tagIdIndexMap.get(upperEpc);
-                    if (lookupIdx != null) {
-                        StockTakingModel.SessionItem si = sessionItems.get(lookupIdx);
-                        if (si.itemName != null && !si.itemName.isEmpty()) resolvedName = si.itemName;
-                        else if (si.itemCode != null && !si.itemCode.isEmpty()) resolvedName = si.itemCode;
-                        resolvedTagId = si.tagId != null && !si.tagId.isEmpty() ? si.tagId : q.epcTag;
-                    }
-                    queuedScans.add(new StockTakingModel.ScannedTagItem(resolvedTagId, q.epcTag, resolvedName));
+                    queuedScans.add(new StockTakingModel.ScannedTagItem(null, q.epcTag, null));
                 }
                 scannedItems.addAll(queuedScans);
                 scannedAdapter.notifyDataSetChanged();
 
-                // Apply Tab 2 (Taking Data) states from queue
+                // Apply Tab 2 (Taking Data) states
                 for (ScanQueueEntity q : queue) {
                     if (q.epcTag == null) continue;
                     Integer idx = epcIndexMap.get(q.epcTag.toUpperCase());
@@ -496,8 +483,7 @@ public class StockTakingActivity extends ScannerActivity
     private void loadSessionTagsFromCache() {
         showLoading();
         new Thread(() -> {
-            List<SessionItemEntity> cached =
-                    db.appDao().getSessionItemsBySttId(sttId);
+            List<SessionItemEntity> cached = db.appDao().getSessionItemsBySttId(sttId);
             handler.post(() -> {
                 hideLoading();
                 if (cached.isEmpty()) {
@@ -545,20 +531,10 @@ public class StockTakingActivity extends ScannerActivity
 
         String key = epcOrBarcode.toUpperCase();
 
-        // Add to Scan Result list (Tab 1) with EPC-based dedup
+        // Add to Scan Result (Tab 1) - only EPC, dedup by EPC key
         if (!scannedEpcSet.contains(key)) {
             scannedEpcSet.add(key);
-            String resolvedName = "-";
-            String resolvedTagId = epcOrBarcode;
-            Integer lookupIdx = epcIndexMap.get(key);
-            if (lookupIdx == null) lookupIdx = tagIdIndexMap.get(key);
-            if (lookupIdx != null) {
-                StockTakingModel.SessionItem si = sessionItems.get(lookupIdx);
-                if (si.itemName != null && !si.itemName.isEmpty()) resolvedName = si.itemName;
-                else if (si.itemCode != null && !si.itemCode.isEmpty()) resolvedName = si.itemCode;
-                resolvedTagId = si.tagId != null && !si.tagId.isEmpty() ? si.tagId : epcOrBarcode;
-            }
-            scannedItems.add(0, new StockTakingModel.ScannedTagItem(resolvedTagId, epcOrBarcode, resolvedName));
+            scannedItems.add(0, new StockTakingModel.ScannedTagItem(null, epcOrBarcode, null));
             scannedAdapter.notifyItemInserted(0);
             rvScannedTags.scrollToPosition(0);
         }
@@ -568,10 +544,8 @@ public class StockTakingActivity extends ScannerActivity
         if (idx == null) idx = tagIdIndexMap.get(key);
 
         if (idx == null) {
-            if (!switchRfid.isChecked()) {
-                playScanFeedback(2);
-                showWarning("Tag not found: " + epcOrBarcode);
-            }
+            if (!switchRfid.isChecked()) playScanFeedback(2);
+            showWarning("Tag not found: " + epcOrBarcode);
             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Tag not found in session: " + epcOrBarcode, new PrefManager(this).getUserId());
             return;
         }
@@ -587,9 +561,9 @@ public class StockTakingActivity extends ScannerActivity
         scannedCount++;
         hasChanges = true;
         adapter.notifyItemChanged(idx);
-        if (!switchRfid.isChecked()) rvTags.scrollToPosition(idx);
+        rvTags.scrollToPosition(idx);
         updateInfo();
-        if (!switchRfid.isChecked()) playScanFeedback(0);
+        playScanFeedback(0);
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Scanned: " + epcOrBarcode, new PrefManager(this).getUserId());
 
         saveToQueue(item.epcTag, "FOUND", null, null, null);
@@ -646,10 +620,7 @@ public class StockTakingActivity extends ScannerActivity
             }
 
             if (items.isEmpty()) {
-                handler.post(() -> {
-                    hideLoading();
-                    showWarning("No scan data to submit");
-                });
+                handler.post(() -> { hideLoading(); showWarning("No scan data to submit"); });
                 return;
             }
 
@@ -663,8 +634,7 @@ public class StockTakingActivity extends ScannerActivity
                     String resJson = "{\"http_code\":" + response.code() + ",\"success\":" + response.isSuccessful() + "}";
                     if (response.isSuccessful()) {
                         LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_SUBMIT,
-                                "Stock Taking", sttId, "Operator submit success: " + sttId,
-                                userId, reqJson, resJson);
+                                "Stock Taking", sttId, "Operator submit success: " + sttId, userId, reqJson, resJson);
                         new Thread(() -> {
                             List<ScanQueueEntity> all = db.appDao().getUnsyncedBySttId(sttId);
                             for (ScanQueueEntity q : all) db.appDao().markSyncedById(q.id);
@@ -677,8 +647,7 @@ public class StockTakingActivity extends ScannerActivity
                         finish();
                     } else {
                         LogManager.get(StockTakingActivity.this).log(LogManager.WARNING, LogManager.ACTION_SUBMIT,
-                                "Stock Taking", sttId, "Operator submit failed: HTTP " + response.code(),
-                                userId, reqJson, resJson);
+                                "Stock Taking", sttId, "Operator submit failed: HTTP " + response.code(), userId, reqJson, resJson);
                         handleApiError(response.code());
                         playScanFeedback(2);
                     }
@@ -689,8 +658,7 @@ public class StockTakingActivity extends ScannerActivity
                     hideLoading();
                     String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                     LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_SUBMIT,
-                            "Stock Taking", sttId, "Operator submit error: " + t.getMessage(),
-                            userId, reqJson, resJson);
+                            "Stock Taking", sttId, "Operator submit error: " + t.getMessage(), userId, reqJson, resJson);
                     handleFailure(t);
                     playScanFeedback(2);
                 }
@@ -868,9 +836,7 @@ public class StockTakingActivity extends ScannerActivity
         }
         ((TextView) dialog.findViewById(R.id.tvConfirmMessage)).setText(message);
         dialog.findViewById(R.id.btnConfirmNo).setOnClickListener(v -> dialog.dismiss());
-        dialog.findViewById(R.id.btnConfirmYes).setOnClickListener(v -> {
-            dialog.dismiss(); onYes.run();
-        });
+        dialog.findViewById(R.id.btnConfirmYes).setOnClickListener(v -> { dialog.dismiss(); onYes.run(); });
         dialog.show();
     }
 
@@ -914,11 +880,7 @@ public class StockTakingActivity extends ScannerActivity
             if (!epc.isEmpty()) epcs.add(epc);
         }
         if (!epcs.isEmpty()) {
-            handler.post(() -> {
-                int before = scannedCount;
-                for (String epc : epcs) processScan(epc);
-                if (scannedCount > before) playScanFeedback(0);
-            });
+            handler.post(() -> { for (String epc : epcs) processScan(epc); });
         }
     }
 

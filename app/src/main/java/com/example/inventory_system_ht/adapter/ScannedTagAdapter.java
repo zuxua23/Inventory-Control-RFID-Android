@@ -38,21 +38,17 @@ public class ScannedTagAdapter extends RecyclerView.Adapter<ScannedTagAdapter.VH
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
         StockTakingModel.ScannedTagItem item = list.get(position);
-        h.tvItemName.setText(item.itemName != null && !item.itemName.isEmpty() ? item.itemName : "-");
-        h.tvTagId.setText(item.tagId != null && !item.tagId.isEmpty() ? item.tagId : "-");
         h.tvEpc.setText(item.epcTag != null && !item.epcTag.isEmpty() ? item.epcTag : "-");
         h.card.setCardBackgroundColor(COLOR_CARD);
     }
 
     static class VH extends RecyclerView.ViewHolder {
         CardView card;
-        TextView tvItemName, tvTagId, tvEpc;
+        TextView tvEpc;
 
         VH(@NonNull View itemView) {
             super(itemView);
             card = (CardView) itemView;
-            tvItemName = itemView.findViewById(R.id.tvItemName);
-            tvTagId = itemView.findViewById(R.id.tvTagId);
             tvEpc = itemView.findViewById(R.id.tvEpc);
         }
     }
