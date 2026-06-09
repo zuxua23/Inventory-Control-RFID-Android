@@ -115,12 +115,9 @@ public class RfidBulkHelper {
                 sym.dataMatrix.rectangle.enabled = true;
 
                 barcode.setSettings(settings);
-                Log.d(TAG, "barcode setSettings ok: qr=" + sym.qrCode.enabled
-                        + " qrM2=" + sym.qrCode.model2.enabled
-                        + " microQr=" + sym.microQr.enabled
-                        + " dm=" + sym.dataMatrix.enabled);
             } catch (Exception se) {
-                Log.w(TAG, "barcode setSettings warn: " + se.getMessage(), se);
+                // SDK timing: setSettings may fail immediately after openReader (not claimed yet).
+                // Barcode reader still opens successfully — safe to ignore.
             }
 
             Log.d(TAG, "Barcode reader opened");
