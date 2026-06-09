@@ -31,30 +31,47 @@ public class StockTakingModel {
     }
 
     public static class ActiveRes implements Serializable {
-        @SerializedName("sttId") public String sttId;
-        @SerializedName("remark") public String remark;
-        @SerializedName("status") public String status;
-        @SerializedName("location") public String location;
-        @SerializedName("locationIds") public List<String> locationIds;
-        @SerializedName("locations") public List<String> locations;
+        @SerializedName(value = "SttId", alternate = {"sttId"})
+        public String sttId;
+        @SerializedName(value = "Remark", alternate = {"remark"})
+        public String remark;
+        @SerializedName(value = "Status", alternate = {"status"})
+        public String status;
+        @SerializedName(value = "Location", alternate = {"location"})
+        public String location;
+        @SerializedName(value = "LocationIds", alternate = {"locationIds"})
+        public List<String> locationIds;
+        @SerializedName(value = "Locations", alternate = {"locations"})
+        public List<String> locations;
     }
 
     public static class SessionItem implements Serializable {
-        @SerializedName("tagId") public String tagId;
-        @SerializedName("epcTag") public String epcTag;
-        @SerializedName("itemId") public String itemId;
-        @SerializedName("itemCode") public String itemCode;
-        @SerializedName("itemName") public String itemName;
-        @SerializedName("location") public String location;
+        @SerializedName(value = "TagId", alternate = {"tagId"})
+        public String tagId;
+        @SerializedName(value = "EpcTag", alternate = {"epcTag"})
+        public String epcTag;
+        @SerializedName(value = "ItemId", alternate = {"itemId"})
+        public String itemId;
+        @SerializedName(value = "ItemCode", alternate = {"itemCode"})
+        public String itemCode;
+        @SerializedName(value = "ItemName", alternate = {"itemName"})
+        public String itemName;
+        @SerializedName(value = "Location", alternate = {"location"})
+        public String location;
         public transient String state = "PENDING";
         public transient String manualRemark = "";
     }
 
     public static class AvailableTag {
+        @SerializedName(value = "TagId", alternate = {"tagId"})
         public String tagId;
+        @SerializedName(value = "EpcTag", alternate = {"epcTag"})
         public String epcTag;
+        @SerializedName(value = "ItemId", alternate = {"itemId"})
         public String itemId;
+        @SerializedName(value = "ItemName", alternate = {"itemName"})
         public String itemName;
+        @SerializedName(value = "Status", alternate = {"status"})
         public String status;
     }
 
