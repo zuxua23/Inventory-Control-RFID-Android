@@ -472,8 +472,10 @@ public class StockTakingActivity extends ScannerActivity
         if (idx == null) idx = tagIdIndexMap.get(key);
 
         if (idx == null) {
-            if (!switchRfid.isChecked()) playScanFeedback(2);
-            showWarning("Tag not found: " + epcOrBarcode);
+            if (!switchRfid.isChecked()) {
+                playScanFeedback(2);
+                showWarning("Tag not found: " + epcOrBarcode);
+            }
             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Tag not found in session: " + epcOrBarcode, new PrefManager(this).getUserId());
             return;
         }
@@ -489,9 +491,9 @@ public class StockTakingActivity extends ScannerActivity
         scannedCount++;
         hasChanges = true;
         adapter.notifyItemChanged(idx);
-        rvTags.scrollToPosition(idx);
+        if (!switchRfid.isChecked()) rvTags.scrollToPosition(idx);
         updateInfo();
-        playScanFeedback(0);
+        if (!switchRfid.isChecked()) playScanFeedback(0);
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Scanned: " + epcOrBarcode, new PrefManager(this).getUserId());
 
         saveToQueue(item.epcTag, "FOUND", null, null, null);
@@ -815,7 +817,9 @@ public class StockTakingActivity extends ScannerActivity
         }
         if (!epcs.isEmpty()) {
             handler.post(() -> {
+                int before = scannedCount;
                 for (String epc : epcs) processScan(epc);
+                if (scannedCount > before) playScanFeedback(0);
             });
         }
     }
