@@ -2,7 +2,6 @@ package com.example.inventory_system_ht.model;
 
 import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 public class StockTakingModel {
@@ -57,5 +56,17 @@ public class StockTakingModel {
         public String itemId;
         public String itemName;
         public String status;
+    }
+
+    public static class ScannedTagItem {
+        public String tagId;
+        public String epcTag;
+        public String itemName;
+
+        public ScannedTagItem(String tagId, String epcTag, String itemName) {
+            this.tagId = tagId;
+            this.epcTag = epcTag;
+            this.itemName = itemName;
+        }
     }
 }

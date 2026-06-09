@@ -23,6 +23,7 @@ import android.widget.TextView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -39,6 +40,7 @@ import com.densowave.scannersdk.RFID.RFIDData;
 import com.densowave.scannersdk.RFID.RFIDDataReceivedEvent;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
+import com.example.inventory_system_ht.adapter.ScannedTagAdapter;
 import com.example.inventory_system_ht.adapter.StockTakingItemAdapter;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
@@ -58,8 +60,10 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -72,7 +76,10 @@ public class StockTakingActivity extends ScannerActivity
     private CardView btnSave, btnRefresh;
     private EditText resultScan;
     private RecyclerView rvTags;
+    private RecyclerView rvScannedTags;
     private TextView tvRemark, tvLocation, tvQty;
+    private TextView btnTabScanResult, btnTabTakingData;
+    private View tvEmpty;
     private Spinner spinnerPower;
     private FloatingActionButton fabScanCamera;
     private ApiService api;
@@ -81,6 +88,8 @@ public class StockTakingActivity extends ScannerActivity
     private String sttId = "";
     private String remark = "";
     private final List<StockTakingModel.SessionItem> sessionItems = new ArrayList<>();
+    private final List<StockTakingModel.ScannedTagItem> scannedItems = new ArrayList<>();
+    private final Set<String> scannedEpcSet = new HashSet<>();
     private final Map<String, Integer> epcIndexMap = new HashMap<>();
     private final Map<String, Integer> tagIdIndexMap = new HashMap<>();
     private final List<String> powerList = Arrays.asList(
@@ -88,8 +97,10 @@ public class StockTakingActivity extends ScannerActivity
     );
     private boolean hasChanges = false;
     private StockTakingItemAdapter adapter;
+    private ScannedTagAdapter scannedAdapter;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private int scannedCount = 0;
+    private int currentTab = 0; // 0 = Scan Result, 1 = Taking Data
     private String cachedLocationsString = "-";
 
     @Override
@@ -137,6 +148,7 @@ public class StockTakingActivity extends ScannerActivity
         setupPowerSpinner();
         setupAdapter();
         setupListeners();
+        setupTabs();
 
         if (isNetworkConnected()) loadSessionTagsFromServer();
         else { loadSessionTagsFromCache(); showWarning("Offline, using cache"); }
@@ -182,11 +194,15 @@ public class StockTakingActivity extends ScannerActivity
         btnRefresh = findViewById(R.id.btnRefresh);
         resultScan = findViewById(R.id.resultScan);
         rvTags = findViewById(R.id.rvTags);
+        rvScannedTags = findViewById(R.id.rvScannedTags);
         tvRemark = findViewById(R.id.tvRemark);
         tvLocation = findViewById(R.id.tvLocation);
         tvQty = findViewById(R.id.tvQty);
+        tvEmpty = findViewById(R.id.tvEmpty);
         spinnerPower = findViewById(R.id.spinnerPower);
         fabScanCamera = findViewById(R.id.fabScanCamera);
+        btnTabScanResult = findViewById(R.id.btnTabScanResult);
+        btnTabTakingData = findViewById(R.id.btnTabTakingData);
 
         spinnerPower.setVisibility(View.GONE);
         switchRfid.setChecked(false);
@@ -229,6 +245,40 @@ public class StockTakingActivity extends ScannerActivity
         rvTags.setLayoutManager(new LinearLayoutManager(this));
         rvTags.setAdapter(adapter);
         rvTags.setItemAnimator(null);
+
+        scannedAdapter = new ScannedTagAdapter(scannedItems);
+        rvScannedTags.setLayoutManager(new LinearLayoutManager(this));
+        rvScannedTags.setAdapter(scannedAdapter);
+        rvScannedTags.setItemAnimator(null);
+    }
+
+    private void setupTabs() {
+        btnTabScanResult.setOnClickListener(v -> switchTab(0));
+        btnTabTakingData.setOnClickListener(v -> switchTab(1));
+        switchTab(0);
+    }
+
+    private void switchTab(int tab) {
+        currentTab = tab;
+        if (tab == 0) {
+            rvScannedTags.setVisibility(View.VISIBLE);
+            rvTags.setVisibility(View.GONE);
+            if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
+            btnTabScanResult.setBackgroundColor(ContextCompat.getColor(this, R.color.blue_theme));
+            btnTabScanResult.setTextColor(Color.WHITE);
+            btnTabTakingData.setBackgroundColor(Color.WHITE);
+            btnTabTakingData.setTextColor(ContextCompat.getColor(this, R.color.blue_theme));
+        } else {
+            rvScannedTags.setVisibility(View.GONE);
+            rvTags.setVisibility(View.VISIBLE);
+            if (tvEmpty != null) {
+                tvEmpty.setVisibility(sessionItems.isEmpty() ? View.VISIBLE : View.GONE);
+            }
+            btnTabTakingData.setBackgroundColor(ContextCompat.getColor(this, R.color.blue_theme));
+            btnTabTakingData.setTextColor(Color.WHITE);
+            btnTabScanResult.setBackgroundColor(Color.WHITE);
+            btnTabScanResult.setTextColor(ContextCompat.getColor(this, R.color.blue_theme));
+        }
     }
 
     private void setupListeners() {
@@ -348,12 +398,13 @@ public class StockTakingActivity extends ScannerActivity
                         "Load session tags success: " + fromServer.size(),
                         userId, reqJson, resJson);
 
-                View tvEmpty = findViewById(R.id.tvEmpty);
-
                 sessionItems.clear();
                 epcIndexMap.clear();
                 tagIdIndexMap.clear();
+                scannedItems.clear();
+                scannedEpcSet.clear();
                 scannedCount = 0;
+
                 for (StockTakingModel.SessionItem item : fromServer) {
                     if (item == null) continue;
                     item.state = "PENDING";
@@ -366,15 +417,15 @@ public class StockTakingActivity extends ScannerActivity
                 }
                 rebuildLocationsCache();
 
-                if (sessionItems.isEmpty()) {
-                    if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
-                } else {
-                    if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
+                if (tvEmpty != null) {
+                    tvEmpty.setVisibility(
+                            sessionItems.isEmpty() && currentTab == 1 ? View.VISIBLE : View.GONE);
                 }
 
                 saveSessionItemsToCache(new ArrayList<>(sessionItems));
                 applyQueueStateToSessionItems();
                 adapter.notifyDataSetChanged();
+                scannedAdapter.notifyDataSetChanged();
                 updateInfo();
             }
 
@@ -397,6 +448,29 @@ public class StockTakingActivity extends ScannerActivity
             List<ScanQueueEntity> queue = db.appDao().getUnsyncedBySttId(sttId);
             if (queue.isEmpty()) return;
             handler.post(() -> {
+                // Rebuild Tab 1 (Scan Result) from FOUND actions in queue
+                List<StockTakingModel.ScannedTagItem> queuedScans = new ArrayList<>();
+                for (ScanQueueEntity q : queue) {
+                    if (q.epcTag == null || !"FOUND".equals(q.action)) continue;
+                    String upperEpc = q.epcTag.toUpperCase();
+                    if (scannedEpcSet.contains(upperEpc)) continue;
+                    scannedEpcSet.add(upperEpc);
+                    String resolvedName = "-";
+                    String resolvedTagId = q.epcTag;
+                    Integer lookupIdx = epcIndexMap.get(upperEpc);
+                    if (lookupIdx == null) lookupIdx = tagIdIndexMap.get(upperEpc);
+                    if (lookupIdx != null) {
+                        StockTakingModel.SessionItem si = sessionItems.get(lookupIdx);
+                        if (si.itemName != null && !si.itemName.isEmpty()) resolvedName = si.itemName;
+                        else if (si.itemCode != null && !si.itemCode.isEmpty()) resolvedName = si.itemCode;
+                        resolvedTagId = si.tagId != null && !si.tagId.isEmpty() ? si.tagId : q.epcTag;
+                    }
+                    queuedScans.add(new StockTakingModel.ScannedTagItem(resolvedTagId, q.epcTag, resolvedName));
+                }
+                scannedItems.addAll(queuedScans);
+                scannedAdapter.notifyDataSetChanged();
+
+                // Apply Tab 2 (Taking Data) states from queue
                 for (ScanQueueEntity q : queue) {
                     if (q.epcTag == null) continue;
                     Integer idx = epcIndexMap.get(q.epcTag.toUpperCase());
@@ -426,9 +500,8 @@ public class StockTakingActivity extends ScannerActivity
                     db.appDao().getSessionItemsBySttId(sttId);
             handler.post(() -> {
                 hideLoading();
-                View tvEmpty = findViewById(R.id.tvEmpty);
                 if (cached.isEmpty()) {
-                    if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
+                    if (tvEmpty != null && currentTab == 1) tvEmpty.setVisibility(View.VISIBLE);
                     showWarning("No cached data, tap Refresh");
                     return;
                 }
@@ -436,6 +509,8 @@ public class StockTakingActivity extends ScannerActivity
                 sessionItems.clear();
                 epcIndexMap.clear();
                 tagIdIndexMap.clear();
+                scannedItems.clear();
+                scannedEpcSet.clear();
                 scannedCount = 0;
                 for (SessionItemEntity e : cached) {
                     StockTakingModel.SessionItem item = e.toSessionItem();
@@ -448,6 +523,7 @@ public class StockTakingActivity extends ScannerActivity
                 }
                 rebuildLocationsCache();
                 adapter.notifyDataSetChanged();
+                scannedAdapter.notifyDataSetChanged();
                 applyQueueStateToSessionItems();
                 updateInfo();
             });
@@ -468,6 +544,26 @@ public class StockTakingActivity extends ScannerActivity
         if (sttId.isEmpty()) { playScanFeedback(2); return; }
 
         String key = epcOrBarcode.toUpperCase();
+
+        // Add to Scan Result list (Tab 1) with EPC-based dedup
+        if (!scannedEpcSet.contains(key)) {
+            scannedEpcSet.add(key);
+            String resolvedName = "-";
+            String resolvedTagId = epcOrBarcode;
+            Integer lookupIdx = epcIndexMap.get(key);
+            if (lookupIdx == null) lookupIdx = tagIdIndexMap.get(key);
+            if (lookupIdx != null) {
+                StockTakingModel.SessionItem si = sessionItems.get(lookupIdx);
+                if (si.itemName != null && !si.itemName.isEmpty()) resolvedName = si.itemName;
+                else if (si.itemCode != null && !si.itemCode.isEmpty()) resolvedName = si.itemCode;
+                resolvedTagId = si.tagId != null && !si.tagId.isEmpty() ? si.tagId : epcOrBarcode;
+            }
+            scannedItems.add(0, new StockTakingModel.ScannedTagItem(resolvedTagId, epcOrBarcode, resolvedName));
+            scannedAdapter.notifyItemInserted(0);
+            rvScannedTags.scrollToPosition(0);
+        }
+
+        // Match against Taking Data snapshot (Tab 2)
         Integer idx = epcIndexMap.get(key);
         if (idx == null) idx = tagIdIndexMap.get(key);
 
@@ -801,6 +897,8 @@ public class StockTakingActivity extends ScannerActivity
                     sessionItems.clear();
                     epcIndexMap.clear();
                     tagIdIndexMap.clear();
+                    scannedItems.clear();
+                    scannedEpcSet.clear();
                     hasChanges = false;
                     finish();
                 });
