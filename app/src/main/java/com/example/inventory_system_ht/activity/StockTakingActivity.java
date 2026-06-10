@@ -17,6 +17,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Switch;
@@ -841,17 +842,34 @@ public class StockTakingActivity extends ScannerActivity
 
     private void showSessionEndedDialog() {
         if (isFinishing() || isDestroyed()) return;
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Session Ended")
-                .setMessage("This session has been finalized by admin.")
-                .setCancelable(false)
-                .setPositiveButton("OK", (d, w) -> {
-                    new Thread(() -> {
-                        db.appDao().clearSyncedBySttId(sttId);
-                        db.appDao().clearSessionItemsBySttId(sttId);
-                    }).start();
-                    finish();
-                }).show();
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_confirm);
+        dialog.setCancelable(false);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    (int) (getResources().getDisplayMetrics().widthPixels * 0.85),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        ((TextView) dialog.findViewById(R.id.tvConfirmMessage)).setText("This session has been finalized by admin.");
+        Button btnNo = dialog.findViewById(R.id.btnConfirmNo);
+        Button btnOk = dialog.findViewById(R.id.btnConfirmYes);
+        btnNo.setVisibility(View.GONE);
+        btnOk.setText("OK");
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                0, (int) (50 * getResources().getDisplayMetrics().density));
+        params.weight = 2;
+        btnOk.setLayoutParams(params);
+        btnOk.setOnClickListener(v -> {
+            dialog.dismiss();
+            new Thread(() -> {
+                db.appDao().clearSyncedBySttId(sttId);
+                db.appDao().clearSessionItemsBySttId(sttId);
+            }).start();
+            finish();
+        });
+        dialog.show();
     }
 
     private void handleBackPressed() {

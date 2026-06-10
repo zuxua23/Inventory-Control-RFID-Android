@@ -1,7 +1,6 @@
 package com.example.inventory_system_ht.activity;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.res.ColorStateList;
@@ -431,15 +430,23 @@ public class StockInActivity extends ScannerActivity
 
         btnClear.setOnClickListener(v -> {
             if (scannedItemsList.isEmpty()) { showWarning("Nothing to clear"); return; }
-            new AlertDialog.Builder(this)
-                    .setTitle("Clear")
-                    .setMessage("Clear all " + totalScanCount + " items?")
-                    .setPositiveButton("Clear", (d, w) -> {
-                        new Thread(() -> db.appDao().clearAllStockInScans()).start();
-                        clearAllData();
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
+            Dialog dialog = new Dialog(this);
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            dialog.setContentView(R.layout.dialog_confirm);
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                dialog.getWindow().setLayout(
+                        (int) (getResources().getDisplayMetrics().widthPixels * 0.85),
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+            }
+            ((TextView) dialog.findViewById(R.id.tvConfirmMessage)).setText("Clear all " + totalScanCount + " items?");
+            dialog.findViewById(R.id.btnConfirmNo).setOnClickListener(v -> dialog.dismiss());
+            dialog.findViewById(R.id.btnConfirmYes).setOnClickListener(v -> {
+                dialog.dismiss();
+                new Thread(() -> db.appDao().clearAllStockInScans()).start();
+                clearAllData();
+            });
+            dialog.show();
         });
 
         btnSave.setOnClickListener(v -> {
@@ -984,13 +991,20 @@ public class StockInActivity extends ScannerActivity
     }
 
     private void showSaveConfirmDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Confirm")
-                .setMessage("Save " + totalScanCount + " items to warehouse?")
-                .setCancelable(false)
-                .setPositiveButton("Save", (d, w) -> saveToRoomThenSubmit())
-                .setNegativeButton("Cancel", null)
-                .show();
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_confirm);
+        dialog.setCancelable(false);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    (int) (getResources().getDisplayMetrics().widthPixels * 0.85),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        ((TextView) dialog.findViewById(R.id.tvConfirmMessage)).setText("Save " + totalScanCount + " items to warehouse?");
+        dialog.findViewById(R.id.btnConfirmNo).setOnClickListener(v -> dialog.dismiss());
+        dialog.findViewById(R.id.btnConfirmYes).setOnClickListener(v -> { dialog.dismiss(); saveToRoomThenSubmit(); });
+        dialog.show();
     }
 
     private void showDeleteItemDialog(ItemModel.Item item, int position) {

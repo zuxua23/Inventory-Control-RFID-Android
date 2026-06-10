@@ -1,6 +1,5 @@
 package com.example.inventory_system_ht.activity;
 
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Color;
@@ -149,12 +148,19 @@ public class HomeActivity extends ScannerActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                new AlertDialog.Builder(HomeActivity.this)
-                        .setTitle("Exit")
-                        .setMessage("Are you sure you want to go out?")
-                        .setPositiveButton("Yes", (d, w) -> finish())
-                        .setNegativeButton("No", null)
-                        .show();
+                Dialog dialog = new Dialog(HomeActivity.this);
+                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                dialog.setContentView(R.layout.dialog_confirm);
+                if (dialog.getWindow() != null) {
+                    dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                    dialog.getWindow().setLayout(
+                            (int) (getResources().getDisplayMetrics().widthPixels * 0.85),
+                            ViewGroup.LayoutParams.WRAP_CONTENT);
+                }
+                ((TextView) dialog.findViewById(R.id.tvConfirmMessage)).setText("Are you sure you want to go out?");
+                dialog.findViewById(R.id.btnConfirmNo).setOnClickListener(v -> dialog.dismiss());
+                dialog.findViewById(R.id.btnConfirmYes).setOnClickListener(v -> { dialog.dismiss(); finish(); });
+                dialog.show();
             }
         });
     }
