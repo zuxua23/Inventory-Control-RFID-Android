@@ -438,8 +438,8 @@ public class StockInActivity extends ScannerActivity
                         ViewGroup.LayoutParams.WRAP_CONTENT);
             }
             ((TextView) dialog.findViewById(R.id.tvConfirmMessage)).setText("Clear all " + totalScanCount + " items?");
-            dialog.findViewById(R.id.btnConfirmNo).setOnClickListener(v -> dialog.dismiss());
-            dialog.findViewById(R.id.btnConfirmYes).setOnClickListener(v -> {
+            dialog.findViewById(R.id.btnConfirmNo).setOnClickListener(d -> dialog.dismiss());
+            dialog.findViewById(R.id.btnConfirmYes).setOnClickListener(d -> {
                 dialog.dismiss();
                 new Thread(() -> db.appDao().clearAllStockInScans()).start();
                 clearAllData();
