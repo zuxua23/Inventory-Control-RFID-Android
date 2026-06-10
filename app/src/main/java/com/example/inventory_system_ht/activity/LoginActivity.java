@@ -177,6 +177,10 @@ public class LoginActivity extends ScannerActivity {
         finish();
     }
 
+    private boolean isValidUrl(String url) {
+        return url.startsWith("http://") || url.startsWith("https://");
+    }
+
     private void showSettingDialog() {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -217,11 +221,11 @@ public class LoginActivity extends ScannerActivity {
         btnCekIp.setOnClickListener(v -> {
             String ip = etIpAPI.getText().toString().trim();
             if (ip.isEmpty()) { dWarn.accept("Server IP is empty"); return; }
-            if (!ip.startsWith("http://")) { dError.accept("Wrong format, must start with http://"); return; }
+            if (!isValidUrl(ip)) { dError.accept("Wrong format, must start with http:// or https://"); return; }
 
             showLoading();
             prefManager.saveIp(ip);
-            String pingReq = "{\"url\":\"" + ip + "\"}";
+            String pingReq = "{\"action\":\"ping\"}";
             ApiClient.getClient(this).create(ApiService.class)
                     .ping().enqueue(new Callback<GeneralResponse>() {
                         @Override
@@ -230,7 +234,7 @@ public class LoginActivity extends ScannerActivity {
                             String pingRes = "{\"http_code\":" + response.code() + "}";
                             if (response.isSuccessful()) {
                                 LogManager.get(LoginActivity.this).log(LogManager.INFO, LogManager.ACTION_SETTING,
-                                        "Setting", "Ping", "Ping success: " + ip, "", pingReq, pingRes);
+                                        "Setting", "Ping", "Ping success", "", pingReq, pingRes);
                                 dSuccess.accept("Server connected");
                             } else {
                                 LogManager.get(LoginActivity.this).log(LogManager.WARNING, LogManager.ACTION_SETTING,
@@ -253,10 +257,11 @@ public class LoginActivity extends ScannerActivity {
         btnApplyIp.setOnClickListener(v -> {
             String ip = etIpAPI.getText().toString().trim();
             if (ip.isEmpty()) { dWarn.accept("Server IP is empty"); return; }
+            if (!isValidUrl(ip)) { dError.accept("Wrong format, must start with http:// or https://"); return; }
 
             prefManager.saveIp(ip);
             LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SETTING,
-                    "Setting", "API URL", "API URL saved: " + prefManager.getIp(), prefManager.getUserId());
+                    "Setting", "API URL", "API URL saved", prefManager.getUserId());
             dSuccess.accept("URL saved");
             dialog.dismiss();
         });

@@ -446,7 +446,6 @@ public class StockTakingActivity extends ScannerActivity
             List<ScanQueueEntity> queue = db.appDao().getUnsyncedBySttId(sttId);
             if (queue.isEmpty()) return;
             handler.post(() -> {
-                // Rebuild Tab 1 (Scan Result) - only EPC from FOUND actions
                 List<StockTakingModel.ScannedTagItem> queuedScans = new ArrayList<>();
                 for (ScanQueueEntity q : queue) {
                     if (q.epcTag == null || !"FOUND".equals(q.action)) continue;
@@ -458,7 +457,6 @@ public class StockTakingActivity extends ScannerActivity
                 scannedItems.addAll(queuedScans);
                 scannedAdapter.notifyDataSetChanged();
 
-                // Apply Tab 2 (Taking Data) states
                 for (ScanQueueEntity q : queue) {
                     if (q.epcTag == null) continue;
                     Integer idx = epcIndexMap.get(q.epcTag.toUpperCase());
@@ -532,7 +530,6 @@ public class StockTakingActivity extends ScannerActivity
 
         String key = epcOrBarcode.toUpperCase();
 
-        // Add to Scan Result (Tab 1) - only EPC, dedup by EPC key
         if (!scannedEpcSet.contains(key)) {
             scannedEpcSet.add(key);
             scannedItems.add(0, new StockTakingModel.ScannedTagItem(null, epcOrBarcode, null));
@@ -540,7 +537,6 @@ public class StockTakingActivity extends ScannerActivity
             rvScannedTags.scrollToPosition(0);
         }
 
-        // Match against Taking Data snapshot (Tab 2)
         Integer idx = epcIndexMap.get(key);
         if (idx == null) idx = tagIdIndexMap.get(key);
 

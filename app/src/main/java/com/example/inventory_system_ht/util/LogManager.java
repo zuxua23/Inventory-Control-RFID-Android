@@ -1,12 +1,10 @@
 package com.example.inventory_system_ht.util;
 
 import android.content.Context;
-import android.util.Log;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.AppLogEntity;
 
 public class LogManager {
-    private static final String TAG = "LogManager";
     private static LogManager instance;
     private final Context appContext;
     public static final String INFO = "INFO";
@@ -52,9 +50,7 @@ public class LogManager {
         new Thread(() -> {
             try {
                 AppDatabase.getDatabase(appContext).appDao().insertLog(entry);
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to insert log", e);
-            }
+            } catch (Exception ignored) {}
         }).start();
     }
 

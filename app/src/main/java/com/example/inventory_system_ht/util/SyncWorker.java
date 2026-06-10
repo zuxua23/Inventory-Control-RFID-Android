@@ -1,7 +1,6 @@
 package com.example.inventory_system_ht.util;
 
 import android.content.Context;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.work.Worker;
@@ -24,7 +23,6 @@ import java.util.List;
 import retrofit2.Response;
 
 public class SyncWorker extends Worker {
-    private static final String TAG = "SyncWorker";
 
     public SyncWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
@@ -41,7 +39,6 @@ public class SyncWorker extends Worker {
         List<PendingSubmitEntity> pendingList = appDao.getAllPendingSubmit();
 
         if (pendingList == null || pendingList.isEmpty()) {
-            Log.d(TAG, "No pending submissions");
             return Result.success();
         }
 
@@ -63,13 +60,10 @@ public class SyncWorker extends Worker {
 
                 if (response.isSuccessful()) {
                     appDao.deletePendingSubmitById(pending.id);
-                    Log.d(TAG, "Sync success for doId: " + pending.doId);
                 } else {
-                    Log.e(TAG, "Sync failed for " + pending.doId + " | code: " + response.code());
                     hasFailure = true;
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Sync exception: " + e.getMessage());
                 hasFailure = true;
             }
         }

@@ -1,7 +1,6 @@
 package com.example.inventory_system_ht.util;
 
 import android.content.Context;
-import android.util.Log;
 
 import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Dto.BarcodeScannerSettings;
@@ -10,7 +9,6 @@ import com.densowave.scannersdk.Listener.RFIDDataDelegate;
 import com.densowave.scannersdk.RFID.RFIDScanner;
 
 public class RfidBulkHelper {
-    private static final String TAG = "RfidBulkHelper";
 
     public static boolean openInventory(CommScanner scanner, RFIDDataDelegate delegate, Context ctx) {
         RfidSettingsManager s = new RfidSettingsManager(ctx);
@@ -23,17 +21,11 @@ public class RfidBulkHelper {
 
     public static boolean openInventory(CommScanner scanner, RFIDDataDelegate delegate,
                                         int powerDbm, int session, int qFactor) {
-        if (scanner == null) {
-            Log.e(TAG, "Scanner is null");
-            return false;
-        }
+        if (scanner == null) return false;
 
         try {
             RFIDScanner rfid = scanner.getRFIDScanner();
-            if (rfid == null) {
-                Log.e(TAG, "RFIDScanner is null");
-                return false;
-            }
+            if (rfid == null) return false;
 
             rfid.setDataDelegate(delegate);
 
@@ -55,12 +47,9 @@ public class RfidBulkHelper {
             rfid.setSettings(settings);
             rfid.openInventory();
 
-            Log.d(TAG, "RFID inventory opened, power=" + safePower
-                    + " dBm session=S" + session + " q=" + qFactor);
             return true;
 
         } catch (Exception e) {
-            Log.e(TAG, "openInventory failed: " + e.getMessage());
             return false;
         }
     }
@@ -82,11 +71,7 @@ public class RfidBulkHelper {
 
             rfid.setDataDelegate(null);
             rfid.close();
-
-            Log.d(TAG, "RFID inventory closed");
-        } catch (Exception e) {
-            Log.e(TAG, "closeInventory failed: " + e.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
     public static boolean openBarcode(CommScanner scanner,
@@ -115,15 +100,10 @@ public class RfidBulkHelper {
                 sym.dataMatrix.rectangle.enabled = true;
 
                 barcode.setSettings(settings);
-            } catch (Exception se) {
-                // SDK timing: setSettings may fail immediately after openReader (not claimed yet).
-                // Barcode reader still opens successfully — safe to ignore.
-            }
+            } catch (Exception ignored) {}
 
-            Log.d(TAG, "Barcode reader opened");
             return true;
         } catch (Exception e) {
-            Log.e(TAG, "openBarcode failed: " + e.getMessage());
             return false;
         }
     }
@@ -136,11 +116,7 @@ public class RfidBulkHelper {
 
             barcode.setDataDelegate(null);
             barcode.closeReader();
-
-            Log.d(TAG, "Barcode reader closed");
-        } catch (Exception e) {
-            Log.e(TAG, "closeBarcode failed: " + e.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
     public static String bytesToHex(byte[] bytes) {

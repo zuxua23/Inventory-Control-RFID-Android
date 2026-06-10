@@ -42,7 +42,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     private boolean isScanning = false;
     private static final int NO_SIGNAL_TIMEOUT_MS = 8000;
 
-    // ── Bar animation state ──────────────────────────────────────────────────
     private int currentBarLevel = 0;
     private int targetBarLevel = 0;
     private static final int BAR_ANIM_DELAY_MS = 40;
@@ -172,7 +171,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         }
         isScanning = true;
         tagFoundNotified = false;
-        // Gunakan power minimum (4 dBm) agar hanya tag yang sangat dekat yang terdeteksi
         RfidBulkHelper.closeBarcode(scanner);
         RfidBulkHelper.openInventory(scanner, this, 4);
         handler.removeCallbacks(noSignalRunnable);
@@ -246,7 +244,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
 
         tvRssiValue.setText(String.format("%.1f dBm", rssi));
 
-        // Trigger bar animation
         targetBarLevel = level;
         handler.removeCallbacks(barAnimRunnable);
         handler.post(barAnimRunnable);

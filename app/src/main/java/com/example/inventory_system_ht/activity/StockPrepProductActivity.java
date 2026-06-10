@@ -122,7 +122,6 @@ public class StockPrepProductActivity extends ScannerActivity
     ));
     private ArrayAdapter<String> locationSpinnerAdapter;
 
-    // --- VARIABLES FOR BATCH/BUFFER LOGIC ---
     private final Set<String> tagBuffer = new HashSet<>();
     private boolean isProcessingBuffer = false;
     private static final int BATCH_DELAY_MS = 500;
@@ -632,10 +631,6 @@ public class StockPrepProductActivity extends ScannerActivity
         }).start();
     }
 
-    // =========================================================================
-    // BATCHING / BUFFERING LOGIC
-    // =========================================================================
-
     private void queueScan(String scannedData) {
         if (!isDoDetailLoaded) {
             showWarning("Loading DO details, please wait...");
@@ -905,8 +900,6 @@ public class StockPrepProductActivity extends ScannerActivity
             handler.post(() -> queueScan(barcode));
         }
     }
-
-    // =========================================================================
 
     private void confirmSubmit() {
         if (scannedList.isEmpty()) { showWarning("No items scanned"); return; }

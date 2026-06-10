@@ -11,7 +11,6 @@ import java.security.GeneralSecurityException;
 
 public class PrefManager {
     private SharedPreferences securePref;
-    private final SharedPreferences pref;
     private static final String PREF_NAME = "InventoryPrefsBase";
     private static final String SECURE_PREF = "InventoryPrefsSecure";
     private static final String KEY_BASE_URL = "base_url_api";
@@ -24,8 +23,6 @@ public class PrefManager {
     private static final String KEY_LOGGED_IN = "is_logged_in";
 
     public PrefManager(Context context) {
-        pref = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-
         try {
             String masterKey = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC);
             securePref = EncryptedSharedPreferences.create(
@@ -50,6 +47,17 @@ public class PrefManager {
             } catch (Exception e2) {
                 securePref = context.getSharedPreferences(SECURE_PREF, Context.MODE_PRIVATE);
             }
+        }
+
+        migrateUrlFromPlainPrefs(context);
+    }
+
+    private void migrateUrlFromPlainPrefs(Context context) {
+        SharedPreferences plain = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        String oldUrl = plain.getString(KEY_BASE_URL, null);
+        if (oldUrl != null && securePref.getString(KEY_BASE_URL, null) == null) {
+            securePref.edit().putString(KEY_BASE_URL, oldUrl).apply();
+            plain.edit().remove(KEY_BASE_URL).apply();
         }
     }
 
@@ -97,11 +105,13 @@ public class PrefManager {
     }
 
     public void saveIp(String url) {
-        if (!url.startsWith("http://")) url = "http://" + url;
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://" + url;
+        }
         if (!url.endsWith("/")) url += "/";
-        pref.edit().putString(KEY_BASE_URL, url).apply();
+        securePref.edit().putString(KEY_BASE_URL, url).apply();
     }
 
-    public String getBaseUrl() { return pref.getString(KEY_BASE_URL, ""); }
+    public String getBaseUrl() { return securePref.getString(KEY_BASE_URL, ""); }
     public String getIp() { return getBaseUrl(); }
 }

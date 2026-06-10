@@ -2,6 +2,7 @@ package com.example.inventory_system_ht.network;
 
 import android.content.Context;
 
+import com.example.inventory_system_ht.BuildConfig;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.franmontiel.persistentcookiejar.ClearableCookieJar;
 import com.franmontiel.persistentcookiejar.PersistentCookieJar;
@@ -29,7 +30,9 @@ public class ApiClient {
         }
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        loggingInterceptor.setLevel(BuildConfig.DEBUG
+                ? HttpLoggingInterceptor.Level.BODY
+                : HttpLoggingInterceptor.Level.NONE);
 
         Interceptor authInterceptor = chain -> {
             Request originalRequest = chain.request();

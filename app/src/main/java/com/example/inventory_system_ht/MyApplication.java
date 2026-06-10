@@ -1,7 +1,6 @@
 package com.example.inventory_system_ht;
 
 import android.app.Application;
-import android.util.Log;
 
 import com.densowave.scannersdk.Common.CommManager;
 import com.densowave.scannersdk.Common.CommScanner;
@@ -21,7 +20,6 @@ public class MyApplication extends Application
         new PrefManager(this).clearSession();
         CommManager.addAcceptStatusListener(this);
         CommManager.startAccept();
-        Log.d("MyApp", "Waiting for SP1...");
     }
 
     @Override
@@ -32,10 +30,7 @@ public class MyApplication extends Application
             scanner.addStatusListener(this);
             CommManager.endAccept();
             CommManager.removeAcceptStatusListener(this);
-            Log.d("MyApp", "SP1 connected: " + scanner.getBTAddress());
-        } catch (Exception e) {
-            Log.e("MyApp", "Claim failed: " + e.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
     @Override
@@ -46,7 +41,6 @@ public class MyApplication extends Application
 
             CommManager.addAcceptStatusListener(this);
             CommManager.startAccept();
-            Log.d("MyApp", "SP1 disconnected, waiting for reconnect...");
         }
     }
 }

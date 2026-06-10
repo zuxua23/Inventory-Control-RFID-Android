@@ -103,13 +103,11 @@ public class StockInActivity extends ScannerActivity
     private String selectedLocation = "";
     private String selectedLocationId = "";
 
-    // ── Batch / buffer logic for barcode scan ────────────────────
     private final Set<String> tagBuffer = new HashSet<>();
     private boolean isProcessingBuffer = false;
     private String activeScannerType = null;
     private static final int BATCH_DELAY_MS = 300;
 
-    // ── In-flight guard for RFID batch ────────────────────────────
     private final Set<String> inFlightEpcs = new HashSet<>();
     private int inFlightCount = 0;
     private TextView tvProcessing;

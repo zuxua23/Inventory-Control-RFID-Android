@@ -22,14 +22,12 @@ import retrofit2.http.Query;
 
 public interface ApiService {
 
-    // ── Auth ──────────────────────────────────────────────────────
     @GET("api/ping")
     Call<GeneralResponse> ping();
 
     @POST("api/auth/login")
     Call<AuthModel.LoginResponse> login(@Body AuthModel.LoginRequest loginRequest);
 
-    // ── Tag ────────────────────────────────────────────────────────────
     @POST("api/tag/register")
     Call<GeneralResponse> registerTags(@Header("Authorization") String token,
                                        @Body AuthModel.RegisterRequest request);
@@ -48,7 +46,6 @@ public interface ApiService {
                                          @Query("code") String code,
                                          @Query("scannerType") String scannerType);
 
-    // ── Stock In ──────────────────────────────────────────────────────
     @POST("api/stockin")
     Call<GeneralResponse> stockIn(@Header("Authorization") String token,
                                   @Body StockInRequest request);
@@ -57,7 +54,6 @@ public interface ApiService {
     Call<List<TagModel.TagResponse>> getStockInTagsInfoBulk(@Header("Authorization") String token,
                                                             @Body TagModel.BulkInfoReq request);
 
-    // ── Stock Preparation ─────────────────────────────────────────────────
     @POST("api/preparation/bulk")
     Call<GeneralResponse> submitStockPrep(@Header("Authorization") String token,
                                           @Body StockPrepBulkRequest request);
@@ -80,7 +76,6 @@ public interface ApiService {
     Call<List<TagModel.TagInfoDto>> getTagsInfoBulk(@Header("Authorization") String token,
                                                     @Body TagModel.BulkInfoReq request);
 
-    // ── Stock Taking ──────────────────────────────────────────────────────
     @GET("api/stock-taking/active")
     Call<StockTakingModel.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);
 
@@ -98,14 +93,12 @@ public interface ApiService {
     Call<GeneralResponse> operatorSubmit(@Header("Authorization") String token,
                                          @Body StockTakingModel.OperatorSubmitReq request);
 
-    // ── Location & Item ─────────────────────────────────────────────────
     @GET("api/location")
     Call<List<LocationModel>> getLocations(@Header("Authorization") String token);
 
     @GET("api/item")
     Call<List<ItemModel.ItemResponse>> getAllItems(@Header("Authorization") String token);
 
-    // ── Search Item ─────────────────────────────────────────────────────
     @GET("api/search-item")
     Call<List<TagModel.SearchItemDto>> getSearchItems(@Header("Authorization") String token);
 

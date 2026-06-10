@@ -43,7 +43,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     AppDatabase.class,
                                     "sato_inventory_db")
                             .allowMainThreadQueries()
-                            .fallbackToDestructiveMigration()
+                            .fallbackToDestructiveMigrationFrom(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
                             .build();
                 }
             }
