@@ -64,6 +64,20 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         }
     };
 
+    private final Runnable beepRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!isScanning || currentBarLevel == 0) return;
+            playScanFeedback(1);
+            long interval;
+            if      (currentBarLevel >= 8) interval = 250;
+            else if (currentBarLevel >= 6) interval = 500;
+            else if (currentBarLevel >= 4) interval = 800;
+            else                           interval = 1200;
+            handler.postDelayed(this, interval);
+        }
+    };
+
     private final Runnable noSignalRunnable = new Runnable() {
         @Override
         public void run() {
@@ -176,7 +190,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         RfidBulkHelper.closeBarcode(scanner);
 
         int power = new RfidSettingsManager(this).getPower();
-        boolean ok = RfidBulkHelper.openInventory(scanner, this, power);
+        boolean ok = RfidBulkHelper.openInventoryLocate(scanner, this, power);
         if (!ok) {
             isScanning = false;
             showWarning("RFID unavailable");
@@ -193,6 +207,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         isScanning = false;
         handler.removeCallbacks(noSignalRunnable);
         handler.removeCallbacks(barAnimRunnable);
+        handler.removeCallbacks(beepRunnable);
         RfidBulkHelper.closeInventoryKeepDelegate(getScannerInstance());
         tagFoundNotified = false;
         resetSignalDisplay();
@@ -256,12 +271,19 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
 
         tvRssiValue.setText(String.format("%.1f dBm", rssi));
 
+        boolean wasZero = (currentBarLevel == 0 && targetBarLevel == 0);
         targetBarLevel = level;
         handler.removeCallbacks(barAnimRunnable);
         handler.post(barAnimRunnable);
 
+        if (level > 0 && wasZero) {
+            handler.removeCallbacks(beepRunnable);
+            handler.post(beepRunnable);
+        }
+
         if (level >= 9 && !tagFoundNotified) {
             tagFoundNotified = true;
+            handler.removeCallbacks(beepRunnable);
             String itemName = selectedItem != null ? selectedItem.getItemName() : "-";
             String epcTag  = selectedItem != null ? selectedItem.getEpcTag()  : "-";
             LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN,
@@ -300,6 +322,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
 
     private void resetSignalDisplay() {
         handler.removeCallbacks(barAnimRunnable);
+        handler.removeCallbacks(beepRunnable);
         currentBarLevel = 0;
         targetBarLevel = 0;
         if (tvRssiValue != null) tvRssiValue.setText("-- dBm");
