@@ -28,6 +28,7 @@ import com.example.inventory_system_ht.model.TagModel;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
+import com.example.inventory_system_ht.util.RfidSettingsManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -176,7 +177,15 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         RfidBulkHelper.closeBarcode(scanner);
 
         try {
-            // Set delegate dulu sebelum openRead agar onRFIDDataReceived terpanggil
+            // Set power dari RfidSettingsManager (diatur user di menu RFID Setting)
+            // dan session S0 sebelum openRead agar jangkauan baca sesuai setting user
+            int power = new RfidSettingsManager(this).getPower();
+            RFIDScannerSettings settings = scanner.getRFIDScanner().getSettings();
+            settings.scan.powerLevelRead  = power;
+            settings.scan.powerLevelWrite = power;
+            settings.scan.sessionFlag = RFIDScannerSettings.Scan.SessionFlag.S0;
+            scanner.getRFIDScanner().setSettings(settings);
+
             scanner.getRFIDScanner().setDataDelegate(this);
 
             byte[] targetEpc = hexStringToBytes(selectedItem.getEpcTag());
@@ -188,7 +197,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
                     targetEpc
             );
         } catch (Exception e) {
-            RfidBulkHelper.openInventory(scanner, this, 4);
+            RfidBulkHelper.openInventory(scanner, this, new RfidSettingsManager(this).getPower());
         }
 
         handler.removeCallbacks(noSignalRunnable);
@@ -251,8 +260,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
                         new PrefManager(SearchSignalActivity.this).getUserId());
                 handler.removeCallbacks(noSignalRunnable);
                 handler.post(() -> {
-                    // Beep hanya berbunyi saat tag ditemukan sangat dekat (level >= 9),
-                    // bukan setiap kali data RFID diterima
                     updateSignalBars(finalRssi);
                     if (isScanning) handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
                 });
