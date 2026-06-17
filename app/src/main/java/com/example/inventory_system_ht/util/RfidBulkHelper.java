@@ -12,15 +12,28 @@ public class RfidBulkHelper {
 
     public static boolean openInventory(CommScanner scanner, RFIDDataDelegate delegate, Context ctx) {
         RfidSettingsManager s = new RfidSettingsManager(ctx);
-        return openInventory(scanner, delegate, s.getPower(), s.getSession(), s.getQFactor());
+        return openInventory(scanner, delegate, s.getPower(), s.getSession(), s.getQFactor(),
+                RFIDScannerSettings.Scan.TriggerMode.MOMENTARY);
     }
 
     public static boolean openInventory(CommScanner scanner, RFIDDataDelegate delegate, int powerDbm) {
-        return openInventory(scanner, delegate, powerDbm, RfidSettingsManager.DEFAULT_SESSION, RfidSettingsManager.DEFAULT_Q);
+        return openInventory(scanner, delegate, powerDbm,
+                RfidSettingsManager.DEFAULT_SESSION,
+                RfidSettingsManager.DEFAULT_Q,
+                RFIDScannerSettings.Scan.TriggerMode.MOMENTARY);
+    }
+
+    /** Untuk locate-tag: scan terus-menerus tanpa perlu tekan tombol fisik reader. */
+    public static boolean openInventoryLocate(CommScanner scanner, RFIDDataDelegate delegate, int powerDbm) {
+        return openInventory(scanner, delegate, powerDbm,
+                RfidSettingsManager.DEFAULT_SESSION,
+                RfidSettingsManager.DEFAULT_Q,
+                RFIDScannerSettings.Scan.TriggerMode.ALTERNATE);
     }
 
     public static boolean openInventory(CommScanner scanner, RFIDDataDelegate delegate,
-                                        int powerDbm, int session, int qFactor) {
+                                        int powerDbm, int session, int qFactor,
+                                        RFIDScannerSettings.Scan.TriggerMode triggerMode) {
         if (scanner == null) return false;
 
         try {
@@ -31,7 +44,7 @@ public class RfidBulkHelper {
 
             RFIDScannerSettings settings = rfid.getSettings();
 
-            settings.scan.triggerMode = RFIDScannerSettings.Scan.TriggerMode.MOMENTARY;
+            settings.scan.triggerMode = triggerMode;
 
             int safePower = Math.max(4, Math.min(30, powerDbm));
             settings.scan.powerLevelRead  = safePower;
@@ -74,11 +87,6 @@ public class RfidBulkHelper {
         } catch (Exception ignored) {}
     }
 
-    /**
-     * Close scanner inventory tanpa null-kan delegate.
-     * Digunakan di SearchSignalActivity agar onRFIDDataReceived tetap aktif
-     * saat scan dimulai ulang, sesuai pattern Denso sample code.
-     */
     public static void closeInventoryKeepDelegate(CommScanner scanner) {
         if (scanner == null) return;
         try {
