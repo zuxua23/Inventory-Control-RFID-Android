@@ -21,7 +21,7 @@
             android:contentDescription="@string/desc_logo_apl"
             android:src="@drawable/ic_box"
             android:layout_marginBottom="24dp"
-            app:tint="@color/white"
+            app:tint="#10548F"
             tools:ignore="ImageContrastCheck"/>
 
         <TextView

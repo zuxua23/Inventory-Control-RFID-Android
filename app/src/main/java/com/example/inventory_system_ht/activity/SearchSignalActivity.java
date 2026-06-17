@@ -68,7 +68,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         @Override
         public void run() {
             if (!isScanning) return;
-            showWarning("Tag not detected, move closer");
             playScanFeedback(2);
             resetSignalDisplay();
             handler.postDelayed(this, NO_SIGNAL_TIMEOUT_MS);
