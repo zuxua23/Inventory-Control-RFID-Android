@@ -18,7 +18,6 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.densowave.scannersdk.Common.CommScanner;
-import com.densowave.scannersdk.Dto.RFIDScannerSettings;
 import com.densowave.scannersdk.Listener.RFIDDataDelegate;
 import com.densowave.scannersdk.RFID.RFIDData;
 import com.densowave.scannersdk.RFID.RFIDDataReceivedEvent;
@@ -176,28 +175,13 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         tagFoundNotified = false;
         RfidBulkHelper.closeBarcode(scanner);
 
-        try {
-            // Set power dari RfidSettingsManager (diatur user di menu RFID Setting)
-            // dan session S0 sebelum openRead agar jangkauan baca sesuai setting user
-            int power = new RfidSettingsManager(this).getPower();
-            RFIDScannerSettings settings = scanner.getRFIDScanner().getSettings();
-            settings.scan.powerLevelRead  = power;
-            settings.scan.powerLevelWrite = power;
-            settings.scan.sessionFlag = RFIDScannerSettings.Scan.SessionFlag.S0;
-            scanner.getRFIDScanner().setSettings(settings);
-
-            scanner.getRFIDScanner().setDataDelegate(this);
-
-            byte[] targetEpc = hexStringToBytes(selectedItem.getEpcTag());
-            scanner.getRFIDScanner().openRead(
-                    RFIDScannerSettings.RFIDBank.UII,
-                    (short) 0,
-                    (short) targetEpc.length,
-                    new byte[]{0,0,0,0},
-                    targetEpc
-            );
-        } catch (Exception e) {
-            RfidBulkHelper.openInventory(scanner, this, new RfidSettingsManager(this).getPower());
+        int power = new RfidSettingsManager(this).getPower();
+        boolean ok = RfidBulkHelper.openInventory(scanner, this, power);
+        if (!ok) {
+            isScanning = false;
+            showWarning("RFID unavailable");
+            setButtonStartState();
+            return;
         }
 
         handler.removeCallbacks(noSignalRunnable);
@@ -205,21 +189,10 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         setButtonStopState();
     }
 
-    private static byte[] hexStringToBytes(String hex) {
-        if (hex == null || hex.isEmpty()) return new byte[0];
-        String s = hex.length() % 2 == 0 ? hex : "0" + hex;
-        byte[] b = new byte[s.length() / 2];
-        for (int i = 0; i < b.length; i++)
-            b[i] = (byte) Short.parseShort(s.substring(i*2, i*2+2), 16);
-        return b;
-    }
-
     private void stopScanning() {
         isScanning = false;
         handler.removeCallbacks(noSignalRunnable);
         handler.removeCallbacks(barAnimRunnable);
-        // Gunakan closeInventoryKeepDelegate agar delegate tidak di-null-kan,
-        // sehingga saat startScanning() dipanggil lagi tidak perlu set ulang dari nol
         RfidBulkHelper.closeInventoryKeepDelegate(getScannerInstance());
         tagFoundNotified = false;
         resetSignalDisplay();
