@@ -18,6 +18,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.densowave.scannersdk.Common.CommScanner;
+import com.densowave.scannersdk.Dto.RFIDScannerSettings;
 import com.densowave.scannersdk.Listener.RFIDDataDelegate;
 import com.densowave.scannersdk.RFID.RFIDData;
 import com.densowave.scannersdk.RFID.RFIDDataReceivedEvent;
@@ -165,19 +166,42 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
 
     private void startScanning() {
         CommScanner scanner = getScannerInstance();
-        if (scanner == null) {
-            showWarning("RFID reader not connected");
-            return;
+        if (scanner == null) { showWarning("RFID reader not connected"); return; }
+
+        if (selectedItem == null || selectedItem.getEpcTag() == null) {
+            showWarning("No target EPC"); return;
         }
+
         isScanning = true;
         tagFoundNotified = false;
         RfidBulkHelper.closeBarcode(scanner);
-        RfidBulkHelper.openInventory(scanner, this, 4);
+
+        try {
+            byte[] targetEpc = hexStringToBytes(selectedItem.getEpcTag());
+            scanner.getRFIDScanner().openRead(
+                    RFIDScannerSettings.RFIDBank.UII,
+                    (short) 0,
+                    (short) targetEpc.length,
+                    new byte[]{0,0,0,0},
+                    targetEpc
+            );
+        } catch (Exception e) {
+            RfidBulkHelper.openInventory(scanner, this, 4);
+        }
+
         handler.removeCallbacks(noSignalRunnable);
         handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
         setButtonStopState();
     }
 
+    private static byte[] hexStringToBytes(String hex) {
+        if (hex == null || hex.isEmpty()) return new byte[0];
+        String s = hex.length() % 2 == 0 ? hex : "0" + hex;
+        byte[] b = new byte[s.length() / 2];
+        for (int i = 0; i < b.length; i++)
+            b[i] = (byte) Short.parseShort(s.substring(i*2, i*2+2), 16);
+        return b;
+    }
     private void stopScanning() {
         isScanning = false;
         handler.removeCallbacks(noSignalRunnable);
@@ -211,9 +235,11 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         if (!isScanning) return;
         for (RFIDData data : event.getRFIDData()) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII());
+            if (epc == null || epc.isEmpty()) continue;
             float rssi = data.getRSSI() / 10f;
 
             if (selectedItem != null && epc.equalsIgnoreCase(selectedItem.getEpcTag())) {
+                final float finalRssi = rssi;
                 LogManager.get(SearchSignalActivity.this).log(LogManager.INFO, LogManager.ACTION_SCAN,
                         "Search Signal", epc,
                         "Tag detected: " + selectedItem.getItemName() + " | RSSI: " + rssi + " dBm",
@@ -221,7 +247,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
                 handler.removeCallbacks(noSignalRunnable);
                 handler.post(() -> {
                     playScanFeedback(0);
-                    updateSignalBars(rssi);
+                    updateSignalBars(finalRssi);
                     if (isScanning) handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
                 });
             }
@@ -270,15 +296,21 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
 
     private void renderBarLevel(int level) {
         if (containerSignalBars == null) return;
-        int activeColor = (level >= 8)
-                ? Color.parseColor("#4CAF50")
-                : Color.parseColor("#03A9F4");
-        for (int i = 0; i < containerSignalBars.getChildCount(); i++) {
-            containerSignalBars.getChildAt(i).setBackgroundColor(
-                    i < level ? activeColor : Color.parseColor("#E0E0E0"));
+        int count = containerSignalBars.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View bar = containerSignalBars.getChildAt(i);
+            if (i < level) {
+                int color;
+                if (i < 3) color = Color.parseColor("#F44336");
+                else if (i < 6) color = Color.parseColor("#FFC107");
+                else if (i < 8) color = Color.parseColor("#4CAF50");
+                else color = Color.parseColor("#2E7D32");
+                bar.setBackgroundColor(color);
+            } else {
+                bar.setBackgroundColor(Color.parseColor("#E0E0E0"));
+            }
         }
     }
-
     private void resetSignalDisplay() {
         handler.removeCallbacks(barAnimRunnable);
         currentBarLevel = 0;

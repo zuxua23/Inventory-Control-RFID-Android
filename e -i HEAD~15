@@ -1,0 +1,186 @@
+[33m8d9a148[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m jjj
+[33m7c590be[m Merge: security hardening and code cleanup
+[33mb8a6978[m Security hardening and code cleanup
+[33m4b68c57[m Replace all AlertDialog usages with custom dialog design
+[33md84551e[m fix: tvMessage di LogAdapter tampilkan message bukan userId
+[33m579a76d[m Remove tag-not-found toast; silence barcode SDK timing warning in RfidBulkHelper
+[33ma0ace6a[m Fix: update @SerializedName to PascalCase to match .NET JSON response
+[33m2b4b8dd[m Stock Taking: two-tab scan/taking list with EPC display
+[33m7a815ba[m Merge pull request #13 from zuxua23/claude/adoring-noether-l1kish
+[33m27f4131[m mmm
+[33mb8a2e2c[m feat: add two-tab scan/taking list to StockTakingActivity
+[33md61909a[m refactor: stock taking operator-submit batch flow
+[33m03bedf8[m fix: TagRegistrationActivity NPE crash dan ready sound
+[33m7842720[m Merge pull request #11 from zuxua23/claude/peaceful-feynman-CscRY
+[33md3940eb[m Fix stock prep: use preparation/bulk-info API and filter unregistered tags from list
+[33m25fe03f[m fix: HomeActivity and RfidSettingActivity return scanner from ScannerManager so battery indicator works
+[33m570533e[m feat: add reader battery indicator to login page
+[33m9c1c632[m feat: add reader battery indicator to all pages
+[33m03443b4[m hh
+[33mb9684a3[m perf: fix Stock Taking lag - batch RFID events, O(1) tag lookup, cache updateInfo
+[33mb019897[m feat: signal bar animasi pelan + scan power 4dBm di Search Signal
+[33me2af4e1[m fix: buzzer tag regist, RFID sensitivity, battery reader selalu tampil
+[33m5cef69b[m Merge pull request ojan
+[33ma444f46[m fix: buzzer tidak bunyi saat masuk Tag Registration + RFID kurang sensitif
+[33me26b971[m fix: RFID thread crash, tag registration, duplicate scan, signal display
+[33m1fc1d9c[m[33m ([m[1;32mclaude/quirky-mccarthy-3CQJp[m[33m)[m fix: RFID thread crash, tag registration save, duplicate scan, item adapter, signal display
+[33m3ae0cc8[m Merge pull request #8 from zuxua23/claude/festive-wright-tuEe0
+[33mc78023f[m Remove RFID toggle FAB on SearchItem and auto-activate RFID
+[33ma5fe504[m Merge pull request #7 from zuxua23/claude/festive-wright-tuEe0
+[33m42cfb45[m Fix SearchItem RFID scan and label the RFID toggle FAB
+[33m5f82f51[m Merge pull request #6 from zuxua23/claude/festive-wright-tuEe0
+[33mc0b60d4[m Fix stock-in 400, battery visibility, tag-regist beep & dupes, list display
+[33m2618064[m fix: stock prep ALLOCATED tag validation issues (#5)
+[33m5ea6474[m feat: FAB Log & Camera auto-fade setelah 5 detik idle (like iPhone shortcuts) (#4)
+[33maf306a2[m feat(stock-in): filter PRINTED/STANDBY only, fast RFID batch with processing indicator
+[33md05b637[m Fix sum Stock In: tambah itemId di TagResponse, gunakan itemId dari API bukan null saat update list
+[33m2b37f77[m Hapus debounce timer, proses langsung per event RFID dengan inFlightEpcs guard
+[33m27f50aa[m Fix delay lama: debounce 200ms + max wait 800ms agar batch tidak terus di-reset
+[33m4ee5a16[m Tambah indikator 'Memproses tag...' dan fix duplikat saat batch in-flight bersamaan
+[33m99f522a[m Fix NPE di processBatch: pindah equalsIgnoreCase ke sisi epc yg non-null
+[33m940a6ae[m Optimasi Tag Registration: batch buffer scan RFID, 1 API call per kelompok scan, hapus vibrate untuk tag reject
+[33m7626ea4[m Fix compile error: ganti variable data ke epc di addTagToList
+[33m2420f5d[m Tampilkan Tag ID (bukan EPC) di list Tag Registration
+[33ma81f1a6[m Fix PERDI 1 Android: validasi status tag saat scan di Tag Registration, tolak jika bukan PRINTED atau OUT
+[33m7ed4a5a[m jjj
+[33m9250c4a[m Fix issues 8, 14 dan PERDI 2: skip vibrate saat RFID scan salah, RFID toggle FAB di Search Item, validasi semua item terpenuhi sebelum save Stock Prep
+[33mecfcfa9[m k
+[33mb562b4b[m Merge branch 'main' of https://github.com/zuxua23/inventory_control-RFID--batch-3
+[33mde8521f[m hhrpo
+[33m7d6a4df[m fix: remove power spinner & toggle RFID trigger in SearchSignalActivity (#3)
+[33m354e741[m hhrp
+[33m40a40ea[m fix: add epcTag to search filter in SearchItemActivity
+[33m431baa6[m hhr
+[33m7538411[m feat: apply 6 UX/consistency fixes (issues 6-11)
+[33m1277168[m hh
+[33m74bddca[m perf(stockin)+feat(stockprep): batch validation for stock in, over-quota guard for prep
+[33m66efe43[m hhh
+[33m6d5b6d9[m fix(stock-taking): load session tags from server, queue/sync safety, location UI
+[33ma1b88c2[m mmm
+[33maf3a2a7[m fix: Stock Preparation full flow
+[33me4bedbd[m blal
+[33m409b1fa[m Remove auto-focus behavior on SearchItemActivity to match LogActivity
+[33m67e211f[m pppp
+[33m0c56ad8[m hjk
+[33m98721ab[m Merge branch 'main' of https://github.com/zuxua23/inventory_control-RFID--batch-3
+[33m18e385c[m mmmm
+[33maf7f458[m fix & feat: perbaiki search field terpotong + tambah opsi Other di dialog auto-delete
+[33m76b2642[m mmmm
+[33me1dcba6[m fix: hapus indexOfPower duplikat di RfidSettingActivity
+[33ma9a8eae[m feat: base power dari RFID Setting diterapkan ke semua halaman
+[33mca2cad7[m chore: fix gradlew execute permission
+[33m909ccec[m feat: add auto-delete dialog with day chips & update search field bg
+[33me146dec[m qerw
+[33m1944423[m hhhheeee
+[33m8483f47[m hhhh
+[33m2d688d8[m vbnwqew
+[33m784e7d9[m vbnwq
+[33mbf17cb9[m vbn
+[33m14978ea[m fix: update API contract to match BE main branch
+[33m75629f8[m fix: trim symbology list so SP1 BAR_CODE setSettings accepts QR
+[33m0504955[m fix: update API contract to match BE main branch
+[33m67de000[m fix: drop symbology setSettings; SP1 firmware rejects 2D enable
+[33m0599880[m fix: trim symbology list so SP1 BAR_CODE setSettings accepts QR
+[33m7e08e6d[m fix: enable QR Model1/Model2 and DataMatrix square/rectangle
+[33m8f2724f[m fix: enable QR/2D and common 1D symbologies for SP1 barcode
+[33m4dd27d8[m fix: RFID trigger-press only, strengthen SP1 barcode open
+[33m25f3730[m mmmmpppoo
+[33m0779598[m feat: restore power spinner on Tag Registration
+[33m13caa96[m i18n: translate remaining Indonesian log messages and labels to English
+[33mdf147e5[m mmmmppp
+[33m7dff4c8[m feat: RFID-only tag registration, RFID settings menu, fixes
+[33mf2777b4[m mmmm
+[33m4f4239c[m blablap
+[33m2e0c644[m blabla
+[33m39d6e9f[m fix: show tvEmpty on initial load in TagRegistrationActivity
+[33ma60409c[m hahahahaoooowwwaaaaaaapppoooolllll
+[33m6aea1ce[m fix: remove invalid findViewById calls in BarcodeCameraActivity
+[33me350a45[m hahahahaoooowwwaaaaaaapppoooo
+[33m5d9d114[m fix: replace Log.e with LogManager in StockPrep activities
+[33m6a3bca7[m hahahahaoooowwwaaaaaaappp
+[33m2fc5801[m fix: cast menu buttons to CardView in HomeActivity
+[33m0696e6b[m hahahahaoooowwwaaaaaaa
+[33m7117be3[m hahahahaoooowww
+[33m526e4f1[m feat: redesign home screen to list-style menu layout
+[33m7e23eb2[m feat: UI improvements — branding, empty states, shimmer, semantic colors
+[33ma6d31dd[m fix: resolve all high/medium priority bugs across project
+[33m60d7a9c[m hahahahaoooo
+[33m7bb6d85[m color list taking
+[33m1bf6f2a[m hahahaha
+[33m7d81e4e[m hwehweheeee
+[33m1fdcb7a[m Add API request/response logging in StockTaking and TagRegistration activities
+[33me54e40e[m Add API request/response logging in StockPrepActivity and StockPrepProductActivity
+[33m76defee[m Add API request/response logging in StockInActivity
+[33m6f18f67[m Add RFID scan event logging in SearchSignalActivity
+[33mcee9d2a[m Add API request/response logging in SearchItemActivity
+[33m8a35a92[m Add API request/response logging in LoginActivity
+[33mc91751c[m fix(log): date picker tidak muncul saat pilih "Pick Date..."
+[33m31eb8af[m hmmmmmmmmmm
+[33m2f0ec07[m feat(log): tambah field device info di activity log
+[33m8b9f462[m fix(log): ganti tampilan message di list item jadi user ID
+[33m6d341a2[m fix(log): date picker max=today min=30days, hide message in list
+[33m9f95b45[m fix(log): date picker max=today min=30days, hide message in list
+[33m215423e[m hmmmmm
+[33m8b51c29[m Add Copy button to log detail dialog and update LogActivity
+[33m8bde9ca[m add feature
+[33m4a76e72[m add Log
+[33m74f9355[m add Log in Login Activity
+[33mf78e770[m hmmmm
+[33me973ca8[m Add date picker filter to LogActivity and disable auto-delete
+[33m4297ef8[m Add rounded corners to tvLevel badge in log list item
+[33mefd5098[m hmmm
+[33mb65bfa2[m fix: add pageSizeCompat=enabled for 16 KB backcompat mode
+[33m2a5bfd6[m fix: exclude x86_64 ABI to remove 4KB-aligned libimage_processing_util_jni.so
+[33mafe54a5[m fix: switch ML Kit barcode ke Play Services variant untuk support 16 KB page size
+[33mbab92ec[m Add rounded corners to tvDetailLevel badge in log detail dialog
+[33m7bb9a92[m Fix FAB cut off and spinner font in LogActivity
+[33m7e80dce[m ...
+[33m58ca4c3[m Fix LogActivity spinner crash and FAB cut off
+[33m1e86cc5[m Pre-fill search field instead of spinner when opening log from a menu
+[33me25278e[m Fix log FAB z-order on Login screen
+[33m1e122b1[m Add card-style log FAB to Home and Login screens
+[33mf29699d[m edit button log n cam
+[33mc646d21[m Add detailed scan failure logs for all rejection scenarios
+[33ma32837c[m Add SCAN/SUBMIT/LOGIN logs to remaining activities
+[33m4622677[m add Log
+[33m6e834fb[m Merge branch 'claude/gallant-tesla-PYPr4': Add Activity Log feature
+[33m4b6f0af[m Add Activity Log feature with Room persistence and filtering
+[33m21d4bb3[m add ic
+[33m7c79895[m asw
+[33m9d29cba[m Merge remote-tracking branch 'origin/claude/test-github-access-eQ3pu'
+[33m9ab8f13[m Remove old packages: Activity, Adapter, Helper, Models
+[33m08e1111[m Clean code refactoring: restructure packages and rename classes
+[33mc9579b3[m test: coba commit dan push dari Claude
+[33md8ed0cf[m ojan
+[33m6bfdf2e[m test4
+[33mbfb9cca[m Keep local camera rotation config for handy terminal
+[33mf44863e[m test3
+[33m1eb2d60[m Implement orientation event listener for camera
+[33m525b469[m test2
+[33m20e2ddd[m test1
+[33mc9ac062[m test
+[33me0ed870[m push mei 11 2026
+[33m1e60896[m ojan done full all, tinggal bagian pengecekan dan pengujian doang dan konsistensi message language nya
+[33m88a4194[m refactor: clean up Models, Helpers, Adapters, Activity directories
+[33ma7a4ba5[m day 91
+[33m84a9daf[m day 90
+[33m006145b[m day 35
+[33m75ec50b[m day 34
+[33m5f96e65[m hwehwe
+[33m076a1f2[m day 33
+[33m22f6ebd[m ojann day 10
+[33mb11056d[m day 22
+[33m95b5f83[m day 21
+[33mbc7fa08[m commit day 14
+[33m68e0c5c[m ojan day 10
+[33m0e1504a[m Ojan Day 9
+[33m92669b5[m ojan Day 8
+[33m6a18a5e[m Fauzan Day 7
+[33mfa924d7[m day6
+[33m58ee914[m day 5
+[33mc63c72b[m day 4
+[33mee18ac7[m day 3
+[33ma2b80ba[m bug
+[33mb003d3e[m banyak dah
+[33mc178011[m day 2
+[33m51fead0[m first commit

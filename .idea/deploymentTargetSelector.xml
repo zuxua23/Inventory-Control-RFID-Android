@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-02T03:16:42.435981500Z">
+        <DropdownSelection timestamp="2026-06-15T09:17:56.263005900Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=4969004110100009" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\ASANI\.android\avd\denso_m80.avd" />
             </handle>
           </Target>
         </DropdownSelection>
