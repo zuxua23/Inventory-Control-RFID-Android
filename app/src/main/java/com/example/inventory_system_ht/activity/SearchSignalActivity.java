@@ -176,6 +176,9 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         RfidBulkHelper.closeBarcode(scanner);
 
         try {
+            // Set delegate dulu sebelum openRead agar onRFIDDataReceived terpanggil
+            scanner.getRFIDScanner().setDataDelegate(this);
+
             byte[] targetEpc = hexStringToBytes(selectedItem.getEpcTag());
             scanner.getRFIDScanner().openRead(
                     RFIDScannerSettings.RFIDBank.UII,
@@ -201,11 +204,14 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             b[i] = (byte) Short.parseShort(s.substring(i*2, i*2+2), 16);
         return b;
     }
+
     private void stopScanning() {
         isScanning = false;
         handler.removeCallbacks(noSignalRunnable);
         handler.removeCallbacks(barAnimRunnable);
-        RfidBulkHelper.closeInventory(getScannerInstance());
+        // Gunakan closeInventoryKeepDelegate agar delegate tidak di-null-kan,
+        // sehingga saat startScanning() dipanggil lagi tidak perlu set ulang dari nol
+        RfidBulkHelper.closeInventoryKeepDelegate(getScannerInstance());
         tagFoundNotified = false;
         resetSignalDisplay();
         setButtonStartState();
@@ -245,7 +251,8 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
                         new PrefManager(SearchSignalActivity.this).getUserId());
                 handler.removeCallbacks(noSignalRunnable);
                 handler.post(() -> {
-                    playScanFeedback(0);
+                    // Beep hanya berbunyi saat tag ditemukan sangat dekat (level >= 9),
+                    // bukan setiap kali data RFID diterima
                     updateSignalBars(finalRssi);
                     if (isScanning) handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
                 });
@@ -286,7 +293,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             isScanning = false;
             handler.removeCallbacks(noSignalRunnable);
             CommScanner sc = getScannerInstance();
-            if (sc != null) RfidBulkHelper.closeInventory(sc);
+            if (sc != null) RfidBulkHelper.closeInventoryKeepDelegate(sc);
             setButtonStartState();
         } else if (level < 7) {
             tagFoundNotified = false;
@@ -310,6 +317,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             }
         }
     }
+
     private void resetSignalDisplay() {
         handler.removeCallbacks(barAnimRunnable);
         currentBarLevel = 0;

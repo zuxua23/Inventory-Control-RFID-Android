@@ -74,6 +74,19 @@ public class RfidBulkHelper {
         } catch (Exception ignored) {}
     }
 
+    /**
+     * Close scanner inventory tanpa null-kan delegate.
+     * Digunakan di SearchSignalActivity agar onRFIDDataReceived tetap aktif
+     * saat scan dimulai ulang, sesuai pattern Denso sample code.
+     */
+    public static void closeInventoryKeepDelegate(CommScanner scanner) {
+        if (scanner == null) return;
+        try {
+            RFIDScanner rfid = scanner.getRFIDScanner();
+            if (rfid != null) rfid.close();
+        } catch (Exception ignored) {}
+    }
+
     public static boolean openBarcode(CommScanner scanner,
                                       com.densowave.scannersdk.Listener.BarcodeDataDelegate delegate) {
         if (scanner == null) return false;
