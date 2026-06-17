@@ -65,8 +65,8 @@ public class SearchItemActivity extends ScannerActivity
     private SearchItemAdapter adapter;
     private List<TagModel.SearchItemDto> allItemList;
     private List<TagModel.SearchItemDto> filteredList;
-    private String selectedStatus = "All";
-    private String selectedWarehouse = "All";
+    private String selectedStatus = "All Status";
+    private String selectedWarehouse = "All Warehouse";
     private final Handler handler = new Handler(Looper.getMainLooper());
     private ApiService api;
     private String token;
@@ -249,8 +249,8 @@ public class SearchItemActivity extends ScannerActivity
     private void populateFilters() {
         Set<String> statuses = new LinkedHashSet<>();
         Set<String> warehouses = new LinkedHashSet<>();
-        statuses.add("All");
-        warehouses.add("All");
+        statuses.add("All Status");
+        warehouses.add("All Warehouse");
         for (TagModel.SearchItemDto item : allItemList) {
             if (item.getStatus() != null && !item.getStatus().isEmpty())
                 statuses.add(item.getStatus());
@@ -419,11 +419,11 @@ public class SearchItemActivity extends ScannerActivity
         filteredList.clear();
         String query = text.toLowerCase().trim();
         for (TagModel.SearchItemDto item : allItemList) {
-            if (!"All".equals(selectedStatus)) {
+            if (!"All Status".equals(selectedStatus)) {
                 String itemStatus = item.getStatus() != null ? item.getStatus() : "";
                 if (!selectedStatus.equalsIgnoreCase(itemStatus)) continue;
             }
-            if (!"All".equals(selectedWarehouse)) {
+            if (!"All Warehouse".equals(selectedWarehouse)) {
                 String itemLoc = item.getLocation() != null ? item.getLocation() : "";
                 if (!selectedWarehouse.equalsIgnoreCase(itemLoc)) continue;
             }
