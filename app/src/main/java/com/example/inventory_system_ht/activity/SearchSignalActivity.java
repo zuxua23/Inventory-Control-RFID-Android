@@ -177,8 +177,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         RfidBulkHelper.closeBarcode(scanner);
 
         try {
-            // Set power dari RfidSettingsManager (diatur user di menu RFID Setting)
-            // dan session S0 sebelum openRead agar jangkauan baca sesuai setting user
             int power = new RfidSettingsManager(this).getPower();
             RFIDScannerSettings settings = scanner.getRFIDScanner().getSettings();
             settings.scan.powerLevelRead  = power;
@@ -218,8 +216,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         isScanning = false;
         handler.removeCallbacks(noSignalRunnable);
         handler.removeCallbacks(barAnimRunnable);
-        // Gunakan closeInventoryKeepDelegate agar delegate tidak di-null-kan,
-        // sehingga saat startScanning() dipanggil lagi tidak perlu set ulang dari nol
         RfidBulkHelper.closeInventoryKeepDelegate(getScannerInstance());
         tagFoundNotified = false;
         resetSignalDisplay();
