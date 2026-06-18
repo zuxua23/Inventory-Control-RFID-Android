@@ -78,6 +78,7 @@ public class TagModel {
             this.scannerType = scannerType;
         }
     }
+
     public static class PrepBulkInfoReq {
         private List<String> codes;
         @SerializedName("scannerType") private String scannerType;
@@ -90,4 +91,13 @@ public class TagModel {
         }
     }
 
+    public static class RegisterWithItemReq {
+        @SerializedName("epcTag") private String epcTag;
+        @SerializedName("itemId") private String itemId;
+
+        public RegisterWithItemReq(String epcTag, String itemId) {
+            this.epcTag = epcTag;
+            this.itemId = itemId;
+        }
+    }
 }
