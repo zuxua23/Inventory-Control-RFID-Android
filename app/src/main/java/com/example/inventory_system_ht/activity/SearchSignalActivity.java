@@ -234,14 +234,22 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             showWarning("No target EPC"); return;
         }
 
-        isScanning       = true;
+        isScanning = true;
         tagFoundNotified = false;
         rssiBuffer.clear();
 
         RfidBulkHelper.closeBarcode(scanner);
 
         int power = new RfidSettingsManager(this).getPower();
-        boolean ok = RfidBulkHelper.openRead(scanner, this, power, selectedItem.getEpcTag());
+
+        // TAMBAH LOG INI
+        android.util.Log.d("SearchSignal", "startScanning EPC=[" + selectedItem.getEpcTag() + "] power=" + power);
+
+        boolean ok = RfidBulkHelper.openInventoryLocate(scanner, this, power, selectedItem.getEpcTag());
+
+        // TAMBAH LOG INI
+        android.util.Log.d("SearchSignal", "openInventoryLocate result=" + ok);
+
         if (!ok) {
             isScanning = false;
             showWarning("RFID unavailable");
@@ -249,16 +257,13 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             return;
         }
 
-        // mulai averaging loop
         handler.removeCallbacks(rssiAverageRunnable);
         handler.postDelayed(rssiAverageRunnable, RSSI_INTERVAL_MS);
-
-        // mulai no-signal timeout
         handler.removeCallbacks(noSignalRunnable);
         handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
-
         setButtonStopState();
     }
+
 
     private void stopScanning() {
         isScanning = false;
@@ -280,11 +285,19 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
         if (!isScanning) return;
-        // openRead sudah filter di hardware — semua data yang masuk = target tag
+        String targetEpc = selectedItem.getEpcTag().trim();
         for (RFIDData data : event.getRFIDData()) {
+            String epc = RfidBulkHelper.bytesToHex(data.getUII());
             float rssi = data.getRSSI() / 10f;
-            synchronized (rssiBuffer) {
-                rssiBuffer.add(rssi);
+
+            // TAMBAH LOG INI
+            android.util.Log.d("SearchSignal", "onRFIDDataReceived epc=[" + epc + "] rssi=" + rssi + " target=[" + targetEpc + "] match=" + epc.equalsIgnoreCase(targetEpc));
+
+            if (epc == null || epc.isEmpty()) continue;
+            if (epc.equalsIgnoreCase(targetEpc)) {
+                synchronized (rssiBuffer) {
+                    rssiBuffer.add(rssi);
+                }
             }
         }
     }
@@ -372,8 +385,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     }
 
     // endregion
-
-    // region Button state
 
     private void setButtonStartState() {
         if (btnToggleScan == null) return;

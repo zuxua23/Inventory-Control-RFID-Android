@@ -23,14 +23,31 @@ public class RfidBulkHelper {
                 RFIDScannerSettings.Scan.TriggerMode.MOMENTARY);
     }
 
-    public static boolean openInventoryLocate(CommScanner scanner, RFIDDataDelegate delegate, int powerDbm) {
-        return openInventory(scanner, delegate, powerDbm,
-                RfidSettingsManager.DEFAULT_SESSION,
-                RfidSettingsManager.DEFAULT_Q,
-                RFIDScannerSettings.Scan.TriggerMode.CONTINUOUS2);
-    }
+    public static boolean openInventoryLocate(CommScanner scanner, RFIDDataDelegate delegate, int powerDbm, String targetEpc) {
+        if (scanner == null) return false;
+        try {
+            RFIDScanner rfid = scanner.getRFIDScanner();
+            if (rfid == null) return false;
 
-    /** Locate tag pakai openRead — hardware filter EPC, return RSSI target tag aja */
+            rfid.setDataDelegate(delegate);
+
+            RFIDScannerSettings settings = rfid.getSettings();
+            int safePower = Math.max(4, Math.min(30, powerDbm));
+            settings.scan.powerLevelRead  = safePower;
+            settings.scan.powerLevelWrite = safePower;
+            settings.scan.sessionFlag     = RFIDScannerSettings.Scan.SessionFlag.S0;
+            settings.scan.polarization    = RFIDScannerSettings.Scan.Polarization.Both;
+            settings.scan.triggerMode     = RFIDScannerSettings.Scan.TriggerMode.CONTINUOUS2;
+            settings.scan.doubleReading   = RFIDScannerSettings.Scan.DoubleReading.Free;
+            settings.scan.qParam          = (short) 0;
+            rfid.setSettings(settings);
+            rfid.openInventory();
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
     public static boolean openRead(CommScanner scanner, RFIDDataDelegate delegate, int powerDbm, String targetEpc) {
         if (scanner == null || targetEpc == null) return false;
         try {
