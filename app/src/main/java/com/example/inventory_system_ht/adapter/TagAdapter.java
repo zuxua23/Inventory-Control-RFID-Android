@@ -45,6 +45,7 @@ public class TagAdapter extends RecyclerView.Adapter<TagAdapter.TagVH> {
     @Override
     public void onBindViewHolder(@NonNull TagVH h, int position) {
         TagLocalEntity item = list.get(position);
+        h.tvEpc.setText(item.getEpcTag() != null ? item.getEpcTag() : "");
         h.tvTagId.setText(item.getTagId() != null ? item.getTagId() : item.getEpcTag());
 
         String name = item.getProductName();
@@ -67,9 +68,10 @@ public class TagAdapter extends RecyclerView.Adapter<TagAdapter.TagVH> {
     }
 
     static class TagVH extends RecyclerView.ViewHolder {
-        TextView tvProductName, tvTagId;
+        TextView tvProductName, tvTagId, tvEpc;
         TagVH(@NonNull View itemView) {
             super(itemView);
+            tvEpc = itemView.findViewById(R.id.tvEpc);
             tvTagId = itemView.findViewById(R.id.tvTagId);
             tvProductName = itemView.findViewById(R.id.tvProductName);
         }

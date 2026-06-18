@@ -71,11 +71,23 @@ public class TagModel {
 
     public static class BulkInfoReq {
         private List<String> codes;
-        private String scannerType;
+        @SerializedName("scannerType") private String scannerType;
 
         public BulkInfoReq(List<String> codes, String scannerType) {
             this.codes = codes;
             this.scannerType = scannerType;
         }
     }
+    public static class PrepBulkInfoReq {
+        private List<String> codes;
+        @SerializedName("scannerType") private String scannerType;
+        @SerializedName("doId") private String doId;
+
+        public PrepBulkInfoReq(List<String> codes, String scannerType, String doId) {
+            this.codes = codes;
+            this.scannerType = scannerType;
+            this.doId = doId;
+        }
+    }
+
 }

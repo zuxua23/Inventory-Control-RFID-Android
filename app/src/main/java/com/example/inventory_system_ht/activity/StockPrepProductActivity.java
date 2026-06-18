@@ -715,6 +715,11 @@ public class StockPrepProductActivity extends ScannerActivity
                         failedCodes.add(code);
                         continue;
                     }
+                    if (!"IN_STOCK".equals(cached.status)) {
+                        rejectionReasons.put(code, "Tag status must be IN_STOCK");
+                        failedCodes.add(code);
+                        continue;
+                    }
                     if (!requiredQtyMap.containsKey(cached.itemId)) {
                         rejectionReasons.put(code, "Item " + cached.itemId + " not in this DO");
                         failedCodes.add(code);
@@ -730,8 +735,8 @@ public class StockPrepProductActivity extends ScannerActivity
                             cached.itemName, currentDoNo, 0);
                 } else {
                     try {
-                        TagModel.BulkInfoReq req = new TagModel.BulkInfoReq(
-                                Arrays.asList(code), isRfid ? "RFID" : "QR");
+                        TagModel.PrepBulkInfoReq req = new TagModel.PrepBulkInfoReq(
+                                Arrays.asList(code), isRfid ? "RFID" : "QR", currentDoId);
                         Response<List<TagModel.TagInfoDto>> response = api.getTagsInfoBulk(token, req).execute();
 
                         if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {

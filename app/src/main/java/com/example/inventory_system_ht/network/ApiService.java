@@ -74,6 +74,9 @@ public interface ApiService {
 
     @POST("api/preparation/bulk-info")
     Call<List<TagModel.TagInfoDto>> getTagsInfoBulk(@Header("Authorization") String token,
+                                                    @Body TagModel.PrepBulkInfoReq request);
+    @POST("api/preparation/bulk-info")
+    Call<List<TagModel.TagInfoDto>> getTagsRegistBulk(@Header("Authorization") String token,
                                                     @Body TagModel.BulkInfoReq request);
 
     @GET("api/stock-taking/active")

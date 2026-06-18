@@ -262,7 +262,7 @@ public class TagRegistrationActivity extends ScannerActivity
         setProcessing(true);
         String token = "Bearer " + new PrefManager(this).getToken();
         ApiClient.getClient(this).create(ApiService.class)
-                .getTagsInfoBulk(token, new TagModel.BulkInfoReq(newEpcs, "RFID"))
+                .getTagsRegistBulk(token, new TagModel.BulkInfoReq(newEpcs, "RFID"))
                 .enqueue(new retrofit2.Callback<List<TagModel.TagInfoDto>>() {
                     @Override
                     public void onResponse(Call<List<TagModel.TagInfoDto>> call, retrofit2.Response<List<TagModel.TagInfoDto>> response) {
