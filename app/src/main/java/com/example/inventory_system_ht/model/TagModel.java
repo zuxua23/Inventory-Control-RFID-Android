@@ -41,7 +41,7 @@ public class TagModel {
 
     public static class TagInfoDto {
         @SerializedName("tagId") private String tagId;
-        @SerializedName("epc") private String epcTag;
+        @SerializedName("epcTag") private String epcTag;
         @SerializedName("itemName") private String itemName;
         @SerializedName("itemId") private String itemId;
         @SerializedName("status") private String status;
