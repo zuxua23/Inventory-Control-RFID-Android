@@ -413,7 +413,7 @@ public class StockInActivity extends ScannerActivity
             @Override
             public void afterTextChanged(Editable s) {
                 String data = s.toString().trim();
-                if (data.length() >= 8 && !switchRfid.isChecked()) {
+                if (!data.isEmpty() && !switchRfid.isChecked()) {
                     resultScan.setText("");
                     enqueueScan(data);
                 }
@@ -596,14 +596,6 @@ public class StockInActivity extends ScannerActivity
                         }
                         int added = 0;
                         for (TagModel.TagResponse t : response.body()) {
-                            String status = t.getStatus();
-                            if (!"PRINTED".equalsIgnoreCase(status) && !"STANDBY".equalsIgnoreCase(status)) {
-                                LogManager.get(StockInActivity.this).log(LogManager.WARNING,
-                                        LogManager.ACTION_SCAN, "Stock In", t.getEpc(),
-                                        "Rejected status=" + status,
-                                        new PrefManager(StockInActivity.this).getUserId());
-                                continue;
-                            }
                             boolean alreadyIn = false;
                             for (ItemModel.Item it : scannedItemsList) {
                                 if (t.getEpc() != null && t.getEpc().equalsIgnoreCase(it.getEpcTag())) {
@@ -746,19 +738,9 @@ public class StockInActivity extends ScannerActivity
                 List<String[]> resolved = new ArrayList<>(); // [code, itemId, itemName]
                 for (String code : codes) {
                     TagModel.TagResponse t = tagMap.get(code.toUpperCase());
-                    if (t == null) {
-                        notFound.add(code);
-                    } else {
-                        String status = t.getStatus();
-                        if (!"PRINTED".equalsIgnoreCase(status) && !"STANDBY".equalsIgnoreCase(status)) {
-                            LogManager.get(StockInActivity.this).log(LogManager.WARNING,
-                                    LogManager.ACTION_SCAN, "Stock In", code,
-                                    "Rejected status=" + status, userId);
-                            notFound.add(code);
-                        } else {
-                            resolved.add(new String[]{ code, t.getItemId(), t.getItemName(), t.getEpc(), t.getTagId() });
-                            db.appDao().insertStockInScan(buildEntity(code, t.getItemId(), t.getItemName(), true));
-                        }
+                    if (t != null) {
+                        resolved.add(new String[]{ code, t.getItemId(), t.getItemName(), t.getEpc(), t.getTagId() });
+                        db.appDao().insertStockInScan(buildEntity(code, t.getItemId(), t.getItemName(), true));
                     }
                 }
 
