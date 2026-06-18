@@ -248,7 +248,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                     @Override
                     public void onFailure(@NonNull Call<List<ItemModel.ItemResponse>> call,
                                           @NonNull Throwable t) {
-                        showWarning("Gagal load item: " + t.getMessage());
+                        showWarning("Failed to load items: " + t.getMessage());
                     }
                 });
     }
@@ -378,11 +378,11 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
         btnSubmitRegis.setOnClickListener(v -> {
             if (selectedItemId == null) {
-                showWarning("Pilih item terlebih dahulu");
+                showWarning("Please select an item first");
                 return;
             }
             if (tagList.isEmpty()) {
-                showWarning("Scan tag RFID terlebih dahulu");
+                showWarning("Please scan an RFID tag first");
                 return;
             }
             hitApiRegisterTagWithItem(currentEpc, selectedItemId);
@@ -406,7 +406,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         if (isProcessing || !tagList.isEmpty()) return;
 
         if (selectedItemId == null) {
-            showWarning("Pilih item dulu sebelum scan tag");
+            showWarning("Select an item before scanning a tag");
             playScanFeedback(2);
             return;
         }
@@ -436,7 +436,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
                         if (!response.isSuccessful() || response.body() == null
                                 || response.body().isEmpty()) {
-                            showError("Tag tidak ditemukan di database");
+                            showError("Tag not found in database");
                             playScanFeedback(2);
                             currentEpc = null;
                             return;
@@ -445,7 +445,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                         TagModel.TagInfoDto info = response.body().get(0);
                         String status = info.getStatus();
                         if (!"PRINTED".equalsIgnoreCase(status) && !"OUT".equalsIgnoreCase(status)) {
-                            showWarning("Tag status '" + status + "' tidak bisa di-register");
+                            showWarning("Tag status '" + status + "' cannot be registered");
                             playScanFeedback(2);
                             currentEpc = null;
                             return;
@@ -497,7 +497,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                                     LogManager.INFO, LogManager.ACTION_SUBMIT,
                                     "Tag Registration", epcTag,
                                     "Registered EPC=" + epcTag + " ItemId=" + itemId, userId);
-                            showSuccess("Tag berhasil di-register ke " + selectedItemName);
+                            showSuccess("Tag successfully registered to " + selectedItemName);
                             playScanFeedback(0);
                             // Reset scan saja, item selection tetap → operator bisa langsung scan tag berikutnya
                             resetScan();
@@ -592,12 +592,12 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         @Override
         public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
             if (isRecentMode && position == 0) {
-                // Header "Terakhir dipilih"
+                // Header "Recently selected"
                 View headerView = LayoutInflater.from(getContext())
                         .inflate(android.R.layout.simple_list_item_1, parent, false);
                 headerView.setTag("header");
                 TextView tv = headerView.findViewById(android.R.id.text1);
-                tv.setText("🕐 Terakhir dipilih");
+                tv.setText("🕐 Recently selected");
                 tv.setTextSize(11f);
                 tv.setTextColor(0xFF888888);
                 tv.setPadding(32, 12, 32, 4);
