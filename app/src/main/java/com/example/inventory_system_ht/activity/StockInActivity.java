@@ -735,12 +735,14 @@ public class StockInActivity extends ScannerActivity
                 }
 
                 List<String> notFound = new ArrayList<>();
-                List<String[]> resolved = new ArrayList<>(); // [code, itemId, itemName]
+                List<String[]> resolved = new ArrayList<>(); // [code, itemId, itemName, epc, tagId]
                 for (String code : codes) {
                     TagModel.TagResponse t = tagMap.get(code.toUpperCase());
                     if (t != null) {
                         resolved.add(new String[]{ code, t.getItemId(), t.getItemName(), t.getEpc(), t.getTagId() });
                         db.appDao().insertStockInScan(buildEntity(code, t.getItemId(), t.getItemName(), true));
+                    } else {
+                        notFound.add(code);
                     }
                 }
 
