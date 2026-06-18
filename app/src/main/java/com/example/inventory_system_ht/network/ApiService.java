@@ -32,6 +32,10 @@ public interface ApiService {
     Call<GeneralResponse> registerTags(@Header("Authorization") String token,
                                        @Body AuthModel.RegisterRequest request);
 
+    @POST("api/tag/register-with-item")
+    Call<GeneralResponse> registerTagWithItem(@Header("Authorization") String token,
+                                              @Body TagModel.RegisterWithItemReq request);
+
     @GET("api/tag/{id}")
     Call<TagModel.TagDetailDto> getTagDetail(@Header("Authorization") String token,
                                              @Path("id") String tagId);
@@ -75,9 +79,10 @@ public interface ApiService {
     @POST("api/preparation/bulk-info")
     Call<List<TagModel.TagInfoDto>> getTagsInfoBulk(@Header("Authorization") String token,
                                                     @Body TagModel.PrepBulkInfoReq request);
+
     @POST("api/preparation/bulk-info")
     Call<List<TagModel.TagInfoDto>> getTagsRegistBulk(@Header("Authorization") String token,
-                                                    @Body TagModel.BulkInfoReq request);
+                                                      @Body TagModel.BulkInfoReq request);
 
     @GET("api/stock-taking/active")
     Call<StockTakingModel.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);
