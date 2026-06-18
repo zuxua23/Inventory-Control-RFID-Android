@@ -675,13 +675,6 @@ public class StockPrepProductActivity extends ScannerActivity
 
         boolean isRfid = switchRfid.isChecked();
 
-        Map<String, Integer> confirmedCount = new HashMap<>();
-        for (TagLocalEntity it : scannedList) {
-            String iid = it.getItmId();
-            if (iid == null || "PENDING".equals(iid)) continue;
-            confirmedCount.merge(iid, 1, Integer::sum);
-        }
-
         for (String epc : batchToProcess) {
             scannedRawSet.add(epc);
             TagLocalEntity placeholder = new TagLocalEntity(
@@ -695,21 +688,19 @@ public class StockPrepProductActivity extends ScannerActivity
         rvTags.scrollToPosition(0);
         playScanFeedback(0);
 
-        validateTagsBulk(batchToProcess, isRfid, confirmedCount);
+        validateTagsBulk(batchToProcess, isRfid);
     }
 
-    private void validateTagsBulk(List<String> codes, boolean isRfid,
-                                  Map<String, Integer> confirmedCount) {
+    private static final long CACHE_EXPIRY_MS = 16 * 60 * 60 * 1000L;
+
+    private void validateTagsBulk(List<String> codes, boolean isRfid) {
         new Thread(() -> {
             List<TagLocalEntity> successfulTags = new ArrayList<>();
             List<String> failedCodes = new ArrayList<>();
-            List<String> overQuotaCodes = new ArrayList<>();
             Map<String, String> rejectionReasons = new HashMap<>();
-            Map<String, Integer> batchAcceptedCount = new HashMap<>();
             String userId = new PrefManager(this).getUserId();
 
             for (String code : codes) {
-                String itemId = null;
                 TagLocalEntity candidate = null;
 
                 if (!isNetworkConnected()) {
@@ -719,8 +710,8 @@ public class StockPrepProductActivity extends ScannerActivity
                         failedCodes.add(code);
                         continue;
                     }
-                    if (!"RESERVED".equals(cached.status)) {
-                        rejectionReasons.put(code, "Status: " + cached.status + " (need RESERVED)");
+                    if (System.currentTimeMillis() - cached.cachedAt > CACHE_EXPIRY_MS) {
+                        rejectionReasons.put(code, "Cache expired, please go online to re-validate");
                         failedCodes.add(code);
                         continue;
                     }
@@ -734,7 +725,6 @@ public class StockPrepProductActivity extends ScannerActivity
                         failedCodes.add(code);
                         continue;
                     }
-                    itemId = cached.itemId;
                     candidate = new TagLocalEntity(
                             cached.epcTag, cached.tagId, cached.itemId,
                             cached.itemName, currentDoNo, 0);
@@ -764,15 +754,6 @@ public class StockPrepProductActivity extends ScannerActivity
                         cache.cachedAt = System.currentTimeMillis();
                         appDao.insertTagCache(cache);
 
-                        if (!"RESERVED".equals(info.getStatus())) {
-                            String reason = "Status: " + info.getStatus() + " (need RESERVED)";
-                            rejectionReasons.put(code, reason);
-                            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
-                                    "Stock Preparation", code,
-                                    "Tag rejected - " + reason, userId);
-                            failedCodes.add(code);
-                            continue;
-                        }
                         if (!requiredQtyMap.containsKey(info.getItemId())) {
                             String reason = "Item " + info.getItemId() + " not in this DO";
                             rejectionReasons.put(code, reason);
@@ -788,7 +769,6 @@ public class StockPrepProductActivity extends ScannerActivity
                             failedCodes.add(code);
                             continue;
                         }
-                        itemId = info.getItemId();
                         candidate = new TagLocalEntity(
                                 info.getEpcTag() != null ? info.getEpcTag() : code,
                                 info.getTagId(), info.getItemId(),
@@ -801,15 +781,6 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                 }
 
-                int already = confirmedCount.getOrDefault(itemId, 0);
-                int acceptedInBatch = batchAcceptedCount.getOrDefault(itemId, 0);
-                int required = requiredQtyMap.getOrDefault(itemId, 0);
-                if (already + acceptedInBatch + 1 > required) {
-                    overQuotaCodes.add(code);
-                    continue;
-                }
-
-                batchAcceptedCount.merge(itemId, 1, Integer::sum);
                 successfulTags.add(candidate);
                 appDao.insertScannedTag(candidate);
             }
@@ -829,9 +800,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                 }
 
-                List<String> toRemove = new ArrayList<>(failedCodes);
-                toRemove.addAll(overQuotaCodes);
-                for (String code : toRemove) {
+                for (String code : failedCodes) {
                     for (int i = 0; i < scannedList.size(); i++) {
                         TagLocalEntity item = scannedList.get(i);
                         if ("PENDING".equals(item.getItmId()) && item.getEpcTag().equalsIgnoreCase(code)) {
@@ -851,31 +820,10 @@ public class StockPrepProductActivity extends ScannerActivity
                     if (sumAdapter != null) sumAdapter.updateData(sumProductList);
                 }
 
-                if (!overQuotaCodes.isEmpty()) {
-                    playScanFeedback(2);
-                    showWarning(overQuotaCodes.size() + " tag(s) exceed DO quota");
-                }
-
-                if (!failedCodes.isEmpty() && !switchRfid.isChecked()) {
+                if (!failedCodes.isEmpty()) {
                     playScanFeedback(2);
                     String reason = rejectionReasons.get(failedCodes.get(0));
                     showWarning(reason != null ? reason : "Tag rejected");
-                } else if (!failedCodes.isEmpty() && switchRfid.isChecked()) {
-                    long notRegistered = failedCodes.stream()
-                            .filter(c -> rejectionReasons.containsKey(c) && rejectionReasons.get(c).startsWith("Tag not registered"))
-                            .count();
-                    long wrongStatus = failedCodes.stream()
-                            .filter(c -> rejectionReasons.containsKey(c) && rejectionReasons.get(c).startsWith("Status:"))
-                            .count();
-                    long notInDo = failedCodes.stream()
-                            .filter(c -> rejectionReasons.containsKey(c) && rejectionReasons.get(c).startsWith("Item"))
-                            .count();
-                    if (notInDo > 0)
-                        showWarning(notInDo + " tag(s) not in this DO's item list");
-                    else if (wrongStatus > 0)
-                        showWarning(wrongStatus + " tag(s) have wrong status (need RESERVED)");
-                    else if (notRegistered > 0)
-                        showWarning(notRegistered + " tag(s) not registered in database");
                 }
             });
 
