@@ -100,7 +100,8 @@ public class StockTakingActivity extends ScannerActivity
     );
     private boolean hasChanges = false;
     private boolean isManualAddDialogOpen = false;
-    private android.widget.EditText activeDialogEpcField = null;
+    private Runnable activeDialogFetchCallback = null;
+    private java.util.function.Consumer<String> activeDialogScanHandler = null;
     private StockTakingItemAdapter adapter;
     private ScannedTagAdapter scannedAdapter;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -758,16 +759,15 @@ public class StockTakingActivity extends ScannerActivity
                     ViewGroup.LayoutParams.WRAP_CONTENT);
         }
 
-        ViewGroup dialogRoot = (ViewGroup) dialog.getWindow().getDecorView();
-
-        EditText etItemId = dialog.findViewById(R.id.etManualItemId);
-        EditText etScanEpc = dialog.findViewById(R.id.etManualScanEpc);
-        EditText etRemark = dialog.findViewById(R.id.etManualRemark);
-        View frameTagResult = dialog.findViewById(R.id.frameTagResult);
-        TextView tvTagPlaceholder = dialog.findViewById(R.id.tvTagPlaceholder);
-        TextView tvManualTagId = dialog.findViewById(R.id.tvManualTagId);
-        TextView tvManualEpc = dialog.findViewById(R.id.tvManualEpc);
+        ViewGroup dialogRoot    = (ViewGroup) dialog.getWindow().getDecorView();
+        EditText etItemId       = dialog.findViewById(R.id.etManualItemId);
+        EditText etRemark       = dialog.findViewById(R.id.etManualRemark);
+        View frameTagResult     = dialog.findViewById(R.id.frameTagResult);
+        View layoutPlaceholder  = dialog.findViewById(R.id.layoutTagPlaceholder);
+        TextView tvManualTagId  = dialog.findViewById(R.id.tvManualTagId);
+        TextView tvManualEpc    = dialog.findViewById(R.id.tvManualEpc);
         TextView tvManualStatus = dialog.findViewById(R.id.tvManualTagStatus);
+        View btnDeleteTag       = dialog.findViewById(R.id.btnDeleteTag);
 
         // "ITEM001 - Nama Item"
         String itemCode = (item.itemCode != null && !item.itemCode.isEmpty()) ? item.itemCode : "";
@@ -778,49 +778,97 @@ public class StockTakingActivity extends ScannerActivity
         etItemId.setText(displayItem);
         etItemId.setEnabled(false);
 
-        // State: tag yang sudah tervalidasi
         final StockTakingModel.ValidateTagResult[] validatedTag = {null};
+
+        // Helper show/hide
+        Runnable showPlaceholder = () -> {
+            frameTagResult.setVisibility(View.GONE);
+            layoutPlaceholder.setVisibility(View.VISIBLE);
+            validatedTag[0] = null;
+        };
+
+        // Delete button — clear tag, kembali ke placeholder, bisa scan ulang
+        btnDeleteTag.setOnClickListener(v -> {
+            showPlaceholder.run();
+            playScanFeedback(2);
+        });
 
         // Aktifkan intercept scanner
         isManualAddDialogOpen = true;
-        activeDialogEpcField = etScanEpc;
 
-        // Watch EPC field — auto-fetch saat ada input (dari scan atau ketik manual + enter)
-        etScanEpc.addTextChangedListener(new android.text.TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override public void afterTextChanged(android.text.Editable s) {
-                // Reset state tag kalau input berubah
-                validatedTag[0] = null;
-                frameTagResult.setVisibility(View.GONE);
-                tvTagPlaceholder.setVisibility(View.VISIBLE);
+        // Scanner intercept handler — dipanggil dari onRFIDDataReceived/onBarcodeDataReceived
+        activeDialogScanHandler = (epc) -> {
+            // Kalau sudah ada tag valid, scan baru di-ignore — user harus delete dulu
+            if (validatedTag[0] != null) {
+                showSagaFeedback(dialogRoot, "Delete current tag first before scanning a new one", 1);
+                return;
             }
-        });
 
-        etScanEpc.setOnEditorActionListener((v, actionId, event) -> {
-            String epc = etScanEpc.getText().toString().trim();
-            if (!epc.isEmpty()) fetchAndValidateTag(epc, item, validatedTag,
-                    frameTagResult, tvTagPlaceholder, tvManualTagId, tvManualEpc, tvManualStatus, dialogRoot);
-            return true;
-        });
+            if (!isNetworkConnected()) {
+                showSagaFeedback(dialogRoot, "Internet connection required to validate tag", 1);
+                return;
+            }
 
-        // Dismiss listener — matiin intercept
+            api.validateManualTag(token, epc, sttId).enqueue(new Callback<StockTakingModel.ValidateTagResult>() {
+                @Override
+                public void onResponse(Call<StockTakingModel.ValidateTagResult> call,
+                                       Response<StockTakingModel.ValidateTagResult> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        StockTakingModel.ValidateTagResult result = response.body();
+
+                        // Validasi item match
+                        if (result.itemId != null && !result.itemId.isEmpty()
+                                && item.itemId != null && !result.itemId.equals(item.itemId)) {
+                            showSagaFeedback(dialogRoot, "Tag does not belong to item " + item.itemCode, 1);
+                            playScanFeedback(2);
+                            return;
+                        }
+
+                        // Valid — tampilkan di card list
+                        validatedTag[0] = result;
+                        tvManualTagId.setText(result.tagId);
+                        tvManualEpc.setText(result.epcTag);
+                        tvManualStatus.setText(result.status);
+                        layoutPlaceholder.setVisibility(View.GONE);
+                        frameTagResult.setVisibility(View.VISIBLE);
+                        playScanFeedback(0);
+
+                    } else {
+                        String errMsg = "Tag not valid";
+                        try {
+                            if (response.errorBody() != null) {
+                                org.json.JSONObject json = new org.json.JSONObject(response.errorBody().string());
+                                errMsg = json.optString("message", errMsg);
+                            }
+                        } catch (Exception ignored) {}
+                        showSagaFeedback(dialogRoot, errMsg, 1);
+                        playScanFeedback(2);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<StockTakingModel.ValidateTagResult> call, Throwable t) {
+                    showSagaFeedback(dialogRoot, "Validation failed: " + t.getMessage(), 1);
+                    playScanFeedback(2);
+                }
+            });
+        };
+
         dialog.setOnDismissListener(d -> {
             isManualAddDialogOpen = false;
-            activeDialogEpcField = null;
+            activeDialogScanHandler = null;
         });
 
         dialog.findViewById(R.id.btnCancelManual).setOnClickListener(v -> dialog.dismiss());
 
         dialog.findViewById(R.id.btnSaveManual).setOnClickListener(v -> {
             if (validatedTag[0] == null) {
-                showSagaFeedback(dialogRoot, "Scan tag terlebih dahulu", 1);
+                showSagaFeedback(dialogRoot, "Scan a replacement tag first", 1);
                 return;
             }
             String remarkText = etRemark.getText().toString().trim();
             dialog.dismiss();
 
-            // Simpan ke queue (offline-first), update UI lokal
             saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, validatedTag[0].epcTag, remarkText);
 
             boolean wasScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
@@ -831,77 +879,12 @@ public class StockTakingActivity extends ScannerActivity
             adapter.notifyItemChanged(position);
             updateInfo();
             playScanFeedback(0);
-            showSuccess("Manual add tersimpan");
+            showSuccess("Manual add saved");
         });
 
         dialog.show();
-        etScanEpc.requestFocus();
     }
 
-    private void fetchAndValidateTag(
-            String epc,
-            StockTakingModel.SessionItem item,
-            StockTakingModel.ValidateTagResult[] validatedTag,
-            View frameTagResult,
-            TextView tvTagPlaceholder,
-            TextView tvManualTagId,
-            TextView tvManualEpc,
-            TextView tvManualStatus,
-            ViewGroup dialogRoot) {
-
-        if (!isNetworkConnected()) {
-            showSagaFeedback(dialogRoot, "Koneksi diperlukan untuk validasi tag", 1);
-            return;
-        }
-
-        api.validateManualTag(token, epc, sttId).enqueue(new Callback<StockTakingModel.ValidateTagResult>() {
-            @Override
-            public void onResponse(Call<StockTakingModel.ValidateTagResult> call,
-                                   Response<StockTakingModel.ValidateTagResult> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    StockTakingModel.ValidateTagResult result = response.body();
-
-                    // Kalau tag punya item dan tidak match, tolak
-                    if (result.itemId != null && !result.itemId.isEmpty()
-                            && item.itemId != null && !result.itemId.equals(item.itemId)) {
-                        showSagaFeedback(dialogRoot, "Tag ini bukan milik item " + item.itemCode, 1);
-                        validatedTag[0] = null;
-                        frameTagResult.setVisibility(View.GONE);
-                        tvTagPlaceholder.setVisibility(View.VISIBLE);
-                        return;
-                    }
-
-                    validatedTag[0] = result;
-                    tvManualTagId.setText(result.tagId);
-                    tvManualEpc.setText(result.epcTag);
-                    tvManualStatus.setText(result.status);
-                    frameTagResult.setVisibility(View.VISIBLE);
-                    tvTagPlaceholder.setVisibility(View.GONE);
-                    playScanFeedback(0);
-                } else {
-                    // Parse error message dari response body
-                    String errMsg = "Tag tidak valid";
-                    try {
-                        if (response.errorBody() != null) {
-                            org.json.JSONObject json = new org.json.JSONObject(response.errorBody().string());
-                            errMsg = json.optString("message", errMsg);
-                        }
-                    } catch (Exception ignored) {}
-                    showSagaFeedback(dialogRoot, errMsg, 1);
-                    validatedTag[0] = null;
-                    frameTagResult.setVisibility(View.GONE);
-                    tvTagPlaceholder.setVisibility(View.VISIBLE);
-                    playScanFeedback(2);
-                }
-            }
-
-            @Override
-            public void onFailure(Call<StockTakingModel.ValidateTagResult> call, Throwable t) {
-                showSagaFeedback(dialogRoot, "Gagal validasi: " + t.getMessage(), 1);
-                playScanFeedback(2);
-            }
-        });
-    }
     private void showFaqDialog() {
         Dialog d = new Dialog(this);
         d.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -989,10 +972,9 @@ public class StockTakingActivity extends ScannerActivity
         }
         if (!epcs.isEmpty()) {
             handler.post(() -> {
-                if (isManualAddDialogOpen && activeDialogEpcField != null) {
-                    // Intercept — kirim ke field EPC dialog, ambil pertama saja
-                    activeDialogEpcField.setText(epcs.get(0));
-                    activeDialogEpcField.setSelection(activeDialogEpcField.getText().length());
+                if (isManualAddDialogOpen && activeDialogScanHandler != null) {
+                    // Intercept — pass first EPC directly to dialog handler
+                    activeDialogScanHandler.accept(epcs.get(0));
                 } else {
                     for (String epc : epcs) processScan(epc);
                 }
@@ -1004,14 +986,14 @@ public class StockTakingActivity extends ScannerActivity
     public void onBarcodeDataReceived(CommScanner scanner, BarcodeDataReceivedEvent event) {
         List<BarcodeData> dataList = event.getBarcodeData();
         if (!dataList.isEmpty()) {
-            String barcode = new String(dataList.get(0).getData());
+            String barcode = new String(dataList.get(0).getData()).trim();
             handler.post(() -> {
-                if (isManualAddDialogOpen && activeDialogEpcField != null) {
-                    activeDialogEpcField.setText(barcode);
-                    activeDialogEpcField.setSelection(activeDialogEpcField.getText().length());
+                if (isManualAddDialogOpen && activeDialogScanHandler != null) {
+                    activeDialogScanHandler.accept(barcode);
                 } else {
                     processScan(barcode);
                 }
             });
         }
-    }}
+    }
+}

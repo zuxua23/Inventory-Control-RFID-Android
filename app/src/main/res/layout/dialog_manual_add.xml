@@ -54,33 +54,16 @@
             android:importantForAutofill="no"
             tools:ignore="all" />
 
-        <!-- Scan EPC label -->
+        <!-- Scan Tag label -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Scan Replacement Tag"
+            android:text="Replacement Tag"
             android:textSize="11sp"
             android:fontFamily="@font/raleway_bold"
             android:textColor="@color/black"
             android:alpha="0.5"
-            android:layout_marginBottom="4dp" />
-
-        <!-- EPC scan input field -->
-        <EditText
-            android:id="@+id/etManualScanEpc"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="@drawable/bg_edit_text"
-            android:hint="Point scanner at tag (OUT / PRINTED / STANDBY)"
-            android:paddingHorizontal="16dp"
-            android:fontFamily="@font/raleway_regular"
-            android:textSize="13sp"
-            android:textColor="@color/black"
-            android:layout_marginBottom="8dp"
-            android:inputType="text"
-            android:imeOptions="actionSearch"
-            android:importantForAutofill="no"
-            tools:ignore="all" />
+            android:layout_marginBottom="8dp" />
 
         <!-- Tag result card — hidden until scan succeeds -->
         <FrameLayout
@@ -88,24 +71,32 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:visibility="gone"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="12dp">
 
             <include layout="@layout/item_manual_tag" />
 
         </FrameLayout>
 
         <!-- Placeholder shown before any scan -->
-        <TextView
-            android:id="@+id/tvTagPlaceholder"
+        <LinearLayout
+            android:id="@+id/layoutTagPlaceholder"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:text="No tag scanned yet"
-            android:textSize="12sp"
-            android:fontFamily="@font/raleway_regular"
-            android:textColor="@color/black"
-            android:alpha="0.35"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginBottom="16dp" />
+            android:background="@drawable/bg_edit_text"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Point scanner at tag to scan..."
+                android:textSize="12sp"
+                android:fontFamily="@font/raleway_regular"
+                android:textColor="@color/black"
+                android:alpha="0.35" />
+
+        </LinearLayout>
 
         <!-- Remark label -->
         <TextView
@@ -118,7 +109,7 @@
             android:alpha="0.5"
             android:layout_marginBottom="4dp" />
 
-        <!-- Remark — multiline flexible -->
+        <!-- Remark multiline -->
         <EditText
             android:id="@+id/etManualRemark"
             android:layout_width="match_parent"
