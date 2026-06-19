@@ -6,6 +6,7 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import com.example.inventory_system_ht.entity.AppLogEntity;
 import com.example.inventory_system_ht.entity.DeliveryOrderEntity;
+import com.example.inventory_system_ht.entity.ItemCacheEntity;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
 import com.example.inventory_system_ht.entity.SearchItemEntity;
@@ -24,7 +25,8 @@ import com.example.inventory_system_ht.entity.TagLocalEntity;
                 PendingSubmitEntity.class,
                 ScanQueueEntity.class,
                 SessionItemEntity.class,
-                StockInScanEntity.class
+                StockInScanEntity.class,
+                ItemCacheEntity.class
         },
         version = 11,
         exportSchema = false

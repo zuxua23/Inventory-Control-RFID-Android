@@ -34,6 +34,8 @@ import com.densowave.scannersdk.RFID.RFIDDataReceivedEvent;
 import com.example.inventory_system_ht.R;
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.adapter.TagRegistrationAdapter;
+import com.example.inventory_system_ht.database.AppDatabase;
+import com.example.inventory_system_ht.entity.ItemCacheEntity;
 import com.example.inventory_system_ht.entity.TagLocalEntity;
 import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.model.ItemModel;
@@ -56,6 +58,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -63,30 +67,6 @@ import retrofit2.Response;
 
 public class TagRegistrationActivity extends ScannerActivity implements RFIDDataDelegate {
 
-    // Views
-    private AutoCompleteTextView actvItemSearch;
-    private TextView tvSelectedItem, tvScanned, tvProcessing;
-    private Button btnClear, btnSubmitRegis;
-    private RecyclerView rvTags;
-    private View tvEmpty;
-
-    // State
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private TagRegistrationAdapter adapter;
-    private final List<TagLocalEntity> tagList = new ArrayList<>();
-
-    // Selected item
-    private String selectedItemId = null;
-    private String selectedItemName = null;
-
-    // All items from API
-    private List<ItemModel.ItemResponse> allItems = new ArrayList<>();
-
-    // Scan guard — max 1 tag
-    private String currentEpc = null;
-    private boolean isProcessing = false;
-
-    // Recent items
     private static final String PREF_RECENT = "tag_regis_recent_items";
     private static final int MAX_RECENT = 5;
 
@@ -94,6 +74,30 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"));
     private final int[] powerValues = {5, 10, 15, 18, 21, 24, 27, 30};
+
+    // Views
+    private AutoCompleteTextView actvItemSearch;
+    private TextView tvScanned, tvProcessing;
+    private Button btnClear, btnSubmitRegis;
+    private RecyclerView rvTags;
+    private View tvEmpty;
+
+    // State
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private TagRegistrationAdapter adapter;
+    private final List<TagLocalEntity> tagList = new ArrayList<>();
+
+    // Selected item
+    private String selectedItemId = null;
+    private String selectedItemName = null;
+
+    // Items for autocomplete
+    private List<ItemModel.ItemResponse> allItems = new ArrayList<>();
+
+    // Scan guard — max 1 tag
+    private String currentEpc = null;
+    private boolean isProcessing = false;
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -112,7 +116,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         setupRecyclerView();
         setupItemSearch();
         setupButtonListeners();
-        loadItems();
+        loadItemsWithRoomCache();
 
         FloatingActionButton fabLog = findViewById(R.id.fabLog);
         if (fabLog != null) {
@@ -127,6 +131,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 "Tag Registration", "", "Opened Tag Registration",
                 new PrefManager(this).getUserId());
     }
+
 
     private void applyWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnBack), (v, insets) -> {
@@ -170,17 +175,98 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         RfidBulkHelper.closeInventory(getScannerInstance());
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executor.shutdown();
+    }
+
     // ─── Bind Views ───────────────────────────────────────────────────────────
 
     private void bindViews() {
         actvItemSearch = findViewById(R.id.actvItemSearch);
-        tvSelectedItem = findViewById(R.id.tvSelectedItem);
         tvScanned = findViewById(R.id.tvScanned);
         tvProcessing = findViewById(R.id.tvProcessing);
         btnClear = findViewById(R.id.btnClear);
         btnSubmitRegis = findViewById(R.id.btnSubmitRegis);
         rvTags = findViewById(R.id.rvTags);
         tvEmpty = findViewById(R.id.tvEmpty);
+    }
+
+    // ─── Item Cache — Room DB ─────────────────────────────────────────────────
+
+    /**
+     * Strategy:
+     * 1. Read from Room immediately → populate autocomplete (no delay, works offline)
+     * 2. Fetch API in background → upsert to Room + refresh adapter
+     */
+    private void loadItemsWithRoomCache() {
+        executor.execute(() -> {
+            AppDatabase db = AppDatabase.getDatabase(this);
+
+            // Step 1: load from Room
+            List<ItemCacheEntity> cached = db.appDao().getAllItemCache();
+            if (!cached.isEmpty()) {
+                List<ItemModel.ItemResponse> fromCache = entityToModel(cached);
+                handler.post(() -> {
+                    allItems = fromCache;
+                    setupAutoCompleteAdapter();
+                });
+            }
+
+            // Step 2: fetch fresh from API (always, to keep Room up to date)
+            handler.post(this::fetchItemsFromApi);
+        });
+    }
+
+    private void fetchItemsFromApi() {
+        String token = "Bearer " + new PrefManager(this).getToken();
+        ApiClient.getClient(this).create(ApiService.class)
+                .getAllItems(token)
+                .enqueue(new Callback<List<ItemModel.ItemResponse>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<List<ItemModel.ItemResponse>> call,
+                                           @NonNull Response<List<ItemModel.ItemResponse>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            List<ItemModel.ItemResponse> fresh = response.body();
+                            // Persist to Room on background thread
+                            executor.execute(() -> {
+                                AppDatabase db = AppDatabase.getDatabase(TagRegistrationActivity.this);
+                                db.appDao().clearItemCache();
+                                db.appDao().insertItemCache(modelToEntity(fresh));
+                            });
+                            // Update UI
+                            allItems = fresh;
+                            setupAutoCompleteAdapter();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<List<ItemModel.ItemResponse>> call,
+                                          @NonNull Throwable t) {
+                        // Room cache already loaded — silently ignore if offline
+                        if (allItems.isEmpty()) {
+                            showWarning("Failed to load items. Check connection.");
+                        }
+                    }
+                });
+    }
+
+    private List<ItemModel.ItemResponse> entityToModel(List<ItemCacheEntity> entities) {
+        List<ItemModel.ItemResponse> list = new ArrayList<>();
+        for (ItemCacheEntity e : entities) {
+            list.add(new ItemModel.ItemResponse(e.itemId, e.itemName));
+        }
+        return list;
+    }
+
+    private List<ItemCacheEntity> modelToEntity(List<ItemModel.ItemResponse> models) {
+        List<ItemCacheEntity> list = new ArrayList<>();
+        long now = System.currentTimeMillis();
+        for (ItemModel.ItemResponse m : models) {
+            list.add(new ItemCacheEntity(m.getItemId(), m.getItemName(), now));
+        }
+        return list;
     }
 
     // ─── Item Search / Autocomplete ───────────────────────────────────────────
@@ -202,12 +288,10 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 if (selectedItemId != null) {
                     selectedItemId = null;
                     selectedItemName = null;
-                    tvSelectedItem.setVisibility(View.GONE);
                 }
                 if (s.length() == 0) {
                     showRecentDropdown();
                 } else {
-                    // Swap ke full list adapter kalau masih di recent mode
                     if (actvItemSearch.getAdapter() instanceof ItemAutoCompleteAdapter
                             && ((ItemAutoCompleteAdapter) actvItemSearch.getAdapter()).isRecentMode) {
                         setupAutoCompleteAdapter();
@@ -225,45 +309,19 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 selectedItemName = selected.getItemName();
                 actvItemSearch.setText(selected.getItemName());
                 actvItemSearch.dismissDropDown();
-                tvSelectedItem.setText("✓ " + selected.getItemName());
-                tvSelectedItem.setVisibility(View.VISIBLE);
                 saveRecentItem(selected);
             }
         });
     }
 
-    private void loadItems() {
-        String token = "Bearer " + new PrefManager(this).getToken();
-        ApiClient.getClient(this).create(ApiService.class)
-                .getAllItems(token)
-                .enqueue(new Callback<List<ItemModel.ItemResponse>>() {
-                    @Override
-                    public void onResponse(@NonNull Call<List<ItemModel.ItemResponse>> call,
-                                           @NonNull Response<List<ItemModel.ItemResponse>> response) {
-                        if (response.isSuccessful() && response.body() != null) {
-                            allItems = response.body();
-                            setupAutoCompleteAdapter();
-                        }
-                    }
-                    @Override
-                    public void onFailure(@NonNull Call<List<ItemModel.ItemResponse>> call,
-                                          @NonNull Throwable t) {
-                        showWarning("Failed to load items: " + t.getMessage());
-                    }
-                });
-    }
-
     private void setupAutoCompleteAdapter() {
-        ItemAutoCompleteAdapter a = new ItemAutoCompleteAdapter(allItems, false);
-        actvItemSearch.setAdapter(a);
+        actvItemSearch.setAdapter(new ItemAutoCompleteAdapter(allItems, false));
     }
 
     private void showRecentDropdown() {
         LinkedList<ItemModel.ItemResponse> recents = loadRecentItems();
         if (recents.isEmpty()) return;
-        ItemAutoCompleteAdapter recentAdapter = new ItemAutoCompleteAdapter(
-                new ArrayList<>(recents), true);
-        actvItemSearch.setAdapter(recentAdapter);
+        actvItemSearch.setAdapter(new ItemAutoCompleteAdapter(new ArrayList<>(recents), true));
         actvItemSearch.showDropDown();
     }
 
@@ -319,7 +377,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         rvTags.setNestedScrollingEnabled(false);
         adapter = new TagRegistrationAdapter(tagList);
         rvTags.setAdapter(adapter);
-        // Tap item = hapus (reset scan)
         adapter.setOnItemClickListener(item -> resetScan());
         updateEmptyState();
     }
@@ -331,7 +388,8 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         tvScanned.setText(empty ? "Tag: -" : "Tag: " + tagList.get(0).getEpcTag());
     }
 
-    // ─── Power Spinner ───────────────────────────────────────────────────────
+
+    // ─── Power Spinner ───────────────────────────────────────────────────────────
 
     private void setupPowerSpinner() {
         android.widget.Spinner spinnerPower = findViewById(R.id.spinnerPower);
@@ -373,9 +431,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     private void setupButtonListeners() {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
-
         btnClear.setOnClickListener(v -> resetAll());
-
         btnSubmitRegis.setOnClickListener(v -> {
             if (selectedItemId == null) {
                 showWarning("Please select an item first");
@@ -393,7 +449,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
-        if (isProcessing || !tagList.isEmpty()) return; // sudah ada 1 tag, ignore
+        if (isProcessing || !tagList.isEmpty()) return;
         List<String> epcs = new ArrayList<>();
         for (RFIDData data : event.getRFIDData()) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII()).trim().toUpperCase();
@@ -422,7 +478,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
             return;
         }
 
-        // Validasi status tag ke BE (harus PRINTED atau OUT)
         String token = "Bearer " + new PrefManager(this).getToken();
         ApiClient.getClient(this).create(ApiService.class)
                 .getTagsRegistBulk(token, new TagModel.BulkInfoReq(
@@ -460,8 +515,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                                           @NonNull Throwable t) {
                         if (tvProcessing != null) tvProcessing.setVisibility(View.GONE);
                         isProcessing = false;
-                        // Offline fallback
-                        addTagToList(epc);
+                        addTagToList(epc); // offline fallback
                     }
                 });
     }
@@ -474,7 +528,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         updateEmptyState();
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN,
                 "Tag Registration", epc,
-                "Scanned: " + epc + " → " + selectedItemName,
+                "Scanned: " + epc + " -> " + selectedItemName,
                 new PrefManager(this).getUserId());
     }
 
@@ -499,7 +553,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                                     "Registered EPC=" + epcTag + " ItemId=" + itemId, userId);
                             showSuccess("Tag successfully registered to " + selectedItemName);
                             playScanFeedback(0);
-                            // Reset scan saja, item selection tetap → operator bisa langsung scan tag berikutnya
                             resetScan();
                         } else {
                             LogManager.get(TagRegistrationActivity.this).log(
@@ -526,16 +579,13 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     // ─── Reset ────────────────────────────────────────────────────────────────
 
-    /** Reset penuh — item selection + scan */
     private void resetAll() {
         actvItemSearch.setText("");
-        tvSelectedItem.setVisibility(View.GONE);
         selectedItemId = null;
         selectedItemName = null;
         resetScan();
     }
 
-    /** Reset scan saja, item selection tetap */
     private void resetScan() {
         tagList.clear();
         currentEpc = null;
@@ -554,7 +604,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
         private List<ItemModel.ItemResponse> filtered;
         private final List<ItemModel.ItemResponse> original;
-        boolean isRecentMode; // package-private, diakses dari outer class
+        boolean isRecentMode;
 
         ItemAutoCompleteAdapter(List<ItemModel.ItemResponse> items, boolean isRecentMode) {
             super(TagRegistrationActivity.this, 0, items);
@@ -577,7 +627,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         @Override
         public ItemModel.ItemResponse getItem(int position) {
             if (isRecentMode) {
-                if (position == 0) return null; // header
+                if (position == 0) return null;
                 return filtered.get(position - 1);
             }
             return filtered.get(position);
@@ -592,7 +642,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         @Override
         public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
             if (isRecentMode && position == 0) {
-                // Header "Recently selected"
                 View headerView = LayoutInflater.from(getContext())
                         .inflate(android.R.layout.simple_list_item_1, parent, false);
                 headerView.setTag("header");

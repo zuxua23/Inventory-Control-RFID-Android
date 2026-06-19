@@ -13,6 +13,7 @@ import com.example.inventory_system_ht.entity.SearchItemEntity;
 import com.example.inventory_system_ht.entity.SessionItemEntity;
 import com.example.inventory_system_ht.entity.StockInScanEntity;
 import com.example.inventory_system_ht.entity.TagCacheEntity;
+import com.example.inventory_system_ht.entity.ItemCacheEntity;
 import com.example.inventory_system_ht.entity.TagLocalEntity;
 
 import java.util.List;
@@ -80,13 +81,13 @@ public interface AppDao {
     @Query("SELECT COUNT(*) FROM tb_scan_queue WHERE stt_id = :sttId AND is_synced = 0")
     int countUnsyncedBySttId(String sttId);
 
-    @Query("UPDATE tb_scan_queue SET is_synced = 1 WHERE stt_id = :sttId AND epc_tag = :epc AND action = 'FOUND'")
+    @Query("UPDATE tb_scan_queue SET is_synced = 1 WHERE stt_id = :sttId AND epc_tag = :epc AND `action` = 'FOUND'")
     void markSyncedByEpc(String sttId, String epc);
 
     @Query("UPDATE tb_scan_queue SET is_synced = 1 WHERE id = :id")
     void markSyncedById(int id);
 
-    @Query("UPDATE tb_scan_queue SET is_synced = 1 WHERE stt_id = :sttId AND epc_tag IN (:epcs) AND action = 'FOUND'")
+    @Query("UPDATE tb_scan_queue SET is_synced = 1 WHERE stt_id = :sttId AND epc_tag IN (:epcs) AND `action` = 'FOUND'")
     void markBulkSynced(String sttId, List<String> epcs);
 
     @Query("DELETE FROM tb_scan_queue WHERE stt_id = :sttId AND is_synced = 1")
@@ -147,15 +148,26 @@ public interface AppDao {
     void deleteOldLogs(long cutoff);
 
     @Query("SELECT * FROM tb_app_log WHERE " +
-           "(:level IS NULL OR level = :level) AND " +
-           "(:action IS NULL OR action = :action) AND " +
-           "(:menu IS NULL OR menu = :menu) AND " +
-           "(:fromTime = 0 OR timestamp >= :fromTime) AND " +
-           "(:toTime = 0 OR timestamp <= :toTime) AND " +
-           "(:search IS NULL OR LOWER(message) LIKE '%' || LOWER(:search) || '%' " +
-           "OR LOWER(entity) LIKE '%' || LOWER(:search) || '%' " +
-           "OR LOWER(action) LIKE '%' || LOWER(:search) || '%' " +
-           "OR LOWER(menu) LIKE '%' || LOWER(:search) || '%') " +
-           "ORDER BY timestamp DESC")
-    List<AppLogEntity> filterLogs(String level, String action, String menu, long fromTime, long toTime, String search);
+            "(:level IS NULL OR level = :level) AND " +
+            "(:actionType IS NULL OR `action` = :actionType) AND " +
+            "(:menu IS NULL OR menu = :menu) AND " +
+            "(:fromTime = 0 OR timestamp >= :fromTime) AND " +
+            "(:toTime = 0 OR timestamp <= :toTime) AND " +
+            "(:search IS NULL OR LOWER(message) LIKE '%' || LOWER(:search) || '%' " +
+            "OR LOWER(entity) LIKE '%' || LOWER(:search) || '%' " +
+            "OR LOWER(`action`) LIKE '%' || LOWER(:search) || '%' " +
+            "OR LOWER(menu) LIKE '%' || LOWER(:search) || '%') " +
+            "ORDER BY timestamp DESC")
+    List<AppLogEntity> filterLogs(String level, String actionType, String menu, long fromTime, long toTime, String search);
+
+    // ─── Item Cache ───────────────────────────────────────────────────────────
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertItemCache(List<ItemCacheEntity> items);
+
+    @Query("SELECT * FROM tb_item_cache ORDER BY item_name ASC")
+    List<ItemCacheEntity> getAllItemCache();
+
+    @Query("DELETE FROM tb_item_cache")
+    void clearItemCache();
 }
