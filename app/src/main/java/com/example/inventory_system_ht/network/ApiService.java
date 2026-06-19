@@ -84,6 +84,10 @@ public interface ApiService {
     Call<List<TagModel.TagInfoDto>> getTagsRegistBulk(@Header("Authorization") String token,
                                                       @Body TagModel.BulkInfoReq request);
 
+    @POST("api/tag/validate-epc")
+    Call<List<TagModel.TagInfoDto>> validateTagEpc(@Header("Authorization") String token,
+                                                   @Body TagModel.BulkInfoReq request);
+
     @GET("api/stock-taking/active")
     Call<StockTakingModel.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);
 

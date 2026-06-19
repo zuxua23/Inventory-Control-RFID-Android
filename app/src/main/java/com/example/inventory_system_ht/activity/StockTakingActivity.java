@@ -192,7 +192,7 @@ public class StockTakingActivity extends ScannerActivity
     private void bindViews() {
         switchRfid = findViewById(R.id.switchRfid);
         btnSave = findViewById(R.id.btnSave);
-        btnRefresh = findViewById(R.id.btnRefresh);
+        btnRefresh = findViewById(R.id.btnReset);
         resultScan = findViewById(R.id.resultScan);
         rvTags = findViewById(R.id.rvTags);
         rvScannedTags = findViewById(R.id.rvScannedTags);
@@ -341,7 +341,14 @@ public class StockTakingActivity extends ScannerActivity
                 showLoading();
                 new Thread(() -> {
                     db.appDao().clearSessionItemsBySttId(sttId);
-                    handler.post(this::loadSessionTagsFromServer);
+                    handler.post(() -> {
+                        scannedItems.clear();
+                        scannedEpcSet.clear();
+                        scannedCount = 0;
+                        scannedAdapter.notifyDataSetChanged();
+                        updateInfo();
+                        loadSessionTagsFromServer();
+                    });
                 }).start();
             });
         }
@@ -448,7 +455,7 @@ public class StockTakingActivity extends ScannerActivity
             handler.post(() -> {
                 List<StockTakingModel.ScannedTagItem> queuedScans = new ArrayList<>();
                 for (ScanQueueEntity q : queue) {
-                    if (q.epcTag == null || !"FOUND".equals(q.action)) continue;
+                    if (q.epcTag == null) continue;
                     String upperEpc = q.epcTag.toUpperCase();
                     if (scannedEpcSet.contains(upperEpc)) continue;
                     scannedEpcSet.add(upperEpc);
@@ -542,14 +549,20 @@ public class StockTakingActivity extends ScannerActivity
 
         if (idx == null) {
             if (!switchRfid.isChecked()) playScanFeedback(2);
-            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Tag not found in session: " + epcOrBarcode, new PrefManager(this).getUserId());
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
+                    "Stock Taking", epcOrBarcode,
+                    "Tag not in session: " + epcOrBarcode,
+                    new PrefManager(this).getUserId());
             return;
         }
 
         StockTakingModel.SessionItem item = sessionItems.get(idx);
         if (!"PENDING".equals(item.state)) {
             if (!switchRfid.isChecked()) showWarning("Already scanned");
-            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Duplicate scan: " + epcOrBarcode, new PrefManager(this).getUserId());
+            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
+                    "Stock Taking", epcOrBarcode,
+                    "Duplicate scan: " + epcOrBarcode,
+                    new PrefManager(this).getUserId());
             return;
         }
 
@@ -560,7 +573,10 @@ public class StockTakingActivity extends ScannerActivity
         rvTags.scrollToPosition(idx);
         updateInfo();
         playScanFeedback(0);
-        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN, "Stock Taking", epcOrBarcode, "Scanned: " + epcOrBarcode, new PrefManager(this).getUserId());
+        LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN,
+                "Stock Taking", epcOrBarcode,
+                "Scanned: " + epcOrBarcode,
+                new PrefManager(this).getUserId());
 
         saveToQueue(item.epcTag, "FOUND", null, null, null);
     }

@@ -109,4 +109,5 @@
     <string name="label_rfid_session">Session</string>
     <string name="label_rfid_qfactor">Q Factor</string>
     <string name="label_rfid_power">Power (dBm)</string>
+    <string name="label_button_reset">Reset</string>
 </resources>

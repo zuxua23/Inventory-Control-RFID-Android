@@ -77,7 +77,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     // Views
     private AutoCompleteTextView actvItemSearch;
-    private TextView tvScanned, tvProcessing;
+    private TextView tvProcessing;
     private Button btnClear, btnSubmitRegis;
     private RecyclerView rvTags;
     private View tvEmpty;
@@ -94,6 +94,9 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     // Items for autocomplete
     private List<ItemModel.ItemResponse> allItems = new ArrayList<>();
+
+    // Flag to prevent onTextChanged from resetting selection when we programmatically set text
+    private boolean isSettingText = false;
 
     // Scan guard — max 1 tag
     private String currentEpc = null;
@@ -185,7 +188,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     private void bindViews() {
         actvItemSearch = findViewById(R.id.actvItemSearch);
-        tvScanned = findViewById(R.id.tvScanned);
         tvProcessing = findViewById(R.id.tvProcessing);
         btnClear = findViewById(R.id.btnClear);
         btnSubmitRegis = findViewById(R.id.btnSubmitRegis);
@@ -280,11 +282,19 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
             }
         });
 
+        // Tap on empty field → show recent
+        actvItemSearch.setOnClickListener(v -> {
+            if (actvItemSearch.getText().toString().isEmpty()) {
+                showRecentDropdown();
+            }
+        });
+
         actvItemSearch.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
 
             @Override
             public void onTextChanged(CharSequence s, int st, int b, int c) {
+                if (isSettingText) return; // programmatic setText, skip
                 if (selectedItemId != null) {
                     selectedItemId = null;
                     selectedItemName = null;
@@ -307,7 +317,9 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
             if (selected != null) {
                 selectedItemId = selected.getItemId();
                 selectedItemName = selected.getItemName();
+                isSettingText = true;
                 actvItemSearch.setText(selected.getItemName());
+                isSettingText = false;
                 actvItemSearch.dismissDropDown();
                 saveRecentItem(selected);
             }
@@ -385,7 +397,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         boolean empty = tagList.isEmpty();
         tvEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
         rvTags.setVisibility(empty ? View.GONE : View.VISIBLE);
-        tvScanned.setText(empty ? "Tag: -" : "Tag: " + tagList.get(0).getEpcTag());
     }
 
 
@@ -480,7 +491,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
         String token = "Bearer " + new PrefManager(this).getToken();
         ApiClient.getClient(this).create(ApiService.class)
-                .getTagsRegistBulk(token, new TagModel.BulkInfoReq(
+                .validateTagEpc(token, new TagModel.BulkInfoReq(
                         Collections.singletonList(epc), "RFID"))
                 .enqueue(new Callback<List<TagModel.TagInfoDto>>() {
                     @Override
@@ -580,10 +591,15 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
     // ─── Reset ────────────────────────────────────────────────────────────────
 
     private void resetAll() {
+        isSettingText = true;
         actvItemSearch.setText("");
+        isSettingText = false;
         selectedItemId = null;
         selectedItemName = null;
         resetScan();
+        actvItemSearch.post(() -> {
+            if (actvItemSearch.hasFocus()) showRecentDropdown();
+        });
     }
 
     private void resetScan() {
@@ -646,7 +662,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                         .inflate(android.R.layout.simple_list_item_1, parent, false);
                 headerView.setTag("header");
                 TextView tv = headerView.findViewById(android.R.id.text1);
-                tv.setText("🕐 Recently selected");
+                tv.setText("Recently selected");
                 tv.setTextSize(11f);
                 tv.setTextColor(0xFF888888);
                 tv.setPadding(32, 12, 32, 4);
