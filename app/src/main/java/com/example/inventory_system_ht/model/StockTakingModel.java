@@ -75,6 +75,23 @@ public class StockTakingModel {
         public String status;
     }
 
+    public static class ValidateTagResult {
+        @SerializedName(value = "TagId", alternate = {"tagId"})
+        public String tagId;
+
+        @SerializedName(value = "EpcTag", alternate = {"epcTag"})
+        public String epcTag;
+
+        @SerializedName(value = "Status", alternate = {"status"})
+        public String status;
+
+        @SerializedName(value = "ItemId", alternate = {"itemId"})
+        public String itemId;
+
+        @SerializedName(value = "ItemName", alternate = {"itemName"})
+        public String itemName;
+    }
+
     public static class ScannedTagItem {
         public String tagId;
         public String epcTag;

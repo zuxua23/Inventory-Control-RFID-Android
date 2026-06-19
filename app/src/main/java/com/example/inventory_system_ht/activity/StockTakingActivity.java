@@ -99,6 +99,8 @@ public class StockTakingActivity extends ScannerActivity
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
     );
     private boolean hasChanges = false;
+    private boolean isManualAddDialogOpen = false;
+    private android.widget.EditText activeDialogEpcField = null;
     private StockTakingItemAdapter adapter;
     private ScannedTagAdapter scannedAdapter;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -333,23 +335,29 @@ public class StockTakingActivity extends ScannerActivity
 
         if (btnRefresh != null) {
             btnRefresh.setOnClickListener(v -> {
-                if (!isNetworkConnected()) {
-                    showWarning("No internet, showing cache");
-                    loadSessionTagsFromCache();
-                    return;
-                }
-                showLoading();
-                new Thread(() -> {
-                    db.appDao().clearSessionItemsBySttId(sttId);
-                    handler.post(() -> {
-                        scannedItems.clear();
-                        scannedEpcSet.clear();
-                        scannedCount = 0;
-                        scannedAdapter.notifyDataSetChanged();
-                        updateInfo();
-                        loadSessionTagsFromServer();
-                    });
-                }).start();
+                showCustomConfirmDialog("Reset semua data scan?", () -> {
+                    // clear in-memory state
+                    scannedItems.clear();
+                    scannedEpcSet.clear();
+                    scannedCount = 0;
+                    hasChanges = false;
+                    scannedAdapter.notifyDataSetChanged();
+                    updateInfo();
+
+                    if (!isNetworkConnected()) {
+                        new Thread(() -> db.appDao().clearScanQueueBySttId(sttId)).start();
+                        loadSessionTagsFromCache();
+                        showWarning("Offline — scan queue cleared, loaded from cache");
+                        return;
+                    }
+
+                    showLoading();
+                    new Thread(() -> {
+                        db.appDao().clearScanQueueBySttId(sttId);
+                        db.appDao().clearSessionItemsBySttId(sttId);
+                        handler.post(this::loadSessionTagsFromServer);
+                    }).start();
+                });
             });
         }
 
@@ -753,61 +761,67 @@ public class StockTakingActivity extends ScannerActivity
         ViewGroup dialogRoot = (ViewGroup) dialog.getWindow().getDecorView();
 
         EditText etItemId = dialog.findViewById(R.id.etManualItemId);
+        EditText etScanEpc = dialog.findViewById(R.id.etManualScanEpc);
         EditText etRemark = dialog.findViewById(R.id.etManualRemark);
-        Spinner spinnerNewTagId = dialog.findViewById(R.id.spinnerNewTagId);
+        View frameTagResult = dialog.findViewById(R.id.frameTagResult);
+        TextView tvTagPlaceholder = dialog.findViewById(R.id.tvTagPlaceholder);
+        TextView tvManualTagId = dialog.findViewById(R.id.tvManualTagId);
+        TextView tvManualEpc = dialog.findViewById(R.id.tvManualEpc);
+        TextView tvManualStatus = dialog.findViewById(R.id.tvManualTagStatus);
 
-        String displayItem;
-        if (item.itemCode != null && !item.itemCode.isEmpty()) displayItem = item.itemCode;
-        else if (item.itemName != null && !item.itemName.isEmpty()) displayItem = item.itemName;
-        else displayItem = item.itemId != null ? item.itemId : "";
+        // "ITEM001 - Nama Item"
+        String itemCode = (item.itemCode != null && !item.itemCode.isEmpty()) ? item.itemCode : "";
+        String itemName = (item.itemName != null && !item.itemName.isEmpty()) ? item.itemName : "";
+        String displayItem = itemCode.isEmpty() && itemName.isEmpty()
+                ? (item.itemId != null ? item.itemId : "")
+                : (itemCode + (itemCode.isEmpty() || itemName.isEmpty() ? "" : " - ") + itemName);
         etItemId.setText(displayItem);
         etItemId.setEnabled(false);
 
-        List<String> spinnerTagIds = new ArrayList<>();
-        List<StockTakingModel.AvailableTag> filteredTags = new ArrayList<>();
-        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, spinnerTagIds);
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerNewTagId.setAdapter(spinnerAdapter);
+        // State: tag yang sudah tervalidasi
+        final StockTakingModel.ValidateTagResult[] validatedTag = {null};
 
-        if (isNetworkConnected()) {
-            showLoading();
-            api.getAvailableTags(token, sttId).enqueue(new Callback<List<StockTakingModel.AvailableTag>>() {
-                @Override
-                public void onResponse(Call<List<StockTakingModel.AvailableTag>> call, Response<List<StockTakingModel.AvailableTag>> response) {
-                    hideLoading();
-                    if (response.isSuccessful() && response.body() != null) {
-                        for (StockTakingModel.AvailableTag tag : response.body()) {
-                            if (tag.itemId != null && tag.itemId.equals(item.itemId)) {
-                                filteredTags.add(tag);
-                                spinnerTagIds.add(tag.tagId);
-                            }
-                        }
-                        spinnerAdapter.notifyDataSetChanged();
-                        if (spinnerTagIds.isEmpty()) showWarning("Tidak ada tag Standby/Printed untuk item ini.");
-                    } else {
-                        showError("Gagal mengambil data tag available.");
-                    }
-                }
-                @Override
-                public void onFailure(Call<List<StockTakingModel.AvailableTag>> call, Throwable t) {
-                    hideLoading();
-                    showError("Error: " + t.getMessage());
-                }
-            });
-        } else {
-            showWarning("Offline, tidak bisa load tag pengganti.");
-        }
+        // Aktifkan intercept scanner
+        isManualAddDialogOpen = true;
+        activeDialogEpcField = etScanEpc;
+
+        // Watch EPC field — auto-fetch saat ada input (dari scan atau ketik manual + enter)
+        etScanEpc.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                // Reset state tag kalau input berubah
+                validatedTag[0] = null;
+                frameTagResult.setVisibility(View.GONE);
+                tvTagPlaceholder.setVisibility(View.VISIBLE);
+            }
+        });
+
+        etScanEpc.setOnEditorActionListener((v, actionId, event) -> {
+            String epc = etScanEpc.getText().toString().trim();
+            if (!epc.isEmpty()) fetchAndValidateTag(epc, item, validatedTag,
+                    frameTagResult, tvTagPlaceholder, tvManualTagId, tvManualEpc, tvManualStatus, dialogRoot);
+            return true;
+        });
+
+        // Dismiss listener — matiin intercept
+        dialog.setOnDismissListener(d -> {
+            isManualAddDialogOpen = false;
+            activeDialogEpcField = null;
+        });
 
         dialog.findViewById(R.id.btnCancelManual).setOnClickListener(v -> dialog.dismiss());
+
         dialog.findViewById(R.id.btnSaveManual).setOnClickListener(v -> {
-            if (spinnerNewTagId.getSelectedItem() == null) {
-                showSagaFeedback(dialogRoot, "Pilih Tag pengganti terlebih dahulu", 1);
+            if (validatedTag[0] == null) {
+                showSagaFeedback(dialogRoot, "Scan tag terlebih dahulu", 1);
                 return;
             }
-            String selectedTagId = spinnerNewTagId.getSelectedItem().toString();
             String remarkText = etRemark.getText().toString().trim();
+            dialog.dismiss();
 
-            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, selectedTagId, remarkText);
+            // Simpan ke queue (offline-first), update UI lokal
+            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, validatedTag[0].epcTag, remarkText);
 
             boolean wasScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
             item.state = "MANUAL_ADD";
@@ -817,12 +831,77 @@ public class StockTakingActivity extends ScannerActivity
             adapter.notifyItemChanged(position);
             updateInfo();
             playScanFeedback(0);
-            dialog.dismiss();
-            showSuccess("Manual add saved");
+            showSuccess("Manual add tersimpan");
         });
+
         dialog.show();
+        etScanEpc.requestFocus();
     }
 
+    private void fetchAndValidateTag(
+            String epc,
+            StockTakingModel.SessionItem item,
+            StockTakingModel.ValidateTagResult[] validatedTag,
+            View frameTagResult,
+            TextView tvTagPlaceholder,
+            TextView tvManualTagId,
+            TextView tvManualEpc,
+            TextView tvManualStatus,
+            ViewGroup dialogRoot) {
+
+        if (!isNetworkConnected()) {
+            showSagaFeedback(dialogRoot, "Koneksi diperlukan untuk validasi tag", 1);
+            return;
+        }
+
+        api.validateManualTag(token, epc, sttId).enqueue(new Callback<StockTakingModel.ValidateTagResult>() {
+            @Override
+            public void onResponse(Call<StockTakingModel.ValidateTagResult> call,
+                                   Response<StockTakingModel.ValidateTagResult> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    StockTakingModel.ValidateTagResult result = response.body();
+
+                    // Kalau tag punya item dan tidak match, tolak
+                    if (result.itemId != null && !result.itemId.isEmpty()
+                            && item.itemId != null && !result.itemId.equals(item.itemId)) {
+                        showSagaFeedback(dialogRoot, "Tag ini bukan milik item " + item.itemCode, 1);
+                        validatedTag[0] = null;
+                        frameTagResult.setVisibility(View.GONE);
+                        tvTagPlaceholder.setVisibility(View.VISIBLE);
+                        return;
+                    }
+
+                    validatedTag[0] = result;
+                    tvManualTagId.setText(result.tagId);
+                    tvManualEpc.setText(result.epcTag);
+                    tvManualStatus.setText(result.status);
+                    frameTagResult.setVisibility(View.VISIBLE);
+                    tvTagPlaceholder.setVisibility(View.GONE);
+                    playScanFeedback(0);
+                } else {
+                    // Parse error message dari response body
+                    String errMsg = "Tag tidak valid";
+                    try {
+                        if (response.errorBody() != null) {
+                            org.json.JSONObject json = new org.json.JSONObject(response.errorBody().string());
+                            errMsg = json.optString("message", errMsg);
+                        }
+                    } catch (Exception ignored) {}
+                    showSagaFeedback(dialogRoot, errMsg, 1);
+                    validatedTag[0] = null;
+                    frameTagResult.setVisibility(View.GONE);
+                    tvTagPlaceholder.setVisibility(View.VISIBLE);
+                    playScanFeedback(2);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<StockTakingModel.ValidateTagResult> call, Throwable t) {
+                showSagaFeedback(dialogRoot, "Gagal validasi: " + t.getMessage(), 1);
+                playScanFeedback(2);
+            }
+        });
+    }
     private void showFaqDialog() {
         Dialog d = new Dialog(this);
         d.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -909,7 +988,15 @@ public class StockTakingActivity extends ScannerActivity
             if (!epc.isEmpty()) epcs.add(epc);
         }
         if (!epcs.isEmpty()) {
-            handler.post(() -> { for (String epc : epcs) processScan(epc); });
+            handler.post(() -> {
+                if (isManualAddDialogOpen && activeDialogEpcField != null) {
+                    // Intercept — kirim ke field EPC dialog, ambil pertama saja
+                    activeDialogEpcField.setText(epcs.get(0));
+                    activeDialogEpcField.setSelection(activeDialogEpcField.getText().length());
+                } else {
+                    for (String epc : epcs) processScan(epc);
+                }
+            });
         }
     }
 
@@ -918,7 +1005,13 @@ public class StockTakingActivity extends ScannerActivity
         List<BarcodeData> dataList = event.getBarcodeData();
         if (!dataList.isEmpty()) {
             String barcode = new String(dataList.get(0).getData());
-            handler.post(() -> processScan(barcode));
+            handler.post(() -> {
+                if (isManualAddDialogOpen && activeDialogEpcField != null) {
+                    activeDialogEpcField.setText(barcode);
+                    activeDialogEpcField.setSelection(activeDialogEpcField.getText().length());
+                } else {
+                    processScan(barcode);
+                }
+            });
         }
-    }
-}
+    }}

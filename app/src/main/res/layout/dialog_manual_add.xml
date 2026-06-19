@@ -16,6 +16,7 @@
         android:orientation="vertical"
         android:padding="24dp">
 
+        <!-- Title -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -26,6 +27,18 @@
             android:textAlignment="center"
             android:layout_marginBottom="20dp" />
 
+        <!-- Item label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Item"
+            android:textSize="11sp"
+            android:fontFamily="@font/raleway_bold"
+            android:textColor="@color/black"
+            android:alpha="0.5"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Item field (disabled) -->
         <EditText
             android:id="@+id/etManualItemId"
             android:layout_width="match_parent"
@@ -36,35 +49,98 @@
             android:fontFamily="@font/raleway_bold"
             android:textSize="14sp"
             android:textColor="@color/black"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="16dp"
             android:inputType="text"
-            android:importantForAutofill="no" />
+            android:importantForAutofill="no"
+            tools:ignore="all" />
 
-        <Spinner
-            android:id="@+id/spinnerNewTagId"
+        <!-- Scan EPC label -->
+        <TextView
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="@drawable/bg_spinner"
-            android:popupBackground="@drawable/bg_spinner_dropdown"
-            android:layout_marginHorizontal="2dp"
-            android:elevation="2dp"
+            android:layout_height="wrap_content"
+            android:text="Scan Replacement Tag"
+            android:textSize="11sp"
             android:fontFamily="@font/raleway_bold"
-            android:layout_marginBottom="12dp" />
+            android:textColor="@color/black"
+            android:alpha="0.5"
+            android:layout_marginBottom="4dp" />
 
+        <!-- EPC scan input field -->
         <EditText
-            android:id="@+id/etManualRemark"
+            android:id="@+id/etManualScanEpc"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:background="@drawable/bg_edit_text"
+            android:hint="Point scanner at tag (OUT / PRINTED / STANDBY)"
+            android:paddingHorizontal="16dp"
+            android:fontFamily="@font/raleway_regular"
+            android:textSize="13sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="8dp"
+            android:inputType="text"
+            android:imeOptions="actionSearch"
+            android:importantForAutofill="no"
+            tools:ignore="all" />
+
+        <!-- Tag result card — hidden until scan succeeds -->
+        <FrameLayout
+            android:id="@+id/frameTagResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp">
+
+            <include layout="@layout/item_manual_tag" />
+
+        </FrameLayout>
+
+        <!-- Placeholder shown before any scan -->
+        <TextView
+            android:id="@+id/tvTagPlaceholder"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:text="No tag scanned yet"
+            android:textSize="12sp"
+            android:fontFamily="@font/raleway_regular"
+            android:textColor="@color/black"
+            android:alpha="0.35"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Remark label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Remark"
+            android:textSize="11sp"
+            android:fontFamily="@font/raleway_bold"
+            android:textColor="@color/black"
+            android:alpha="0.5"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Remark — multiline flexible -->
+        <EditText
+            android:id="@+id/etManualRemark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="80dp"
+            android:background="@drawable/bg_edit_text"
             android:hint="@string/hint_manual_remark"
             android:paddingHorizontal="16dp"
-            android:fontFamily="@font/raleway_bold"
+            android:paddingVertical="12dp"
+            android:fontFamily="@font/raleway_regular"
             android:textSize="14sp"
             android:textColor="@color/black"
             android:layout_marginBottom="24dp"
-            android:inputType="text"
-            android:importantForAutofill="no" />
+            android:inputType="textMultiLine"
+            android:gravity="top|start"
+            android:minLines="2"
+            android:maxLines="5"
+            android:scrollbars="vertical"
+            android:importantForAutofill="no"
+            tools:ignore="all" />
 
+        <!-- Buttons -->
         <LinearLayout
             style="?android:attr/buttonBarStyle"
             android:layout_width="match_parent"
@@ -102,7 +178,8 @@
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 app:cornerRadius="20dp"
-                tools:ignore="TextContrastCheck,VisualLintButtonSize"/>
+                tools:ignore="all" />
+
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

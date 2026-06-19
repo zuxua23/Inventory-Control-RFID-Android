@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="12dp"
+    app:cardBackgroundColor="@color/blue_theme"
+    tools:ignore="all">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="10dp">
+
+        <TextView
+            android:id="@+id/tvManualTagId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:fontFamily="@font/raleway_bold"
+            tools:text="TAG-001"
+            tools:ignore="TextContrastCheck" />
+
+        <TextView
+            android:id="@+id/tvManualEpc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#CCDFFF"
+            android:textSize="11sp"
+            android:fontFamily="@font/raleway_regular"
+            tools:text="E280117000000216B8134469"
+            tools:ignore="TextContrastCheck" />
+
+        <TextView
+            android:id="@+id/tvManualTagStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#CCDFFF"
+            android:textSize="10sp"
+            android:fontFamily="@font/raleway_regular"
+            tools:text="OUT"
+            tools:ignore="TextContrastCheck" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

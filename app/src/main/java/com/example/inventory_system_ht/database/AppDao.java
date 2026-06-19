@@ -160,8 +160,6 @@ public interface AppDao {
             "ORDER BY timestamp DESC")
     List<AppLogEntity> filterLogs(String level, String actionType, String menu, long fromTime, long toTime, String search);
 
-    // ─── Item Cache ───────────────────────────────────────────────────────────
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertItemCache(List<ItemCacheEntity> items);
 
@@ -170,4 +168,7 @@ public interface AppDao {
 
     @Query("DELETE FROM tb_item_cache")
     void clearItemCache();
+    @Query("DELETE FROM tb_scan_queue WHERE stt_id = :sttId AND is_synced = 0")
+    void clearScanQueueBySttId(String sttId);
+
 }

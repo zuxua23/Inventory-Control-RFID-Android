@@ -101,6 +101,13 @@ public interface ApiService {
             @Path("sttId") String sttId
     );
 
+    @GET("api/stock-taking/validate-tag")
+    Call<StockTakingModel.ValidateTagResult> validateManualTag(
+            @Header("Authorization") String token,
+            @Query("epc") String epc,
+            @Query("sttId") String sttId
+    );
+
     @POST("api/stock-taking/operator-submit")
     Call<GeneralResponse> operatorSubmit(@Header("Authorization") String token,
                                          @Body StockTakingModel.OperatorSubmitReq request);
