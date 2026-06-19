@@ -58,6 +58,9 @@ public class StockTakingModel {
         public String itemName;
         @SerializedName(value = "Location", alternate = {"location"})
         public String location;
+        @SerializedName(value = "Action", alternate = {"action"})
+        public String action;
+
         public transient String state = "PENDING";
         public transient String manualRemark = "";
     }

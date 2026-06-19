@@ -336,7 +336,7 @@ public class StockTakingActivity extends ScannerActivity
 
         if (btnRefresh != null) {
             btnRefresh.setOnClickListener(v -> {
-                showCustomConfirmDialog("Reset semua data scan?", () -> {
+                showCustomConfirmDialog("Reset all scan data?", () -> {
                     scannedItems.clear();
                     scannedEpcSet.clear();
                     scannedCount = 0;
@@ -421,12 +421,26 @@ public class StockTakingActivity extends ScannerActivity
 
                 for (StockTakingModel.SessionItem item : fromServer) {
                     if (item == null) continue;
+
+                    String backendAction = item.action != null ? item.action.toUpperCase() : "SYSTEM";
+
+                    if ("REMOVE".equals(backendAction)) {
+                        continue;
+                    }
+
+                    if ("FOUND".equals(backendAction) || "ADD_MANUAL".equals(backendAction) || "MANUAL_ADD".equals(backendAction)) {
+                        scannedEpcSet.add(item.epcTag != null ? item.epcTag.toUpperCase() : "");
+                        continue;
+                    }
+
                     item.state = "PENDING";
+
                     int pos = sessionItems.size();
                     if (item.epcTag != null && !item.epcTag.isEmpty())
                         epcIndexMap.put(item.epcTag.toUpperCase(), pos);
                     if (item.tagId != null && !item.tagId.isEmpty())
                         tagIdIndexMap.put(item.tagId.toUpperCase(), pos);
+
                     sessionItems.add(item);
                 }
                 rebuildLocationsCache();
@@ -541,32 +555,32 @@ public class StockTakingActivity extends ScannerActivity
     }
 
     private void processScan(String epcOrBarcode) {
-        if (sttId.isEmpty()) { playScanFeedback(2); return; }
+        if (sttId.isEmpty()) {
+            playScanFeedback(2);
+            return;
+        }
 
         String key = epcOrBarcode.toUpperCase();
 
-        if (!scannedEpcSet.contains(key)) {
-            scannedEpcSet.add(key);
-            scannedItems.add(0, new StockTakingModel.ScannedTagItem(null, epcOrBarcode, null));
-            scannedAdapter.notifyItemInserted(0);
-            rvScannedTags.scrollToPosition(0);
-        }
-
+        // 1. KITA MATCHING DULU KE DATA SESI (DATABASE)
         Integer idx = epcIndexMap.get(key);
         if (idx == null) idx = tagIdIndexMap.get(key);
 
+        // JIKA TIDAK MATCH:
+        // Langsung stop! Jangan getar, jangan dimasukin ke list UI.
         if (idx == null) {
-            if (!switchRfid.isChecked()) playScanFeedback(2);
             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
                     "Stock Taking", epcOrBarcode,
                     "Tag not in session: " + epcOrBarcode,
                     new PrefManager(this).getUserId());
-            return;
+            return; // Keluar dari fungsi sekarang juga
         }
 
         StockTakingModel.SessionItem item = sessionItems.get(idx);
+
+        // JIKA MATCH, TAPI TAG SUDAH PERNAH DI-SCAN (DUPLIKAT):
+        // Langsung stop! Gak usah berisik getar-getar.
         if (!"PENDING".equals(item.state)) {
-            if (!switchRfid.isChecked()) showWarning("Already scanned");
             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
                     "Stock Taking", epcOrBarcode,
                     "Duplicate scan: " + epcOrBarcode,
@@ -574,6 +588,15 @@ public class StockTakingActivity extends ScannerActivity
             return;
         }
 
+        // 2. KARENA SUDAH LULUS MATCHING & BELUM DI-SCAN, BARU MASUKIN KE LIST UI
+        if (!scannedEpcSet.contains(key)) {
+            scannedEpcSet.add(key);
+            scannedItems.add(0, new StockTakingModel.ScannedTagItem(null, epcOrBarcode, null));
+            scannedAdapter.notifyItemInserted(0);
+            rvScannedTags.scrollToPosition(0);
+        }
+
+        // 3. UPDATE STATUS JADI FOUND & KASIH GETAR SUKSES (Bukan getar error)
         item.state = "FOUND";
         scannedCount++;
         hasChanges = true;
@@ -581,6 +604,7 @@ public class StockTakingActivity extends ScannerActivity
         rvTags.scrollToPosition(idx);
         updateInfo();
         playScanFeedback(0);
+
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN,
                 "Stock Taking", epcOrBarcode,
                 "Scanned: " + epcOrBarcode,
@@ -818,31 +842,15 @@ public class StockTakingActivity extends ScannerActivity
                         if (response.isSuccessful() && response.body() != null) {
                             StockTakingModel.ValidateTagResult result = response.body();
 
-                            if (result.itemId != null && !result.itemId.isEmpty()
-                                    && item.itemId != null && !result.itemId.equals(item.itemId)) {
-                                showSagaFeedback(dialogRoot, "Tag does not belong to item " + item.itemCode, 1);
-                                playScanFeedback(2);
-                                return;
-                            }
-
                             validatedTag[0] = result;
                             tvManualTagId.setText(result.tagId);
                             tvManualEpc.setText(result.epcTag);
                             tvManualStatus.setText(result.status);
                             layoutPlaceholder.setVisibility(View.GONE);
                             frameTagResult.setVisibility(View.VISIBLE);
+
                             playScanFeedback(0);
 
-                        } else {
-                            String errMsg = "Tag not valid";
-                            try {
-                                if (response.errorBody() != null) {
-                                    org.json.JSONObject json = new org.json.JSONObject(response.errorBody().string());
-                                    errMsg = json.optString("message", errMsg);
-                                }
-                            } catch (Exception ignored) {}
-                            showSagaFeedback(dialogRoot, errMsg, 1);
-                            playScanFeedback(2);
                         }
                     });
                 }
@@ -851,7 +859,7 @@ public class StockTakingActivity extends ScannerActivity
                 public void onFailure(Call<StockTakingModel.ValidateTagResult> call, Throwable t) {
                     isValidating[0] = false;
                     handler.post(() -> {
-                        showSagaFeedback(dialogRoot, "Validation failed: " + t.getMessage(), 1);
+                        showSagaFeedback(dialogRoot, "Koneksi terputus: " + t.getMessage(), 1);
                         playScanFeedback(2);
                     });
                 }
