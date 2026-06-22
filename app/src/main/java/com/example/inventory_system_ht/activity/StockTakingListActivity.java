@@ -206,10 +206,6 @@ public class StockTakingListActivity extends ScannerActivity {
         @Override
         public void onBindViewHolder(@NonNull VH h, int position) {
             StockTakingModel.ActiveRes s = list.get(position);
-            h.tvSttId.setText(s.sttId != null
-                    ? "ID: " + s.sttId.substring(0, Math.min(8, s.sttId.length()))
-                    + (s.sttId.length() > 8 ? "..." : "")
-                    : "-");
 
             String locText;
             if (s.locations != null && !s.locations.isEmpty()) {
@@ -220,22 +216,20 @@ public class StockTakingListActivity extends ScannerActivity {
                 locText = "-";
             }
             h.tvLocation.setText(locText);
-
             h.tvDate.setText(s.createdAt != null && !s.createdAt.isEmpty() ? s.createdAt : "-");
 
             h.itemView.setOnClickListener(v -> click.onClick(s));
         }
 
-        @Override
-        public int getItemCount() { return list.size(); }
-
         static class VH extends RecyclerView.ViewHolder {
-            TextView tvSttId, tvLocation, tvDate;
+            TextView tvLocation, tvDate;
             VH(View v) {
                 super(v);
-                tvSttId = v.findViewById(R.id.tvSttId);
                 tvLocation = v.findViewById(R.id.tvSttLocation);
                 tvDate = v.findViewById(R.id.tvSttDate);
             }
         }
+
+        @Override
+        public int getItemCount() { return list.size(); }
     }}
