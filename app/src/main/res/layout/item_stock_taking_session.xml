@@ -42,5 +42,16 @@
             tools:text="Rack A, Rack B"
             tools:ignore="TextContrastCheck" />
 
+        <TextView
+            android:id="@+id/tvSttDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#CCFFFFFF"
+            android:textSize="11sp"
+            android:fontFamily="@font/raleway_regular"
+            android:layout_marginTop="2dp"
+            tools:text="12/06/2025"
+            tools:ignore="TextContrastCheck" />
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>

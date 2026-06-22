@@ -220,6 +220,9 @@ public class StockTakingListActivity extends ScannerActivity {
                 locText = "-";
             }
             h.tvLocation.setText(locText);
+
+            h.tvDate.setText(s.createdAt != null && !s.createdAt.isEmpty() ? s.createdAt : "-");
+
             h.itemView.setOnClickListener(v -> click.onClick(s));
         }
 
@@ -227,12 +230,12 @@ public class StockTakingListActivity extends ScannerActivity {
         public int getItemCount() { return list.size(); }
 
         static class VH extends RecyclerView.ViewHolder {
-            TextView tvSttId, tvLocation;
+            TextView tvSttId, tvLocation, tvDate;
             VH(View v) {
                 super(v);
                 tvSttId = v.findViewById(R.id.tvSttId);
                 tvLocation = v.findViewById(R.id.tvSttLocation);
+                tvDate = v.findViewById(R.id.tvSttDate);
             }
         }
-    }
-}
+    }}

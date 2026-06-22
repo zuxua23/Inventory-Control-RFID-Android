@@ -43,6 +43,9 @@ public class StockTakingModel {
         public List<String> locationIds;
         @SerializedName(value = "Locations", alternate = {"locations"})
         public List<String> locations;
+        @SerializedName(value = "CreatedAt", alternate = {"createdAt"})
+        public String createdAt;
+
     }
 
     public static class SessionItem implements Serializable {

@@ -126,6 +126,8 @@ public class StockPrepProductActivity extends ScannerActivity
     private final Set<String> tagBuffer = new HashSet<>();
     private boolean isProcessingBuffer = false;
     private static final int BATCH_DELAY_MS = 500;
+    private int inFlightCount = 0;
+    private TextView tvProcessing;
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -222,6 +224,7 @@ public class StockPrepProductActivity extends ScannerActivity
         btnListProduct = findViewById(R.id.btnListProduct);
         btnSumProduct = findViewById(R.id.btnSumProduct);
         fabScanCamera = findViewById(R.id.fabScanCamera);
+        tvProcessing = findViewById(R.id.tvProcessing);
 
         spinnerPower.setVisibility(View.GONE);
         switchRfid.setChecked(false);
@@ -751,12 +754,21 @@ public class StockPrepProductActivity extends ScannerActivity
 
     private static final long CACHE_EXPIRY_MS = 16 * 60 * 60 * 1000L;
 
+    private void setProcessing(boolean active) {
+        inFlightCount = Math.max(0, inFlightCount + (active ? 1 : -1));
+        if (tvProcessing != null)
+            tvProcessing.setVisibility(inFlightCount > 0 ? View.VISIBLE : View.GONE);
+    }
+
     private void validateTagsBulk(List<String> codes, boolean isRfid) {
+        runOnUiThread(() -> setProcessing(true));
+
         new Thread(() -> {
             List<TagLocalEntity> successfulTags = new ArrayList<>();
             List<String> failedCodes = new ArrayList<>();
             Map<String, String> rejectionReasons = new HashMap<>();
             Map<String, Boolean> shouldNotify = new HashMap<>();
+            Map<String, Integer> batchQtyMap = new HashMap<>();
             String userId = new PrefManager(this).getUserId();
 
             for (String code : codes) {
@@ -782,34 +794,41 @@ public class StockPrepProductActivity extends ScannerActivity
                         failedCodes.add(code);
                         continue;
                     }
-                    if (!requiredQtyMap.containsKey(cached.itemId)) {
+                    if (cached.itemId == null || !requiredQtyMap.containsKey(cached.itemId)) {
                         rejectionReasons.put(code, "Item not in this DO");
                         shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
                     }
-                    int currentQty = 0;
+                    int existingQty = 0;
                     for (TagLocalEntity t : scannedList) {
-                        if (cached.itemId.equals(t.getItmId())) currentQty++;
+                        if (cached.itemId.equals(t.getItmId())) existingQty++;
                     }
-                    for (TagLocalEntity t : successfulTags) {
-                        if (cached.itemId.equals(t.getItmId())) currentQty++;
-                    }
-                    if (currentQty >= requiredQtyMap.get(cached.itemId)) {
-                        rejectionReasons.put(code, "Done");
+                    int batchQty = batchQtyMap.getOrDefault(cached.itemId, 0);
+                    if (existingQty + batchQty >= requiredQtyMap.get(cached.itemId)) {
+                        rejectionReasons.put(code, "Qty sudah terpenuhi");
                         shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
                     }
-                    if (scannedEpcSet.contains(cached.epcTag.toUpperCase())) {
+                    String epcKeyCached = cached.epcTag != null ? cached.epcTag.toUpperCase() : code;
+                    if (scannedEpcSet.contains(epcKeyCached)) {
                         rejectionReasons.put(code, "Already scanned");
                         shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
                     }
-                    candidate = new TagLocalEntity(
-                            cached.epcTag, cached.tagId, cached.itemId,
-                            cached.itemName, currentDoNo, 0);
+                    boolean dupInBatchCached = false;
+                    for (TagLocalEntity t : successfulTags) {
+                        if (epcKeyCached.equals(t.getEpcTag() != null ? t.getEpcTag().toUpperCase() : "")) {
+                            dupInBatchCached = true;
+                            break;
+                        }
+                    }
+                    if (dupInBatchCached) continue;
+
+                    candidate = new TagLocalEntity(cached.epcTag, cached.tagId, cached.itemId, cached.itemName, currentDoNo, 0);
+                    batchQtyMap.put(cached.itemId, batchQty + 1);
 
                 } else {
                     try {
@@ -819,7 +838,7 @@ public class StockPrepProductActivity extends ScannerActivity
 
                         if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {
                             rejectionReasons.put(code, "Tag not registered");
-                            shouldNotify.put(code, false);
+                            shouldNotify.put(code, !isRfid);
                             failedCodes.add(code);
                             continue;
                         }
@@ -835,36 +854,43 @@ public class StockPrepProductActivity extends ScannerActivity
                         cache.cachedAt = System.currentTimeMillis();
                         appDao.insertTagCache(cache);
 
-                        if (!requiredQtyMap.containsKey(info.getItemId())) {
+                        if (info.getItemId() == null || !requiredQtyMap.containsKey(info.getItemId())) {
                             rejectionReasons.put(code, "Item not in this DO");
-                            shouldNotify.put(code, false);
+                            shouldNotify.put(code, !isRfid);
                             failedCodes.add(code);
                             continue;
                         }
-                        int currentQty = 0;
+                        int existingQty = 0;
                         for (TagLocalEntity t : scannedList) {
-                            if (info.getItemId().equals(t.getItmId())) currentQty++;
+                            if (info.getItemId().equals(t.getItmId())) existingQty++;
                         }
-                        for (TagLocalEntity t : successfulTags) {
-                            if (info.getItemId().equals(t.getItmId())) currentQty++;
-                        }
-                        if (currentQty >= requiredQtyMap.get(info.getItemId())) {
-                            rejectionReasons.put(code, "Done");
+                        int batchQty = batchQtyMap.getOrDefault(info.getItemId(), 0);
+                        if (existingQty + batchQty >= requiredQtyMap.get(info.getItemId())) {
+                            rejectionReasons.put(code, "Qty sudah terpenuhi");
                             shouldNotify.put(code, false);
                             failedCodes.add(code);
                             continue;
                         }
-                        if (scannedEpcSet.contains(info.getEpcTag() != null
-                                ? info.getEpcTag().toUpperCase() : code)) {
+                        String epcKey = info.getEpcTag() != null ? info.getEpcTag().toUpperCase() : code;
+                        if (scannedEpcSet.contains(epcKey)) {
                             rejectionReasons.put(code, "Already scanned");
                             shouldNotify.put(code, false);
                             failedCodes.add(code);
                             continue;
                         }
+                        boolean dupInBatch = false;
+                        for (TagLocalEntity t : successfulTags) {
+                            if (epcKey.equals(t.getEpcTag() != null ? t.getEpcTag().toUpperCase() : "")) {
+                                dupInBatch = true;
+                                break;
+                            }
+                        }
+                        if (dupInBatch) continue;
+
                         candidate = new TagLocalEntity(
                                 info.getEpcTag() != null ? info.getEpcTag() : code,
-                                info.getTagId(), info.getItemId(),
-                                info.getItemName(), currentDoNo, 0);
+                                info.getTagId(), info.getItemId(), info.getItemName(), currentDoNo, 0);
+                        batchQtyMap.put(info.getItemId(), batchQty + 1);
 
                     } catch (Exception e) {
                         LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
@@ -881,6 +907,8 @@ public class StockPrepProductActivity extends ScannerActivity
             }
 
             runOnUiThread(() -> {
+                setProcessing(false);
+
                 for (TagLocalEntity real : successfulTags) {
                     scannedList.add(0, real);
                     scannedEpcSet.add(real.getEpcTag().toUpperCase());

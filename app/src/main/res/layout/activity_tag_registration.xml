@@ -178,7 +178,7 @@
                     android:id="@+id/tvProcessing"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="⏳ Memproses tag..."
+                    android:text="Validating tag..."
                     android:textColor="@color/blue_theme"
                     android:textSize="13sp"
                     android:fontFamily="@font/raleway_bold"
