@@ -700,7 +700,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                         String query = constraint.toString().toLowerCase().trim();
                         List<ItemModel.ItemResponse> out = new ArrayList<>();
                         for (ItemModel.ItemResponse item : original) {
-                            if (item.getItemName().toLowerCase().contains(query))
+                            if (item.getItemName() != null && item.getItemName().toLowerCase().contains(query))
                                 out.add(item);
                         }
                         results.values = out;

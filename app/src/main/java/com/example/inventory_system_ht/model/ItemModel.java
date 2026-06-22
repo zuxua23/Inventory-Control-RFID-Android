@@ -38,6 +38,7 @@ public class ItemModel {
         private String itemId;
         private String itemName;
 
+        public ItemResponse() {}
         public ItemResponse(String itemId, String itemName) {
             this.itemId = itemId;
             this.itemName = itemName;
