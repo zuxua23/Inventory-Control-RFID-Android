@@ -1,6 +1,7 @@
 package com.example.inventory_system_ht.network;
 
 import com.example.inventory_system_ht.model.AuthModel;
+import com.example.inventory_system_ht.model.AvailableTagDto;
 import com.example.inventory_system_ht.model.DOModel;
 import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.model.ItemModel;
@@ -83,6 +84,10 @@ public interface ApiService {
     @POST("api/preparation/bulk-info")
     Call<List<TagModel.TagInfoDto>> getTagsRegistBulk(@Header("Authorization") String token,
                                                       @Body TagModel.BulkInfoReq request);
+
+    @GET("api/preparation/available-tags/{doId}")
+    Call<List<AvailableTagDto>> getAvailableTagsForDo(@Header("Authorization") String token,
+                                                      @Path("doId") String doId);
 
     @POST("api/tag/validate-epc")
     Call<List<TagModel.TagInfoDto>> validateTagEpc(@Header("Authorization") String token,

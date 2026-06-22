@@ -282,7 +282,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
             }
         });
 
-        // Tap on empty field → show recent
         actvItemSearch.setOnClickListener(v -> {
             if (actvItemSearch.getText().toString().isEmpty()) {
                 showRecentDropdown();
@@ -378,10 +377,12 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
             JSONArray arr = new JSONArray(json);
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject obj = arr.getJSONObject(i);
-                list.add(new ItemModel.ItemResponse(
-                        obj.getString("itemId"),
-                        obj.getString("itemName")
-                ));
+                String id = obj.optString("itemId", "");
+                String name = obj.optString("itemName", "");
+                if (!id.isEmpty() && !name.isEmpty()){
+                    list.add(new ItemModel.ItemResponse(id, name));
+                }
+
             }
         } catch (JSONException ignored) {}
         return list;
@@ -681,8 +682,11 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 convertView.setTag("item");
             }
             ItemModel.ItemResponse item = getItem(position);
-            ((TextView) convertView.findViewById(android.R.id.text1))
-                    .setText(item != null ? item.getItemName() : "");
+            TextView tvItem = convertView.findViewById(android.R.id.text1);
+
+            tvItem.setText(item != null ? item.getItemName() : "");
+            tvItem.setTextColor(0xFF000000);
+
             return convertView;
         }
 

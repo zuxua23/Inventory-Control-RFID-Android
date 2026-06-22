@@ -52,6 +52,7 @@ import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
 import com.example.inventory_system_ht.entity.TagCacheEntity;
 import com.example.inventory_system_ht.entity.TagLocalEntity;
+import com.example.inventory_system_ht.model.AvailableTagDto;
 import com.example.inventory_system_ht.model.DOModel;
 import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.model.ItemModel;
@@ -481,6 +482,7 @@ public class StockPrepProductActivity extends ScannerActivity
                             else { buildSumProductList(); if (sumAdapter != null) sumAdapter.updateData(sumProductList); }
                         });
                     }
+                    prefetchAvailableTags();
                 } else {
                     LogManager.get(StockPrepProductActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
                             "Stock Preparation", currentDoId, "Fetch DO detail failed: HTTP " + response.code(),
@@ -500,7 +502,76 @@ public class StockPrepProductActivity extends ScannerActivity
             }
         });
     }
+    private void prefetchAvailableTags() {
+        if (currentDoId == null || currentDoId.isEmpty()) return;
+        if (!isNetworkConnected()) return;
 
+        String userId = new PrefManager(this).getUserId();
+
+        api.getAvailableTagsForDo(token, currentDoId).enqueue(new Callback<List<AvailableTagDto>>() {
+            @Override
+            public void onResponse(Call<List<AvailableTagDto>> call,
+                                   Response<List<AvailableTagDto>> response) {
+                if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {
+                    LogManager.get(StockPrepProductActivity.this).log(
+                            LogManager.WARNING, LogManager.ACTION_READ,
+                            "Stock Preparation", currentDoId,
+                            "Pre-fetch tags: empty or failed (HTTP " + response.code() + ")",
+                            userId);
+                    return;
+                }
+
+                List<AvailableTagDto> tagList = response.body();
+
+                new Thread(() -> {
+                    try {
+                        List<TagCacheEntity> cacheList = new ArrayList<>();
+                        long now = System.currentTimeMillis();
+
+                        for (AvailableTagDto dto : tagList) {
+                            if (dto.getEpcTag() == null || dto.getEpcTag().isEmpty()) continue;
+
+                            TagCacheEntity cache = new TagCacheEntity();
+                            cache.epcTag = dto.getEpcTag();
+                            cache.tagId = dto.getTagId();
+                            cache.itemId = dto.getItemId();
+                            cache.itemName = dto.getItemName();
+                            cache.status = dto.getStatus();
+                            cache.cachedAt = now;
+                            cacheList.add(cache);
+                        }
+
+                        if (!cacheList.isEmpty()) {
+                            appDao.insertTagCacheList(cacheList);
+                        }
+
+                        LogManager.get(StockPrepProductActivity.this).log(
+                                LogManager.INFO, LogManager.ACTION_READ,
+                                "Stock Preparation", currentDoId,
+                                "Pre-fetched " + cacheList.size() + " tags into cache for offline use.",
+                                userId);
+
+                    } catch (Exception e) {
+                        LogManager.get(StockPrepProductActivity.this).log(
+                                LogManager.ERROR, LogManager.ACTION_READ,
+                                "Stock Preparation", currentDoId,
+                                "Pre-fetch insert error: " + e.getMessage(),
+                                userId);
+                    }
+                }).start();
+            }
+
+            @Override
+            public void onFailure(Call<List<AvailableTagDto>> call, Throwable t) {
+                LogManager.get(StockPrepProductActivity.this).log(
+                        LogManager.ERROR, LogManager.ACTION_READ,
+                        "Stock Preparation", currentDoId,
+                        "Pre-fetch tags network error: " + t.getMessage(),
+                        userId);
+                // Silent fail — offline mode tetap bisa pakai cache lama
+            }
+        });
+    }
     private void fetchLocations() {
         if (!isNetworkConnected()) return;
         String userId = new PrefManager(this).getUserId();
@@ -625,7 +696,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     adapter.notifyDataSetChanged();
                     tvScanned.setText("Scanned : " + scanCount);
                     if (!forThis.isEmpty())
-                        showWarning("Restored " + forThis.size() + " item(s)");
+                        showWarning("Restored data");
                 });
             } catch (Exception e) { LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ, "Stock Preparation", "Session", "Failed to restore scan session: " + e.getMessage(), new PrefManager(StockPrepProductActivity.this).getUserId()); }
         }).start();
@@ -675,19 +746,6 @@ public class StockPrepProductActivity extends ScannerActivity
 
         boolean isRfid = switchRfid.isChecked();
 
-        for (String epc : batchToProcess) {
-            scannedRawSet.add(epc);
-            TagLocalEntity placeholder = new TagLocalEntity(
-                    epc, epc, "PENDING", "Validating...", currentDoNo, 0);
-            scannedList.add(0, placeholder);
-            scanCount++;
-        }
-
-        tvScanned.setText("Scanned : " + scanCount);
-        adapter.notifyDataSetChanged();
-        rvTags.scrollToPosition(0);
-        playScanFeedback(0);
-
         validateTagsBulk(batchToProcess, isRfid);
     }
 
@@ -698,6 +756,7 @@ public class StockPrepProductActivity extends ScannerActivity
             List<TagLocalEntity> successfulTags = new ArrayList<>();
             List<String> failedCodes = new ArrayList<>();
             Map<String, String> rejectionReasons = new HashMap<>();
+            Map<String, Boolean> shouldNotify = new HashMap<>();
             String userId = new PrefManager(this).getUserId();
 
             for (String code : codes) {
@@ -707,32 +766,51 @@ public class StockPrepProductActivity extends ScannerActivity
                     TagCacheEntity cached = appDao.getTagCacheByKey(code);
                     if (cached == null) {
                         rejectionReasons.put(code, "Tag not found in cache");
+                        shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
                     }
                     if (System.currentTimeMillis() - cached.cachedAt > CACHE_EXPIRY_MS) {
-                        rejectionReasons.put(code, "Cache expired, please go online to re-validate");
+                        rejectionReasons.put(code, "Cache expired, go online to re-validate");
+                        shouldNotify.put(code, true);
                         failedCodes.add(code);
                         continue;
                     }
                     if (!"IN_STOCK".equals(cached.status)) {
-                        rejectionReasons.put(code, "Tag status must be IN_STOCK");
+                        rejectionReasons.put(code, "Tag not available");
+                        shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
                     }
                     if (!requiredQtyMap.containsKey(cached.itemId)) {
-                        rejectionReasons.put(code, "Item " + cached.itemId + " not in this DO");
+                        rejectionReasons.put(code, "Item not in this DO");
+                        shouldNotify.put(code, false);
+                        failedCodes.add(code);
+                        continue;
+                    }
+                    int currentQty = 0;
+                    for (TagLocalEntity t : scannedList) {
+                        if (cached.itemId.equals(t.getItmId())) currentQty++;
+                    }
+                    for (TagLocalEntity t : successfulTags) {
+                        if (cached.itemId.equals(t.getItmId())) currentQty++;
+                    }
+                    if (currentQty >= requiredQtyMap.get(cached.itemId)) {
+                        rejectionReasons.put(code, "Done");
+                        shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
                     }
                     if (scannedEpcSet.contains(cached.epcTag.toUpperCase())) {
                         rejectionReasons.put(code, "Already scanned");
+                        shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
                     }
                     candidate = new TagLocalEntity(
                             cached.epcTag, cached.tagId, cached.itemId,
                             cached.itemName, currentDoNo, 0);
+
                 } else {
                     try {
                         TagModel.PrepBulkInfoReq req = new TagModel.PrepBulkInfoReq(
@@ -740,10 +818,8 @@ public class StockPrepProductActivity extends ScannerActivity
                         Response<List<TagModel.TagInfoDto>> response = api.getTagsInfoBulk(token, req).execute();
 
                         if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {
-                            rejectionReasons.put(code, "Tag not registered in database");
-                            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
-                                    "Stock Preparation", code,
-                                    "Tag rejected - not registered in database", userId);
+                            rejectionReasons.put(code, "Tag not registered");
+                            shouldNotify.put(code, false);
                             failedCodes.add(code);
                             continue;
                         }
@@ -760,17 +836,28 @@ public class StockPrepProductActivity extends ScannerActivity
                         appDao.insertTagCache(cache);
 
                         if (!requiredQtyMap.containsKey(info.getItemId())) {
-                            String reason = "Item " + info.getItemId() + " not in this DO";
-                            rejectionReasons.put(code, reason);
-                            LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
-                                    "Stock Preparation", code,
-                                    "Tag rejected - " + reason, userId);
+                            rejectionReasons.put(code, "Item not in this DO");
+                            shouldNotify.put(code, false);
+                            failedCodes.add(code);
+                            continue;
+                        }
+                        int currentQty = 0;
+                        for (TagLocalEntity t : scannedList) {
+                            if (info.getItemId().equals(t.getItmId())) currentQty++;
+                        }
+                        for (TagLocalEntity t : successfulTags) {
+                            if (info.getItemId().equals(t.getItmId())) currentQty++;
+                        }
+                        if (currentQty >= requiredQtyMap.get(info.getItemId())) {
+                            rejectionReasons.put(code, "Done");
+                            shouldNotify.put(code, false);
                             failedCodes.add(code);
                             continue;
                         }
                         if (scannedEpcSet.contains(info.getEpcTag() != null
                                 ? info.getEpcTag().toUpperCase() : code)) {
                             rejectionReasons.put(code, "Already scanned");
+                            shouldNotify.put(code, false);
                             failedCodes.add(code);
                             continue;
                         }
@@ -778,9 +865,12 @@ public class StockPrepProductActivity extends ScannerActivity
                                 info.getEpcTag() != null ? info.getEpcTag() : code,
                                 info.getTagId(), info.getItemId(),
                                 info.getItemName(), currentDoNo, 0);
+
                     } catch (Exception e) {
-                        LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN, "Stock Preparation", code, "Tag API error: " + e.getMessage(), userId);
+                        LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
+                                "Stock Preparation", code, "Tag API error: " + e.getMessage(), userId);
                         rejectionReasons.put(code, "Network error");
+                        shouldNotify.put(code, !isRfid);
                         failedCodes.add(code);
                         continue;
                     }
@@ -791,49 +881,38 @@ public class StockPrepProductActivity extends ScannerActivity
             }
 
             runOnUiThread(() -> {
-                boolean isUiModified = false;
-
                 for (TagLocalEntity real : successfulTags) {
-                    for (int i = 0; i < scannedList.size(); i++) {
-                        TagLocalEntity item = scannedList.get(i);
-                        if ("PENDING".equals(item.getItmId()) && item.getEpcTag().equalsIgnoreCase(real.getEpcTag())) {
-                            scannedList.set(i, real);
-                            scannedEpcSet.add(real.getEpcTag().toUpperCase());
-                            isUiModified = true;
-                            break;
-                        }
-                    }
+                    scannedList.add(0, real);
+                    scannedEpcSet.add(real.getEpcTag().toUpperCase());
+                    scanCount++;
                 }
 
-                for (String code : failedCodes) {
-                    for (int i = 0; i < scannedList.size(); i++) {
-                        TagLocalEntity item = scannedList.get(i);
-                        if ("PENDING".equals(item.getItmId()) && item.getEpcTag().equalsIgnoreCase(code)) {
-                            scannedList.remove(i);
-                            scannedRawSet.remove(code.toUpperCase());
-                            scanCount--;
-                            isUiModified = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (isUiModified) {
+                if (!successfulTags.isEmpty()) {
+                    playScanFeedback(0);
                     buildSumProductList();
                     tvScanned.setText("Scanned : " + scanCount);
                     adapter.notifyDataSetChanged();
+                    rvTags.scrollToPosition(0);
                     if (sumAdapter != null) sumAdapter.updateData(sumProductList);
                 }
 
-                if (!failedCodes.isEmpty()) {
+                String warningMsg = null;
+                for (String code : failedCodes) {
+                    Boolean notify = shouldNotify.get(code);
+                    if (notify != null && notify) {
+                        warningMsg = rejectionReasons.get(code);
+                        break;
+                    }
+                }
+                if (warningMsg != null) {
                     playScanFeedback(2);
-                    String reason = rejectionReasons.get(failedCodes.get(0));
-                    showWarning(reason != null ? reason : "Tag rejected");
+                    showWarning(warningMsg);
                 }
             });
 
         }).start();
     }
+
 
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {

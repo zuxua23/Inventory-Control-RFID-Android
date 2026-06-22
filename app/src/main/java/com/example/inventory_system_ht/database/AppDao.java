@@ -170,5 +170,7 @@ public interface AppDao {
     void clearItemCache();
     @Query("DELETE FROM tb_scan_queue WHERE stt_id = :sttId AND is_synced = 0")
     void clearScanQueueBySttId(String sttId);
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertTagCacheList(List<TagCacheEntity> caches);
 
 }
