@@ -874,14 +874,21 @@ public class StockTakingActivity extends ScannerActivity
         dialog.findViewById(R.id.btnCancelManual).setOnClickListener(v -> dialog.dismiss());
 
         dialog.findViewById(R.id.btnSaveManual).setOnClickListener(v -> {
-            if (validatedTag[0] == null) {
-                showSagaFeedback(dialogRoot, "Scan a replacement tag first", 1);
+            String remarkText = etRemark.getText().toString().trim();
+
+            // Remark WAJIB
+            if (remarkText.isEmpty()) {
+                showSagaFeedback(dialogRoot, "Remark harus diisi", 1);
+                etRemark.requestFocus();
                 return;
             }
-            String remarkText = etRemark.getText().toString().trim();
+
             dialog.dismiss();
 
-            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, validatedTag[0].epcTag, remarkText);
+            String newTagEpc = (validatedTag[0] != null) ? validatedTag[0].epcTag : null;
+            String newTagId  = (validatedTag[0] != null) ? validatedTag[0].tagId  : null;
+
+            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, newTagEpc, remarkText);
 
             boolean wasScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
             item.state = "MANUAL_ADD";

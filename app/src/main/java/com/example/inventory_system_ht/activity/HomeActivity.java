@@ -23,7 +23,9 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.densowave.scannersdk.Common.CommManager;
 import com.densowave.scannersdk.Common.CommScanner;
+import com.example.inventory_system_ht.MyApplication;
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.R;
@@ -79,7 +81,19 @@ public class HomeActivity extends ScannerActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (!prefManager.isSessionValid()) redirectToLogin();
+        if (!prefManager.isSessionValid()) {
+            redirectToLogin();
+            return;
+        }
+        if (!ScannerManager.getInstance().isConnected()) {
+            ((MyApplication) getApplication()).startScannerAccept();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        CommManager.endAccept();
     }
 
     private void initViews() {

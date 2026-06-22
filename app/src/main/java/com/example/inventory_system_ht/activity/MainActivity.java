@@ -10,6 +10,7 @@ import android.os.Looper;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.inventory_system_ht.MyApplication;
 import com.example.inventory_system_ht.R;
 
 public class MainActivity extends AppCompatActivity {
@@ -28,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
                             Manifest.permission.BLUETOOTH_SCAN
                     }, 100);
         } else {
+            ((MyApplication) getApplication()).startScannerAccept();
             goToLogin();
         }
     }
@@ -35,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        ((MyApplication) getApplication()).startScannerAccept();
         goToLogin();
     }
 

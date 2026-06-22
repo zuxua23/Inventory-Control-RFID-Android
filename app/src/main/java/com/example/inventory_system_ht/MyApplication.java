@@ -18,18 +18,21 @@ public class MyApplication extends Application
     public void onCreate() {
         super.onCreate();
         new PrefManager(this).clearSession();
+    }
+
+    public void startScannerAccept() {
         CommManager.addAcceptStatusListener(this);
         CommManager.startAccept();
     }
 
     @Override
     public void OnScannerAppeared(CommScanner scanner) {
+        CommManager.endAccept();
+        CommManager.removeAcceptStatusListener(this);
         try {
             scanner.claim();
             ScannerManager.getInstance().setScanner(scanner);
             scanner.addStatusListener(this);
-            CommManager.endAccept();
-            CommManager.removeAcceptStatusListener(this);
         } catch (Exception ignored) {}
     }
 
@@ -39,8 +42,7 @@ public class MyApplication extends Application
             try { scanner.close(); } catch (Exception ignored) {}
             ScannerManager.getInstance().clearScanner();
 
-            CommManager.addAcceptStatusListener(this);
-            CommManager.startAccept();
+            startScannerAccept();
         }
     }
 }
