@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.inventory_system_ht.MyApplication;
 import com.example.inventory_system_ht.R;
+import com.example.inventory_system_ht.util.PrefManager;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -19,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.launch_activity);
+        new PrefManager(this).clearSession();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)

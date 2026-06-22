@@ -35,8 +35,8 @@ public class ItemModel {
     }
 
     public static class ItemResponse {
-        private final String itemId;
-        private final String itemName;
+        private String itemId;
+        private String itemName;
 
         public ItemResponse(String itemId, String itemName) {
             this.itemId = itemId;

@@ -294,7 +294,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
             @Override
             public void onTextChanged(CharSequence s, int st, int b, int c) {
-                if (isSettingText) return; // programmatic setText, skip
+                if (isSettingText) return;
                 if (selectedItemId != null) {
                     selectedItemId = null;
                     selectedItemName = null;
@@ -302,8 +302,10 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 if (s.length() == 0) {
                     showRecentDropdown();
                 } else {
-                    if (actvItemSearch.getAdapter() instanceof ItemAutoCompleteAdapter
-                            && ((ItemAutoCompleteAdapter) actvItemSearch.getAdapter()).isRecentMode) {
+                    boolean noAdapter = !(actvItemSearch.getAdapter() instanceof ItemAutoCompleteAdapter);
+                    boolean isRecent = !noAdapter
+                            && ((ItemAutoCompleteAdapter) actvItemSearch.getAdapter()).isRecentMode;
+                    if (noAdapter || isRecent) {
                         setupAutoCompleteAdapter();
                     }
                 }
@@ -328,6 +330,10 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     private void setupAutoCompleteAdapter() {
         actvItemSearch.setAdapter(new ItemAutoCompleteAdapter(allItems, false));
+        if (!actvItemSearch.getText().toString().isEmpty() && actvItemSearch.hasFocus()) {
+            actvItemSearch.showDropDown();
+        }
+
     }
 
     private void showRecentDropdown() {
