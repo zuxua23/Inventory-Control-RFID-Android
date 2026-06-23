@@ -137,6 +137,8 @@ public class BarcodeCameraActivity extends AppCompatActivity {
                         imageAnalysis
                 );
                 previewView.setScaleY(-1f);
+                previewView.setScaleX(-1f);
+
             } catch (Exception e) {
                 LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
                         "Camera Scanner", "", "Failed to bind camera: " + e.getMessage(), currentUserId);

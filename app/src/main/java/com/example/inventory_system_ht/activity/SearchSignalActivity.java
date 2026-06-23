@@ -41,6 +41,8 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     private LinearLayout containerSignalBars;
     private TextView tvItemTitle, tvRssiValue;
     private Button btnToggleScan;
+    private boolean triggerCurrentlyHeld = false;
+
     private static final int DENSO_TRIGGER_KEYCODE = android.view.KeyEvent.KEYCODE_FUNCTION;
     private boolean triggerHeld = false;
 
@@ -268,29 +270,38 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
 
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
-        android.util.Log.d("SearchSignal", "KeyEvent kc=" + event.getKeyCode() + " action=" + event.getAction());
         int kc = event.getKeyCode();
-        if (kc == android.view.KeyEvent.KEYCODE_FUNCTION ||
-                kc == android.view.KeyEvent.KEYCODE_PROG_RED ||
-                kc == 319 ) {
 
+        if (kc == android.view.KeyEvent.KEYCODE_FUNCTION) {
             if (event.getAction() == android.view.KeyEvent.ACTION_DOWN) {
-                triggerHeld = true;
-            } else if (event.getAction() == android.view.KeyEvent.ACTION_UP) {
-                triggerHeld = false;
-                if (isScanning) {
-                    handler.removeCallbacks(rssiAverageRunnable);
-                    handler.removeCallbacks(noSignalRunnable);
-                    handler.removeCallbacks(barAnimRunnable);
-                    handler.removeCallbacks(beepRunnable);
-                    synchronized (rssiBuffer) { rssiBuffer.clear(); }
-                    handler.post(this::resetSignalDisplay);
+                if (!triggerCurrentlyHeld) {
+                    triggerCurrentlyHeld = true;
                 }
+                return true;
+            } else if (event.getAction() == android.view.KeyEvent.ACTION_UP) {
+                if (triggerCurrentlyHeld) {
+                    triggerCurrentlyHeld = false;
+                    if (isScanning) {
+                        onTriggerReleased();
+                    }
+                }
+                return true;
             }
-            return true;
         }
         return super.dispatchKeyEvent(event);
     }
+
+    private void onTriggerReleased() {
+        handler.removeCallbacks(rssiAverageRunnable);
+        handler.removeCallbacks(noSignalRunnable);
+        handler.removeCallbacks(barAnimRunnable);
+        handler.removeCallbacks(beepRunnable);
+        synchronized (rssiBuffer) {
+            rssiBuffer.clear();
+        }
+        handler.post(this::resetSignalDisplay);
+    }
+
 
     private void stopScanning() {
         isScanning = false;

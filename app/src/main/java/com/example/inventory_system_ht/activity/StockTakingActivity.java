@@ -841,20 +841,16 @@ public class StockTakingActivity extends ScannerActivity
                 public void onResponse(Call<StockTakingModel.ValidateTagResult> call,
                                        Response<StockTakingModel.ValidateTagResult> response) {
                     isValidating[0] = false;
-
                     handler.post(() -> {
                         if (response.isSuccessful() && response.body() != null) {
                             StockTakingModel.ValidateTagResult result = response.body();
-
                             validatedTag[0] = result;
                             tvManualTagId.setText(result.tagId);
                             tvManualEpc.setText(result.epcTag);
                             tvManualStatus.setText(result.status);
                             layoutPlaceholder.setVisibility(View.GONE);
                             frameTagResult.setVisibility(View.VISIBLE);
-
                             playScanFeedback(0);
-
                         }
                     });
                 }
@@ -863,7 +859,7 @@ public class StockTakingActivity extends ScannerActivity
                 public void onFailure(Call<StockTakingModel.ValidateTagResult> call, Throwable t) {
                     isValidating[0] = false;
                     handler.post(() -> {
-                        showSagaFeedback(dialogRoot, "Koneksi terputus: " + t.getMessage(), 1);
+                        showSagaFeedback(dialogRoot, "Connection failed: " + t.getMessage(), 1);
                         playScanFeedback(2);
                     });
                 }
@@ -880,19 +876,16 @@ public class StockTakingActivity extends ScannerActivity
         dialog.findViewById(R.id.btnSaveManual).setOnClickListener(v -> {
             String remarkText = etRemark.getText().toString().trim();
 
-            // Remark WAJIB
             if (remarkText.isEmpty()) {
-                showSagaFeedback(dialogRoot, "Remark harus diisi", 1);
+                showSagaFeedback(dialogRoot, "Remark is required", 1);
                 etRemark.requestFocus();
                 return;
             }
 
             dialog.dismiss();
 
-            String newTagEpc = (validatedTag[0] != null) ? validatedTag[0].epcTag : null;
-            String newTagId  = (validatedTag[0] != null) ? validatedTag[0].tagId  : null;
-
-            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, newTagEpc, remarkText);
+            String newTagId = (validatedTag[0] != null) ? validatedTag[0].tagId : null;
+            saveToQueue(item.epcTag, "MANUAL_ADD", item.itemId, newTagId, remarkText);
 
             boolean wasScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
             item.state = "MANUAL_ADD";
