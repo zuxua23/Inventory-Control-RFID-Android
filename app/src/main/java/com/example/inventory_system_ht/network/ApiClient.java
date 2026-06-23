@@ -20,14 +20,12 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
     private static Retrofit retrofit = null;
+    private static Retrofit retrofitLong = null;
 
     public static Retrofit getClient(Context context) {
         PrefManager prefManager = new PrefManager(context);
         String baseUrl = prefManager.getBaseUrl();
-
-        if (baseUrl == null || baseUrl.isEmpty()) {
-            baseUrl = "http://localhost/";
-        }
+        if (baseUrl == null || baseUrl.isEmpty()) baseUrl = "http://localhost/";
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
         loggingInterceptor.setLevel(BuildConfig.DEBUG
@@ -37,14 +35,10 @@ public class ApiClient {
         Interceptor authInterceptor = chain -> {
             Request originalRequest = chain.request();
             String token = prefManager.getToken();
-
             Request.Builder builder = originalRequest.newBuilder()
                     .header("Accept", "application/json");
-
-            if (token != null && !token.isEmpty()) {
+            if (token != null && !token.isEmpty())
                 builder.header("Authorization", "Bearer " + token);
-            }
-
             return chain.proceed(builder.build());
         };
 
@@ -69,7 +63,42 @@ public class ApiClient {
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
+            retrofitLong = null;
         }
         return retrofit;
+    }
+
+    public static Retrofit getClientLongTimeout(Context context) {
+        PrefManager prefManager = new PrefManager(context);
+        String baseUrl = prefManager.getBaseUrl();
+        if (baseUrl == null || baseUrl.isEmpty()) baseUrl = "http://localhost/";
+
+        if (retrofitLong != null && retrofitLong.baseUrl().toString().equals(baseUrl)) {
+            return retrofitLong;
+        }
+
+        Interceptor authInterceptor = chain -> {
+            String token = prefManager.getToken();
+            Request.Builder builder = chain.request().newBuilder()
+                    .header("Accept", "application/json");
+            if (token != null && !token.isEmpty())
+                builder.header("Authorization", "Bearer " + token);
+            return chain.proceed(builder.build());
+        };
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(authInterceptor)
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build();
+
+        retrofitLong = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        return retrofitLong;
     }
 }

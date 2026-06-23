@@ -133,8 +133,7 @@ public class SearchItemActivity extends ScannerActivity
         rfidShownEpcs.clear();
         rfidActive = scanner != null && scanner.getRFIDScanner() != null;
         if (rfidActive) {
-            int power = new RfidSettingsManager(this).getPower();
-            boolean ok = RfidBulkHelper.openInventory(scanner, this, power);
+            boolean ok = RfidBulkHelper.openInventory(scanner, this, 30);
             if (!ok) {
                 rfidActive = false;
                 showWarning("RFID unavailable - detail view only");

@@ -671,7 +671,11 @@ public class StockTakingActivity extends ScannerActivity
             StockTakingModel.OperatorSubmitReq req = new StockTakingModel.OperatorSubmitReq(sttId, items);
             String reqJson = "{\"sttId\":\"" + sttId + "\",\"count\":" + items.size() + "}";
 
-            handler.post(() -> api.operatorSubmit(token, req).enqueue(new Callback<GeneralResponse>() {
+            // Declare di luar handler.post — ini yang fix-nya
+            ApiService longApi = ApiClient.getClientLongTimeout(StockTakingActivity.this)
+                    .create(ApiService.class);
+
+            handler.post(() -> longApi.operatorSubmit(token, req).enqueue(new Callback<GeneralResponse>() {
                 @Override
                 public void onResponse(Call<GeneralResponse> call, Response<GeneralResponse> response) {
                     hideLoading();

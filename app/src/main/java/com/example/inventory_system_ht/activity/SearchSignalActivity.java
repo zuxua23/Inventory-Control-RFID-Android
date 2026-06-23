@@ -39,15 +39,17 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     private TagModel.SearchItemDto selectedItem;
     private TagModel.TagDetailDto  selectedDetail;
     private LinearLayout containerSignalBars;
-    private TextView     tvItemTitle, tvRssiValue;
-    private Button       btnToggleScan;
+    private TextView tvItemTitle, tvRssiValue;
+    private Button btnToggleScan;
+    private static final int DENSO_TRIGGER_KEYCODE = android.view.KeyEvent.KEYCODE_FUNCTION;
+    private boolean triggerHeld = false;
+
 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    private boolean isScanning       = false;
+    private boolean isScanning = false;
     private boolean tagFoundNotified = false;
 
-    // RSSI averaging — mirip sample Denso
     private final ArrayList<Float> rssiBuffer = new ArrayList<>();
     private static final int RSSI_INTERVAL_MS = 250;
 
@@ -264,6 +266,31 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         setButtonStopState();
     }
 
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        android.util.Log.d("SearchSignal", "KeyEvent kc=" + event.getKeyCode() + " action=" + event.getAction());
+        int kc = event.getKeyCode();
+        if (kc == android.view.KeyEvent.KEYCODE_FUNCTION ||
+                kc == android.view.KeyEvent.KEYCODE_PROG_RED ||
+                kc == 319 ) {
+
+            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN) {
+                triggerHeld = true;
+            } else if (event.getAction() == android.view.KeyEvent.ACTION_UP) {
+                triggerHeld = false;
+                if (isScanning) {
+                    handler.removeCallbacks(rssiAverageRunnable);
+                    handler.removeCallbacks(noSignalRunnable);
+                    handler.removeCallbacks(barAnimRunnable);
+                    handler.removeCallbacks(beepRunnable);
+                    synchronized (rssiBuffer) { rssiBuffer.clear(); }
+                    handler.post(this::resetSignalDisplay);
+                }
+            }
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
 
     private void stopScanning() {
         isScanning = false;
@@ -288,12 +315,12 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         String targetEpc = selectedItem.getEpcTag().trim();
         for (RFIDData data : event.getRFIDData()) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII());
-            float rssi = data.getRSSI() / 10f;
-
-            // TAMBAH LOG INI
-            android.util.Log.d("SearchSignal", "onRFIDDataReceived epc=[" + epc + "] rssi=" + rssi + " target=[" + targetEpc + "] match=" + epc.equalsIgnoreCase(targetEpc));
-
             if (epc == null || epc.isEmpty()) continue;
+
+            float rssi = (short) data.getRSSI() / 10f;
+
+            android.util.Log.d("SearchSignal", "epc=[" + epc + "] rssi=" + rssi + " match=" + epc.equalsIgnoreCase(targetEpc));
+
             if (epc.equalsIgnoreCase(targetEpc)) {
                 synchronized (rssiBuffer) {
                     rssiBuffer.add(rssi);

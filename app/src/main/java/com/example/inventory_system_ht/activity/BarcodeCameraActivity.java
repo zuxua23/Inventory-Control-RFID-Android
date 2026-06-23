@@ -115,11 +115,16 @@ public class BarcodeCameraActivity extends AppCompatActivity {
             try {
                 ProcessCameraProvider provider = future.get();
 
-                preview = new Preview.Builder().build();
+                int rotation = previewView.getDisplay().getRotation();
+
+                preview = new Preview.Builder()
+                        .setTargetRotation(rotation)
+                        .build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
                 imageAnalysis = new ImageAnalysis.Builder()
                         .setTargetResolution(new Size(1280, 720))
+                        .setTargetRotation(rotation)
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
                 imageAnalysis.setAnalyzer(cameraExecutor, this::analyze);
@@ -131,6 +136,7 @@ public class BarcodeCameraActivity extends AppCompatActivity {
                         preview,
                         imageAnalysis
                 );
+                previewView.setScaleY(-1f);
             } catch (Exception e) {
                 LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
                         "Camera Scanner", "", "Failed to bind camera: " + e.getMessage(), currentUserId);

@@ -23,8 +23,9 @@ public class RfidBulkHelper {
                 RFIDScannerSettings.Scan.TriggerMode.MOMENTARY);
     }
 
-    public static boolean openInventoryLocate(CommScanner scanner, RFIDDataDelegate delegate, int powerDbm, String targetEpc) {
-        if (scanner == null) return false;
+    public static boolean openInventoryLocate(CommScanner scanner, RFIDDataDelegate delegate,
+                                              int powerDbm, String targetEpc) {
+        if (scanner == null || targetEpc == null) return false;
         try {
             RFIDScanner rfid = scanner.getRFIDScanner();
             if (rfid == null) return false;
@@ -35,16 +36,25 @@ public class RfidBulkHelper {
             int safePower = Math.max(4, Math.min(30, powerDbm));
             settings.scan.powerLevelRead  = safePower;
             settings.scan.powerLevelWrite = safePower;
-            settings.scan.sessionFlag     = RFIDScannerSettings.Scan.SessionFlag.S0;
-            settings.scan.polarization    = RFIDScannerSettings.Scan.Polarization.Both;
-            settings.scan.triggerMode     = RFIDScannerSettings.Scan.TriggerMode.CONTINUOUS2;
-            settings.scan.doubleReading   = RFIDScannerSettings.Scan.DoubleReading.Free;
-            settings.scan.qParam          = (short) 0;
+            settings.scan.sessionFlag = RFIDScannerSettings.Scan.SessionFlag.S0;
+            settings.scan.polarization = RFIDScannerSettings.Scan.Polarization.H;
             rfid.setSettings(settings);
-            rfid.openInventory();
+
+            byte[] epcBytes = hexToBytes(targetEpc.trim());
+            byte[] password = new byte[]{0x00, 0x00, 0x00, 0x00};
+            short addr = 0;
+
+            rfid.openRead(
+                    RFIDScannerSettings.RFIDBank.UII,
+                    addr,
+                    (short) epcBytes.length,
+                    password,
+                    epcBytes
+            );
 
             return true;
         } catch (Exception e) {
+            android.util.Log.e("RfidBulkHelper", "openInventoryLocate error", e);
             return false;
         }
     }
