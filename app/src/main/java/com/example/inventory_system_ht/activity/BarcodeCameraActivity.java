@@ -115,7 +115,8 @@ public class BarcodeCameraActivity extends AppCompatActivity {
             try {
                 ProcessCameraProvider provider = future.get();
 
-                int rotation = previewView.getDisplay().getRotation();
+                android.view.Display display = previewView.getDisplay();
+                int rotation = (display != null) ? display.getRotation() : android.view.Surface.ROTATION_0;
 
                 preview = new Preview.Builder()
                         .setTargetRotation(rotation)

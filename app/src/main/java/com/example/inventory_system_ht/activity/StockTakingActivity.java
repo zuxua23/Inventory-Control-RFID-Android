@@ -3,7 +3,6 @@ package com.example.inventory_system_ht.activity;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -26,7 +25,6 @@ import android.widget.TextView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.cardview.widget.CardView;
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -43,7 +41,6 @@ import com.densowave.scannersdk.RFID.RFIDData;
 import com.densowave.scannersdk.RFID.RFIDDataReceivedEvent;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
-import com.example.inventory_system_ht.adapter.ScannedTagAdapter;
 import com.example.inventory_system_ht.adapter.StockTakingItemAdapter;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
@@ -79,9 +76,7 @@ public class StockTakingActivity extends ScannerActivity
     private CardView btnSave, btnRefresh;
     private EditText resultScan;
     private RecyclerView rvTags;
-    private RecyclerView rvScannedTags;
     private TextView tvRemark, tvLocation, tvQty;
-    private Button btnTabScanResult, btnTabTakingData;
     private View tvEmpty;
     private Spinner spinnerPower;
     private FloatingActionButton fabScanCamera;
@@ -91,7 +86,6 @@ public class StockTakingActivity extends ScannerActivity
     private String sttId = "";
     private String remark = "";
     private final List<StockTakingModel.SessionItem> sessionItems = new ArrayList<>();
-    private final List<StockTakingModel.ScannedTagItem> scannedItems = new ArrayList<>();
     private final Set<String> scannedEpcSet = new HashSet<>();
     private final Map<String, Integer> epcIndexMap = new HashMap<>();
     private final Map<String, Integer> tagIdIndexMap = new HashMap<>();
@@ -100,13 +94,10 @@ public class StockTakingActivity extends ScannerActivity
     );
     private boolean hasChanges = false;
     private boolean isManualAddDialogOpen = false;
-    private Runnable activeDialogFetchCallback = null;
     private java.util.function.Consumer<String> activeDialogScanHandler = null;
     private StockTakingItemAdapter adapter;
-    private ScannedTagAdapter scannedAdapter;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private int scannedCount = 0;
-    private int currentTab = 0;
     private String cachedLocationsString = "-";
 
     @Override
@@ -154,7 +145,6 @@ public class StockTakingActivity extends ScannerActivity
         setupPowerSpinner();
         setupAdapter();
         setupListeners();
-        setupTabs();
 
         if (isNetworkConnected()) loadSessionTagsFromServer();
         else { loadSessionTagsFromCache(); showWarning("Offline, using cache"); }
@@ -198,16 +188,14 @@ public class StockTakingActivity extends ScannerActivity
         btnRefresh = findViewById(R.id.btnReset);
         resultScan = findViewById(R.id.resultScan);
         rvTags = findViewById(R.id.rvTags);
-        rvScannedTags = findViewById(R.id.rvScannedTags);
         tvRemark = findViewById(R.id.tvRemark);
         tvLocation = findViewById(R.id.tvLocation);
         tvQty = findViewById(R.id.tvQty);
         tvEmpty = findViewById(R.id.tvEmpty);
         spinnerPower = findViewById(R.id.spinnerPower);
         fabScanCamera = findViewById(R.id.fabScanCamera);
-        btnTabScanResult = findViewById(R.id.btnTabScanResult);
-        btnTabTakingData = findViewById(R.id.btnTabTakingData);
 
+        rvTags.setVisibility(View.VISIBLE);
         spinnerPower.setVisibility(View.GONE);
         switchRfid.setChecked(false);
         tvRemark.setText("Note: " + (remark.isEmpty() ? "-" : remark));
@@ -249,40 +237,6 @@ public class StockTakingActivity extends ScannerActivity
         rvTags.setLayoutManager(new LinearLayoutManager(this));
         rvTags.setAdapter(adapter);
         rvTags.setItemAnimator(null);
-
-        scannedAdapter = new ScannedTagAdapter(scannedItems);
-        rvScannedTags.setLayoutManager(new LinearLayoutManager(this));
-        rvScannedTags.setAdapter(scannedAdapter);
-        rvScannedTags.setItemAnimator(null);
-    }
-
-    private void setupTabs() {
-        btnTabScanResult.setOnClickListener(v -> switchTab(0));
-        btnTabTakingData.setOnClickListener(v -> switchTab(1));
-        switchTab(0);
-    }
-
-    private void switchTab(int tab) {
-        currentTab = tab;
-        if (tab == 0) {
-            rvScannedTags.setVisibility(View.VISIBLE);
-            rvTags.setVisibility(View.GONE);
-            if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
-            btnTabScanResult.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.blue_theme)));
-            btnTabScanResult.setTextColor(Color.WHITE);
-            btnTabTakingData.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE));
-            btnTabTakingData.setTextColor(ContextCompat.getColor(this, R.color.blue_theme));
-        } else {
-            rvScannedTags.setVisibility(View.GONE);
-            rvTags.setVisibility(View.VISIBLE);
-            if (tvEmpty != null) {
-                tvEmpty.setVisibility(sessionItems.isEmpty() ? View.VISIBLE : View.GONE);
-            }
-            btnTabTakingData.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.blue_theme)));
-            btnTabTakingData.setTextColor(Color.WHITE);
-            btnTabScanResult.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE));
-            btnTabScanResult.setTextColor(ContextCompat.getColor(this, R.color.blue_theme));
-        }
     }
 
     private void setupListeners() {
@@ -337,11 +291,9 @@ public class StockTakingActivity extends ScannerActivity
         if (btnRefresh != null) {
             btnRefresh.setOnClickListener(v -> {
                 showCustomConfirmDialog("Reset all scan data?", () -> {
-                    scannedItems.clear();
                     scannedEpcSet.clear();
                     scannedCount = 0;
                     hasChanges = false;
-                    scannedAdapter.notifyDataSetChanged();
                     updateInfo();
 
                     if (!isNetworkConnected()) {
@@ -369,6 +321,7 @@ public class StockTakingActivity extends ScannerActivity
             }
             return true;
         });
+
         fabScanCamera.setOnClickListener(v -> {
             if (switchRfid.isChecked()) switchRfid.setChecked(false);
             cameraScanLauncher.launch(new Intent(this, BarcodeCameraActivity.class));
@@ -415,7 +368,6 @@ public class StockTakingActivity extends ScannerActivity
                 sessionItems.clear();
                 epcIndexMap.clear();
                 tagIdIndexMap.clear();
-                scannedItems.clear();
                 scannedEpcSet.clear();
                 scannedCount = 0;
 
@@ -446,14 +398,12 @@ public class StockTakingActivity extends ScannerActivity
                 rebuildLocationsCache();
 
                 if (tvEmpty != null) {
-                    tvEmpty.setVisibility(
-                            sessionItems.isEmpty() && currentTab == 1 ? View.VISIBLE : View.GONE);
+                    tvEmpty.setVisibility(sessionItems.isEmpty() ? View.VISIBLE : View.GONE);
                 }
 
                 saveSessionItemsToCache(new ArrayList<>(sessionItems));
                 applyQueueStateToSessionItems();
                 adapter.notifyDataSetChanged();
-                scannedAdapter.notifyDataSetChanged();
                 updateInfo();
             }
 
@@ -475,16 +425,11 @@ public class StockTakingActivity extends ScannerActivity
             List<ScanQueueEntity> queue = db.appDao().getUnsyncedBySttId(sttId);
             if (queue.isEmpty()) return;
             handler.post(() -> {
-                List<StockTakingModel.ScannedTagItem> queuedScans = new ArrayList<>();
                 for (ScanQueueEntity q : queue) {
                     if (q.epcTag == null) continue;
                     String upperEpc = q.epcTag.toUpperCase();
-                    if (scannedEpcSet.contains(upperEpc)) continue;
                     scannedEpcSet.add(upperEpc);
-                    queuedScans.add(new StockTakingModel.ScannedTagItem(null, q.epcTag, null));
                 }
-                scannedItems.addAll(queuedScans);
-                scannedAdapter.notifyDataSetChanged();
 
                 for (ScanQueueEntity q : queue) {
                     if (q.epcTag == null) continue;
@@ -515,7 +460,7 @@ public class StockTakingActivity extends ScannerActivity
             handler.post(() -> {
                 hideLoading();
                 if (cached.isEmpty()) {
-                    if (tvEmpty != null && currentTab == 1) tvEmpty.setVisibility(View.VISIBLE);
+                    if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
                     showWarning("No cached data, tap Refresh");
                     return;
                 }
@@ -523,7 +468,6 @@ public class StockTakingActivity extends ScannerActivity
                 sessionItems.clear();
                 epcIndexMap.clear();
                 tagIdIndexMap.clear();
-                scannedItems.clear();
                 scannedEpcSet.clear();
                 scannedCount = 0;
                 for (SessionItemEntity e : cached) {
@@ -537,7 +481,6 @@ public class StockTakingActivity extends ScannerActivity
                 }
                 rebuildLocationsCache();
                 adapter.notifyDataSetChanged();
-                scannedAdapter.notifyDataSetChanged();
                 applyQueueStateToSessionItems();
                 updateInfo();
             });
@@ -562,24 +505,19 @@ public class StockTakingActivity extends ScannerActivity
 
         String key = epcOrBarcode.toUpperCase();
 
-        // 1. KITA MATCHING DULU KE DATA SESI (DATABASE)
         Integer idx = epcIndexMap.get(key);
         if (idx == null) idx = tagIdIndexMap.get(key);
 
-        // JIKA TIDAK MATCH:
-        // Langsung stop! Jangan getar, jangan dimasukin ke list UI.
         if (idx == null) {
             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
                     "Stock Taking", epcOrBarcode,
                     "Tag not in session: " + epcOrBarcode,
                     new PrefManager(this).getUserId());
-            return; // Keluar dari fungsi sekarang juga
+            return;
         }
 
         StockTakingModel.SessionItem item = sessionItems.get(idx);
 
-        // JIKA MATCH, TAPI TAG SUDAH PERNAH DI-SCAN (DUPLIKAT):
-        // Langsung stop! Gak usah berisik getar-getar.
         if (!"PENDING".equals(item.state)) {
             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
                     "Stock Taking", epcOrBarcode,
@@ -588,15 +526,7 @@ public class StockTakingActivity extends ScannerActivity
             return;
         }
 
-        // 2. KARENA SUDAH LULUS MATCHING & BELUM DI-SCAN, BARU MASUKIN KE LIST UI
-        if (!scannedEpcSet.contains(key)) {
-            scannedEpcSet.add(key);
-            scannedItems.add(0, new StockTakingModel.ScannedTagItem(null, epcOrBarcode, null));
-            scannedAdapter.notifyItemInserted(0);
-            rvScannedTags.scrollToPosition(0);
-        }
-
-        // 3. UPDATE STATUS JADI FOUND & KASIH GETAR SUKSES (Bukan getar error)
+        scannedEpcSet.add(key);
         item.state = "FOUND";
         scannedCount++;
         hasChanges = true;
@@ -671,7 +601,6 @@ public class StockTakingActivity extends ScannerActivity
             StockTakingModel.OperatorSubmitReq req = new StockTakingModel.OperatorSubmitReq(sttId, items);
             String reqJson = "{\"sttId\":\"" + sttId + "\",\"count\":" + items.size() + "}";
 
-            // Declare di luar handler.post — ini yang fix-nya
             ApiService longApi = ApiClient.getClientLongTimeout(StockTakingActivity.this)
                     .create(ApiService.class);
 
@@ -970,7 +899,6 @@ public class StockTakingActivity extends ScannerActivity
                     sessionItems.clear();
                     epcIndexMap.clear();
                     tagIdIndexMap.clear();
-                    scannedItems.clear();
                     scannedEpcSet.clear();
                     hasChanges = false;
                     finish();
@@ -1002,6 +930,7 @@ public class StockTakingActivity extends ScannerActivity
         List<BarcodeData> dataList = event.getBarcodeData();
         if (!dataList.isEmpty()) {
             String barcode = new String(dataList.get(0).getData()).trim();
+            if (barcode.isEmpty()) return;
             handler.post(() -> {
                 if (isManualAddDialogOpen && activeDialogScanHandler != null) {
                     activeDialogScanHandler.accept(barcode);

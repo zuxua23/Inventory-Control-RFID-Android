@@ -25,11 +25,13 @@ public class ApiClient {
     public static Retrofit getClient(Context context) {
         PrefManager prefManager = new PrefManager(context);
         String baseUrl = prefManager.getBaseUrl();
-        if (baseUrl == null || baseUrl.isEmpty()) baseUrl = "http://localhost/";
+        if (baseUrl == null || baseUrl.isEmpty()) {
+            throw new IllegalStateException("Base URL is not configured.");
+        }
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
         loggingInterceptor.setLevel(BuildConfig.DEBUG
-                ? HttpLoggingInterceptor.Level.BODY
+                ? HttpLoggingInterceptor.Level.HEADERS
                 : HttpLoggingInterceptor.Level.NONE);
 
         Interceptor authInterceptor = chain -> {
@@ -71,7 +73,9 @@ public class ApiClient {
     public static Retrofit getClientLongTimeout(Context context) {
         PrefManager prefManager = new PrefManager(context);
         String baseUrl = prefManager.getBaseUrl();
-        if (baseUrl == null || baseUrl.isEmpty()) baseUrl = "http://localhost/";
+        if (baseUrl == null || baseUrl.isEmpty()) {
+            throw new IllegalStateException("Base URL is not configured.");
+        }
 
         if (retrofitLong != null && retrofitLong.baseUrl().toString().equals(baseUrl)) {
             return retrofitLong;

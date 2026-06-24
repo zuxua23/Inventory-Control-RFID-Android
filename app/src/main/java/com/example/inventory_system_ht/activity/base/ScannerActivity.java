@@ -11,8 +11,6 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 import android.app.Dialog;
@@ -36,7 +34,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Const.CommConst;
-import com.densowave.scannersdk.Dto.RFIDScannerSettings;
 import com.example.inventory_system_ht.activity.LoginActivity;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;

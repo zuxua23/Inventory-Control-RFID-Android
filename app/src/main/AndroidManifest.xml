@@ -20,7 +20,6 @@
         android:roundIcon="@mipmap/logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Inventory_system_HT"
-        android:usesCleartextTraffic="true"
         android:pageSizeCompat="enabled">
 
         <activity

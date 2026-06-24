@@ -46,7 +46,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     private static final int DENSO_TRIGGER_KEYCODE = android.view.KeyEvent.KEYCODE_FUNCTION;
     private boolean triggerHeld = false;
 
-
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private boolean isScanning = false;
@@ -56,12 +55,10 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
     private static final int RSSI_INTERVAL_MS = 250;
 
     private static final int NO_SIGNAL_TIMEOUT_MS = 8000;
-    private static final int BAR_ANIM_DELAY_MS    = 40;
+    private static final int BAR_ANIM_DELAY_MS = 40;
 
     private int currentBarLevel = 0;
     private int targetBarLevel  = 0;
-
-    // region Runnables
 
     private final Runnable rssiAverageRunnable = new Runnable() {
         @Override
@@ -83,7 +80,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             if (hasData) {
                 final float finalAvg = avg;
                 handler.post(() -> updateSignalBars(finalAvg));
-                // reset timeout
                 handler.removeCallbacks(noSignalRunnable);
                 handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
             }
@@ -115,10 +111,10 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             if (!isScanning || currentBarLevel == 0) return;
             playScanFeedback(1);
             long interval;
-            if      (currentBarLevel >= 8) interval = 250;
+            if (currentBarLevel >= 8) interval = 250;
             else if (currentBarLevel >= 6) interval = 500;
             else if (currentBarLevel >= 4) interval = 800;
-            else                           interval = 1200;
+            else interval = 1200;
             handler.postDelayed(this, interval);
         }
     };
@@ -133,7 +129,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         }
     };
 
-    // endregion
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -163,7 +158,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             return insets;
         });
 
-        selectedItem   = (TagModel.SearchItemDto) getIntent().getSerializableExtra("SELECTED_ITEM");
+        selectedItem = (TagModel.SearchItemDto) getIntent().getSerializableExtra("SELECTED_ITEM");
         selectedDetail = (TagModel.TagDetailDto)  getIntent().getSerializableExtra("SELECTED_DETAIL");
 
         initViews();
@@ -209,13 +204,12 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         stopScanning();
     }
 
-    // region Init
 
     private void initViews() {
         containerSignalBars = findViewById(R.id.containerSignalBars);
-        tvItemTitle         = findViewById(R.id.tvItemTitle);
-        tvRssiValue         = findViewById(R.id.tvRssiValue);
-        btnToggleScan       = findViewById(R.id.btnStopSearch);
+        tvItemTitle = findViewById(R.id.tvItemTitle);
+        tvRssiValue = findViewById(R.id.tvRssiValue);
+        btnToggleScan = findViewById(R.id.btnStopSearch);
         setButtonStartState();
     }
 
@@ -226,10 +220,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         });
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
     }
-
-    // endregion
-
-    // region Scan control
 
     private void startScanning() {
         CommScanner scanner = getScannerInstance();
@@ -245,15 +235,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         RfidBulkHelper.closeBarcode(scanner);
 
         int power = new RfidSettingsManager(this).getPower();
-
-        // TAMBAH LOG INI
-        android.util.Log.d("SearchSignal", "startScanning EPC=[" + selectedItem.getEpcTag() + "] power=" + power);
-
         boolean ok = RfidBulkHelper.openInventoryLocate(scanner, this, power, selectedItem.getEpcTag());
-
-        // TAMBAH LOG INI
-        android.util.Log.d("SearchSignal", "openInventoryLocate result=" + ok);
-
         if (!ok) {
             isScanning = false;
             showWarning("RFID unavailable");
@@ -316,10 +298,6 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         setButtonStartState();
     }
 
-    // endregion
-
-    // region RFID callback
-
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
         if (!isScanning) return;
@@ -327,11 +305,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         for (RFIDData data : event.getRFIDData()) {
             String epc = RfidBulkHelper.bytesToHex(data.getUII());
             if (epc == null || epc.isEmpty()) continue;
-
             float rssi = (short) data.getRSSI() / 10f;
-
-            android.util.Log.d("SearchSignal", "epc=[" + epc + "] rssi=" + rssi + " match=" + epc.equalsIgnoreCase(targetEpc));
-
             if (epc.equalsIgnoreCase(targetEpc)) {
                 synchronized (rssiBuffer) {
                     rssiBuffer.add(rssi);
@@ -340,13 +314,9 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         }
     }
 
-    // endregion
-
-    // region Signal display
-
     public void updateSignalBars(float rssi) {
         int level;
-        if      (rssi > -45) level = 10;
+        if (rssi > -45) level = 10;
         else if (rssi > -50) level = 9;
         else if (rssi > -55) level = 8;
         else if (rssi > -60) level = 7;
@@ -356,7 +326,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         else if (rssi > -80) level = 3;
         else if (rssi > -85) level = 2;
         else if (rssi > -90) level = 1;
-        else                  level = 0;
+        else level = 0;
 
         tvRssiValue.setText(String.format("%.1f dBm", rssi));
 
@@ -373,14 +343,13 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         if (level >= 9 && !tagFoundNotified) {
             tagFoundNotified = true;
             String itemName = selectedItem != null ? selectedItem.getItemName() : "-";
-            String epcTag   = selectedItem != null ? selectedItem.getEpcTag()   : "-";
+            String epcTag = selectedItem != null ? selectedItem.getEpcTag()   : "-";
             LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SCAN,
                     "Search Signal", epcTag,
                     "Tag very close: " + itemName + " | RSSI: " + String.format("%.1f", rssi) + " dBm",
                     new PrefManager(this).getUserId());
             showSuccess("Tag found! Very close.");
             playScanFeedback(0);
-            // scanning tetap jalan, user stop manual
         } else if (level < 7) {
             tagFoundNotified = false;
         }
@@ -399,10 +368,10 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             View bar = containerSignalBars.getChildAt(i);
             if (i < level) {
                 int color;
-                if      (i < 3) color = Color.parseColor("#F44336");
+                if (i < 3) color = Color.parseColor("#F44336");
                 else if (i < 6) color = Color.parseColor("#FFC107");
                 else if (i < 8) color = Color.parseColor("#4CAF50");
-                else            color = Color.parseColor("#2E7D32");
+                else color = Color.parseColor("#2E7D32");
                 bar.setBackgroundColor(color);
             } else {
                 bar.setBackgroundColor(Color.parseColor("#E0E0E0"));
@@ -414,7 +383,7 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         handler.removeCallbacks(barAnimRunnable);
         handler.removeCallbacks(beepRunnable);
         currentBarLevel = 0;
-        targetBarLevel  = 0;
+        targetBarLevel = 0;
         if (tvRssiValue != null) tvRssiValue.setText("-- dBm");
         if (containerSignalBars != null) {
             for (int i = 0; i < containerSignalBars.getChildCount(); i++)

@@ -571,7 +571,6 @@ public class StockPrepProductActivity extends ScannerActivity
                         "Stock Preparation", currentDoId,
                         "Pre-fetch tags network error: " + t.getMessage(),
                         userId);
-                // Silent fail — offline mode tetap bisa pakai cache lama
             }
         });
     }

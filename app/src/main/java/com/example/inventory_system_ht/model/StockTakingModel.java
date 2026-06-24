@@ -7,7 +7,10 @@ import java.util.List;
 public class StockTakingModel {
 
     public static class OperatorSubmitReq {
+        @SerializedName("SttId")
         public String sttId;
+
+        @SerializedName("Items")
         public List<OperatorSubmitItem> items;
 
         public OperatorSubmitReq(String sttId, List<OperatorSubmitItem> items) {
@@ -17,11 +20,22 @@ public class StockTakingModel {
     }
 
     public static class OperatorSubmitItem {
+        @SerializedName("Action")
         public String action;
+
+        @SerializedName("Epc")
         public String epc;
+
+        @SerializedName("TagId")
         public String tagId;
+
+        @SerializedName("ItemId")
         public String itemId;
+
+        @SerializedName("NewTagId")
         public String newTagId;
+
+        @SerializedName("Remark")
         public String remark;
     }
 

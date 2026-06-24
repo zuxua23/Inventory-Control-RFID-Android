@@ -45,7 +45,7 @@ public class PrefManager {
                         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
                 );
             } catch (Exception e2) {
-                securePref = context.getSharedPreferences(SECURE_PREF, Context.MODE_PRIVATE);
+                throw new RuntimeException("Failed to initialize encrypted storage.", e2);
             }
         }
 

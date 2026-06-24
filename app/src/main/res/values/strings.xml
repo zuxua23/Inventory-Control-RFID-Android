@@ -56,9 +56,9 @@
     <string name="label_faq">FAQ</string>
     <string name="action_add">Add Manual</string>
     <string name="label_add_faq">Add Manual:</string>
-    <string name="label_add_faq_fill">Add item outside the application</string>
+    <string name="label_add_faq_fill">Add item manually to the system</string>
     <string name="label_remove_faq">Remove:</string>
-    <string name="label_remove_faq_fill">Delete item from the application</string>
+    <string name="label_remove_faq_fill">Remove item from the system</string>
     <string name="label_loading_screen">Loading, please wait...</string>
     <string name="label_title_dialog_manual_add">Manual Add Item</string>
     <string name="hint_manual_item_id">Enter Item ID</string>
