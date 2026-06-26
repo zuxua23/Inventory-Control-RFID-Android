@@ -35,6 +35,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Const.CommConst;
 import com.example.inventory_system_ht.activity.LoginActivity;
+import com.example.inventory_system_ht.model.StockTakingModel;
+import com.example.inventory_system_ht.network.ApiClient;
+import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.R;
@@ -133,6 +136,43 @@ public abstract class ScannerActivity extends AppCompatActivity {
             for (View v : fabAutoHideViews) v.animate().alpha(1f).setDuration(200).start();
         }
         scheduleFabHide();
+    }
+
+    /**
+     * Check if system is locked due to active Stock Taking session.
+     * @param onLocked   called if locked — use to disable scan input / show persistent banner
+     * @param onUnlocked called if not locked — safe to proceed normally
+     */
+    public void checkInventoryLock(Runnable onLocked, Runnable onUnlocked) {
+        if (!isNetworkConnected()) {
+            if (onUnlocked != null) onUnlocked.run();
+            return;
+        }
+        String token = "Bearer " + new PrefManager(this).getToken();
+        ApiClient.getClient(this).create(ApiService.class)
+                .getActiveStockTaking(token)
+                .enqueue(new retrofit2.Callback<StockTakingModel.ActiveRes>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<StockTakingModel.ActiveRes> call,
+                                           retrofit2.Response<StockTakingModel.ActiveRes> response) {
+                        boolean locked = response.isSuccessful()
+                                && response.body() != null
+                                && response.body().sttId != null
+                                && !response.body().sttId.isEmpty();
+                        runOnUiThread(() -> {
+                            if (locked) {
+                                showWarning("System locked: Stock Taking is active. Scanning is disabled.");
+                                if (onLocked != null) onLocked.run();
+                            } else {
+                                if (onUnlocked != null) onUnlocked.run();
+                            }
+                        });
+                    }
+                    @Override
+                    public void onFailure(retrofit2.Call<StockTakingModel.ActiveRes> call, Throwable t) {
+                        if (onUnlocked != null) runOnUiThread(onUnlocked);
+                    }
+                });
     }
 
     public boolean isNetworkConnected() {

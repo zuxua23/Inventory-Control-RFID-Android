@@ -95,7 +95,7 @@ public class StockPrepProductActivity extends ScannerActivity
     private Switch switchRfid;
     private RecyclerView rvTags;
     private Spinner spinnerLocation, spinnerPower;
-    private Button btnListProduct, btnSumProduct;
+    private Button btnListProduct, btnSumProduct, btnSave;
     private FloatingActionButton fabScanCamera;
     private TagAdapter adapter;
     private StockPrepProductAdapter sumAdapter;
@@ -190,17 +190,32 @@ public class StockPrepProductActivity extends ScannerActivity
     @Override
     protected void onResume() {
         super.onResume();
-        CommScanner scanner = getScannerInstance();
         updateReaderBattery(findViewById(R.id.ivReaderBattery), switchRfid.isChecked());
-
-        if (!switchRfid.isChecked() && scanner != null)
-            RfidBulkHelper.openBarcode(scanner, this);
-
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");
             playScanFeedback(2);
         }
+        checkInventoryLock(
+                () -> {
+                    // locked — close scanner, disable save
+                    CommScanner sc = getScannerInstance();
+                    RfidBulkHelper.closeInventory(sc);
+                    RfidBulkHelper.closeBarcode(sc);
+                    if (btnSave != null) btnSave.setEnabled(false);
+                    if (switchRfid != null) switchRfid.setEnabled(false);
+                    if (resultScan != null) resultScan.setEnabled(false);
+                },
+                () -> {
+                    // unlocked — normal startup
+                    if (btnSave != null) btnSave.setEnabled(true);
+                    if (switchRfid != null) switchRfid.setEnabled(true);
+                    if (resultScan != null && !switchRfid.isChecked()) resultScan.setEnabled(true);
+                    CommScanner scanner = getScannerInstance();
+                    if (!switchRfid.isChecked() && scanner != null)
+                        RfidBulkHelper.openBarcode(scanner, StockPrepProductActivity.this);
+                }
+        );
     }
 
     @Override
@@ -320,6 +335,16 @@ public class StockPrepProductActivity extends ScannerActivity
 
     private void setupSwitchRfid() {
         switchRfid.setOnCheckedChangeListener((btn, isChecked) -> {
+
+            if (!scannedList.isEmpty()) {
+                showWarning("Clear scanned items before switching mode");
+
+                btn.setOnCheckedChangeListener(null);
+                btn.setChecked(!isChecked);
+                setupSwitchRfid();
+                return;
+            }
+
             CommScanner scanner = getScannerInstance();
             updateReaderBattery(findViewById(R.id.ivReaderBattery), isChecked);
 
@@ -350,7 +375,6 @@ public class StockPrepProductActivity extends ScannerActivity
                 spinnerPower.setVisibility(View.GONE);
             }
         });
-
     }
 
     private void setupListeners() {
@@ -1251,5 +1275,6 @@ public class StockPrepProductActivity extends ScannerActivity
             SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
             SimpleDateFormat out = new SimpleDateFormat("dd MMMM yyyy", Locale.ENGLISH);
             return out.format(in.parse(datePart));
-        } catch (Exception e) { return rawDate; }}
+        } catch (Exception e) { return rawDate; }
+    }
 }

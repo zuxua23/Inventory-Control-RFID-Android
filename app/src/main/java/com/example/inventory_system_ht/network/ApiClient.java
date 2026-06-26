@@ -31,7 +31,7 @@ public class ApiClient {
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
         loggingInterceptor.setLevel(BuildConfig.DEBUG
-                ? HttpLoggingInterceptor.Level.HEADERS
+                ? HttpLoggingInterceptor.Level.BODY
                 : HttpLoggingInterceptor.Level.NONE);
 
         Interceptor authInterceptor = chain -> {

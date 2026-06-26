@@ -180,15 +180,31 @@ public class StockInActivity extends ScannerActivity
     @Override
     protected void onResume() {
         super.onResume();
-        CommScanner scanner = getScannerInstance();
         updateReaderBattery(findViewById(R.id.ivReaderBattery), switchRfid.isChecked());
-        if (!switchRfid.isChecked() && scanner != null) RfidBulkHelper.openBarcode(scanner, this);
-
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");
             playScanFeedback(2);
         }
+        checkInventoryLock(
+                () -> {
+                    // locked — close scanner, disable input
+                    CommScanner sc = getScannerInstance();
+                    RfidBulkHelper.closeInventory(sc);
+                    RfidBulkHelper.closeBarcode(sc);
+                    if (btnSave != null) btnSave.setEnabled(false);
+                    if (switchRfid != null) switchRfid.setEnabled(false);
+                    if (resultScan != null) resultScan.setEnabled(false);
+                },
+                () -> {
+                    // unlocked — normal startup
+                    if (btnSave != null) btnSave.setEnabled(true);
+                    if (switchRfid != null) switchRfid.setEnabled(true);
+                    if (resultScan != null && !switchRfid.isChecked()) resultScan.setEnabled(true);
+                    CommScanner scanner = getScannerInstance();
+                    if (!switchRfid.isChecked() && scanner != null) RfidBulkHelper.openBarcode(scanner, StockInActivity.this);
+                }
+        );
     }
 
     @Override
@@ -363,15 +379,14 @@ public class StockInActivity extends ScannerActivity
 
     private void setupSwitchRfid() {
         switchRfid.setOnCheckedChangeListener((btn, isChecked) -> {
-            String desired = isChecked ? "RFID" : "QR";
-            if (activeScannerType != null && !activeScannerType.equals(desired)
-                    && !scannedItemsList.isEmpty()) {
+            if (!scannedItemsList.isEmpty()) {
                 showWarning("Clear scanned items before switching mode");
                 btn.setOnCheckedChangeListener(null);
                 btn.setChecked(!isChecked);
                 setupSwitchRfid();
                 return;
             }
+
             CommScanner scanner = getScannerInstance();
             updateReaderBattery(findViewById(R.id.ivReaderBattery), isChecked);
 
@@ -402,7 +417,6 @@ public class StockInActivity extends ScannerActivity
                 spinnerPower.setVisibility(View.GONE);
             }
         });
-
     }
 
     private void setupBarcodeTextWatcher() {

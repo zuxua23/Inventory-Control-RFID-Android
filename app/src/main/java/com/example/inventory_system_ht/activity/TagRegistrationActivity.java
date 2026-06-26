@@ -157,19 +157,30 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
     protected void onResume() {
         super.onResume();
         updateReaderBattery(findViewById(R.id.ivReaderBattery), true);
-        CommScanner scanner = getScannerInstance();
-        if (scanner == null) {
-            showError("RFID not connected");
-        } else {
-            boolean ok = RfidBulkHelper.openInventory(scanner, this, this);
-            if (!ok) showError("Failed to start RFID");
-            else playScanFeedback(1);
-        }
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");
             playScanFeedback(2);
         }
+        checkInventoryLock(
+                () -> {
+                    RfidBulkHelper.closeInventory(getScannerInstance());
+                    if (btnSubmitRegis != null) btnSubmitRegis.setEnabled(false);
+                    if (actvItemSearch != null) actvItemSearch.setEnabled(false);
+                },
+                () -> {
+                    if (btnSubmitRegis != null) btnSubmitRegis.setEnabled(true);
+                    if (actvItemSearch != null) actvItemSearch.setEnabled(true);
+                    CommScanner scanner = getScannerInstance();
+                    if (scanner == null) {
+                        showError("RFID not connected");
+                    } else {
+                        boolean ok = RfidBulkHelper.openInventory(scanner, this, this);
+                        if (!ok) showError("Failed to start RFID");
+                        else playScanFeedback(1);
+                    }
+                }
+        );
     }
 
     @Override
