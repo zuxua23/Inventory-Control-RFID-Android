@@ -391,6 +391,9 @@ public class StockPrepProductActivity extends ScannerActivity
                     try { appDao.deleteScannedTagByEpc(t.getEpcTag()); } catch (Exception e) { LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_DELETE, "Stock Preparation", "DB", "DB delete error: " + e.getMessage(), new PrefManager(StockPrepProductActivity.this).getUserId()); }
                 }
                 runOnUiThread(() -> {
+                    spinnerLocation.setSelection(0);
+                    selectedLocation = "";
+                    selectedLocationId = "";
                     scannedList.clear();
                     sumProductList.clear();
                     scannedRawSet.clear();
