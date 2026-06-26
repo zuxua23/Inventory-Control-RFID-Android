@@ -3,7 +3,7 @@ package com.example.inventory_system_ht.model;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
-public class AuthModel {
+public class AuthResponses {
 
     public static class LoginRequest {
         private final String username;

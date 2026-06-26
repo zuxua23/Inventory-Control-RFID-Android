@@ -8,18 +8,18 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.inventory_system_ht.model.ItemModel;
+import com.example.inventory_system_ht.model.ItemResponses;
 import com.example.inventory_system_ht.R;
 
 import java.util.List;
 
 public class StockInProductAdapter extends RecyclerView.Adapter<StockInProductAdapter.ViewHolder> {
-    private List<ItemModel.SumProduct> list;
-    public StockInProductAdapter(List<ItemModel.SumProduct> list) {
+    private List<ItemResponses.SumProduct> list;
+    public StockInProductAdapter(List<ItemResponses.SumProduct> list) {
         this.list = list;
     }
 
-    public void updateData(List<ItemModel.SumProduct> newList) {
+    public void updateData(List<ItemResponses.SumProduct> newList) {
         this.list = newList;
         notifyDataSetChanged();
     }
@@ -37,7 +37,7 @@ public class StockInProductAdapter extends RecyclerView.Adapter<StockInProductAd
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder h, int position) {
-        ItemModel.SumProduct item = list.get(position);
+        ItemResponses.SumProduct item = list.get(position);
 
         String name = item.getItemName();
         if (name == null || name.trim().isEmpty())

@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
 import java.util.List;
 
-public class StockTakingModel {
+public class StockTakingResponses {
 
     public static class OperatorSubmitReq {
         @SerializedName("SttId")

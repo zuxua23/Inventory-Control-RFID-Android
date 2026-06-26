@@ -35,7 +35,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Const.CommConst;
 import com.example.inventory_system_ht.activity.LoginActivity;
-import com.example.inventory_system_ht.model.StockTakingModel;
+import com.example.inventory_system_ht.model.StockTakingResponses;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
@@ -151,10 +151,10 @@ public abstract class ScannerActivity extends AppCompatActivity {
         String token = "Bearer " + new PrefManager(this).getToken();
         ApiClient.getClient(this).create(ApiService.class)
                 .getActiveStockTaking(token)
-                .enqueue(new retrofit2.Callback<StockTakingModel.ActiveRes>() {
+                .enqueue(new retrofit2.Callback<StockTakingResponses.ActiveRes>() {
                     @Override
-                    public void onResponse(retrofit2.Call<StockTakingModel.ActiveRes> call,
-                                           retrofit2.Response<StockTakingModel.ActiveRes> response) {
+                    public void onResponse(retrofit2.Call<StockTakingResponses.ActiveRes> call,
+                                           retrofit2.Response<StockTakingResponses.ActiveRes> response) {
                         boolean locked = response.isSuccessful()
                                 && response.body() != null
                                 && response.body().sttId != null
@@ -169,7 +169,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
                         });
                     }
                     @Override
-                    public void onFailure(retrofit2.Call<StockTakingModel.ActiveRes> call, Throwable t) {
+                    public void onFailure(retrofit2.Call<StockTakingResponses.ActiveRes> call, Throwable t) {
                         if (onUnlocked != null) runOnUiThread(onUnlocked);
                     }
                 });
@@ -208,7 +208,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     public void showSagaFeedback(ViewGroup root, String pesan, int type) {
-        View bannerView = getLayoutInflater().inflate(R.layout.layout_message_banner, root, false);
+        View bannerView = getLayoutInflater().inflate(R.layout.message_banner, root, false);
         ImageView dot = bannerView.findViewById(R.id.dotIndicator);
         TextView tvMessage = bannerView.findViewById(R.id.tvBannerMessage);
 
@@ -245,7 +245,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
 
     public void showBannerOverlay(String pesan, int type) {
         if (isFinishing() || isDestroyed()) return;
-        View bannerView = getLayoutInflater().inflate(R.layout.layout_message_banner, null);
+        View bannerView = getLayoutInflater().inflate(R.layout.message_banner, null);
         ImageView dot = bannerView.findViewById(R.id.dotIndicator);
         TextView tvMessage = bannerView.findViewById(R.id.tvBannerMessage);
 

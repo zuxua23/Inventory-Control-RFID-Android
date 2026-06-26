@@ -47,10 +47,10 @@ import com.example.inventory_system_ht.adapter.StockInProductAdapter;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.StockInScanEntity;
 import com.example.inventory_system_ht.model.GeneralResponse;
-import com.example.inventory_system_ht.model.ItemModel;
-import com.example.inventory_system_ht.model.LocationModel;
+import com.example.inventory_system_ht.model.ItemResponses;
+import com.example.inventory_system_ht.model.LocationResponses;
 import com.example.inventory_system_ht.model.StockInRequest;
-import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.model.TagResponses;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.network.ErrorParser;
@@ -88,9 +88,9 @@ public class StockInActivity extends ScannerActivity
     private FloatingActionButton fabScanCamera;
     private ItemAdapter adapter;
     private StockInProductAdapter sumAdapter;
-    private final List<ItemModel.Item> scannedItemsList = new ArrayList<>();
-    private List<ItemModel.SumProduct> sumProductList = new ArrayList<>();
-    private List<LocationModel> masterLocationList = new ArrayList<>();
+    private final List<ItemResponses.Item> scannedItemsList = new ArrayList<>();
+    private List<ItemResponses.SumProduct> sumProductList = new ArrayList<>();
+    private List<LocationResponses> masterLocationList = new ArrayList<>();
     private final List<String> locationList = new ArrayList<>();
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
@@ -458,10 +458,10 @@ public class StockInActivity extends ScannerActivity
             List<StockInScanEntity> saved = db.appDao().getAllStockInScans();
             if (saved.isEmpty()) return;
 
-            List<ItemModel.Item> restored = new ArrayList<>();
+            List<ItemResponses.Item> restored = new ArrayList<>();
             String locId = null;
             for (StockInScanEntity e : saved) {
-                restored.add(new ItemModel.Item(
+                restored.add(new ItemResponses.Item(
                         e.epcTag,
                         e.itemId != null ? e.itemId : "",
                         e.isResolved ? e.itemName : "Pending...", 1));
@@ -504,10 +504,10 @@ public class StockInActivity extends ScannerActivity
         String reqJson = "{\"endpoint\":\"getLocations\"}";
         ApiClient.getClient(this).create(ApiService.class)
                 .getLocations(token)
-                .enqueue(new Callback<List<LocationModel>>() {
+                .enqueue(new Callback<List<LocationResponses>>() {
                     @Override
-                    public void onResponse(Call<List<LocationModel>> call,
-                                           Response<List<LocationModel>> response) {
+                    public void onResponse(Call<List<LocationResponses>> call,
+                                           Response<List<LocationResponses>> response) {
                         String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
                                 + (response.body() != null ? response.body().size() : 0) + "}";
                         if (response.isSuccessful() && response.body() != null) {
@@ -516,7 +516,7 @@ public class StockInActivity extends ScannerActivity
                                     userId, reqJson, resJson);
                             masterLocationList = response.body();
                             locationList.clear();
-                            for (LocationModel loc : masterLocationList)
+                            for (LocationResponses loc : masterLocationList)
                                 locationList.add(loc.getName());
 
                             // Save to Room cache for offline use
@@ -533,7 +533,7 @@ public class StockInActivity extends ScannerActivity
                     }
 
                     @Override
-                    public void onFailure(Call<List<LocationModel>> call, Throwable t) {
+                    public void onFailure(Call<List<LocationResponses>> call, Throwable t) {
                         String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                         LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                                 "Stock In", "Location", "Fetch locations error: " + t.getMessage(),
@@ -544,11 +544,11 @@ public class StockInActivity extends ScannerActivity
                 });
     }
 
-    private void saveLocationCache(List<LocationModel> locations) {
+    private void saveLocationCache(List<LocationResponses> locations) {
         new Thread(() -> {
             List<com.example.inventory_system_ht.entity.LocationCacheEntity> entities = new ArrayList<>();
             long now = System.currentTimeMillis();
-            for (LocationModel loc : locations) {
+            for (LocationResponses loc : locations) {
                 com.example.inventory_system_ht.entity.LocationCacheEntity e =
                         new com.example.inventory_system_ht.entity.LocationCacheEntity();
                 e.locId = loc.getId();
@@ -567,9 +567,9 @@ public class StockInActivity extends ScannerActivity
                     db.appDao().getAllLocationCache();
             if (cached == null || cached.isEmpty()) return;
 
-            List<LocationModel> fromCache = new ArrayList<>();
+            List<LocationResponses> fromCache = new ArrayList<>();
             for (com.example.inventory_system_ht.entity.LocationCacheEntity e : cached) {
-                LocationModel loc = new LocationModel();
+                LocationResponses loc = new LocationResponses();
                 loc.setId(e.locId);
                 loc.setName(e.locName);
                 fromCache.add(loc);
@@ -577,17 +577,17 @@ public class StockInActivity extends ScannerActivity
             runOnUiThread(() -> {
                 masterLocationList = fromCache;
                 locationList.clear();
-                for (LocationModel loc : masterLocationList) locationList.add(loc.getName());
+                for (LocationResponses loc : masterLocationList) locationList.add(loc.getName());
                 populateLocationSpinner(masterLocationList);
                 showWarning("Offline — location loaded from cache");
             });
         }).start();
     }
 
-    private void populateLocationSpinner(List<LocationModel> locations) {
+    private void populateLocationSpinner(List<LocationResponses> locations) {
         List<String> withHint = new ArrayList<>();
         withHint.add("Select Location");
-        for (LocationModel loc : locations) withHint.add(loc.getName());
+        for (LocationResponses loc : locations) withHint.add(loc.getName());
 
         locationSpinnerAdapter.clear();
         locationSpinnerAdapter.addAll(withHint);
@@ -619,7 +619,7 @@ public class StockInActivity extends ScannerActivity
         for (String epc : rawEpcs) {
             if (inFlightEpcs.contains(epc)) continue;
             boolean alreadyIn = false;
-            for (ItemModel.Item t : scannedItemsList) {
+            for (ItemResponses.Item t : scannedItemsList) {
                 if (epc.equalsIgnoreCase(t.getEpcTag())) { alreadyIn = true; break; }
             }
             if (!alreadyIn) newEpcs.add(epc);
@@ -630,7 +630,7 @@ public class StockInActivity extends ScannerActivity
 
         if (!isNetworkConnected()) {
             for (String epc : newEpcs) {
-                addItemToList(new ItemModel.Item(epc, "", "Pending...", 1));
+                addItemToList(new ItemResponses.Item(epc, "", "Pending...", 1));
                 inFlightEpcs.remove(epc);
             }
             return;
@@ -639,11 +639,11 @@ public class StockInActivity extends ScannerActivity
         setProcessing(true);
         String token = "Bearer " + new PrefManager(this).getToken();
         ApiClient.getClient(this).create(ApiService.class)
-                .getStockInTagsInfoBulk(token, new TagModel.BulkInfoReq(newEpcs, "RFID"))
-                .enqueue(new Callback<List<TagModel.TagResponse>>() {
+                .getStockInTagsInfoBulk(token, new TagResponses.BulkInfoReq(newEpcs, "RFID"))
+                .enqueue(new Callback<List<TagResponses.TagResponse>>() {
                     @Override
-                    public void onResponse(Call<List<TagModel.TagResponse>> call,
-                                           Response<List<TagModel.TagResponse>> response) {
+                    public void onResponse(Call<List<TagResponses.TagResponse>> call,
+                                           Response<List<TagResponses.TagResponse>> response) {
                         inFlightEpcs.removeAll(newEpcs);
                         setProcessing(false);
                         if (!response.isSuccessful() || response.body() == null) {
@@ -651,15 +651,15 @@ public class StockInActivity extends ScannerActivity
                             return;
                         }
                         int added = 0;
-                        for (TagModel.TagResponse t : response.body()) {
+                        for (TagResponses.TagResponse t : response.body()) {
                             boolean alreadyIn = false;
-                            for (ItemModel.Item it : scannedItemsList) {
+                            for (ItemResponses.Item it : scannedItemsList) {
                                 if (t.getEpc() != null && t.getEpc().equalsIgnoreCase(it.getEpcTag())) {
                                     alreadyIn = true; break;
                                 }
                             }
                             if (!alreadyIn) {
-                                addItemToList(new ItemModel.Item(t.getEpc(), t.getTagId(), t.getItemId(), t.getItemName(), 1));
+                                addItemToList(new ItemResponses.Item(t.getEpc(), t.getTagId(), t.getItemId(), t.getItemName(), 1));
                                 new Thread(() -> db.appDao().insertStockInScan(
                                         buildEntity(t.getEpc(), t.getItemId(), t.getItemName(), true))).start();
                                 added++;
@@ -668,11 +668,11 @@ public class StockInActivity extends ScannerActivity
                         if (added > 0) playScanFeedback(0);
                     }
                     @Override
-                    public void onFailure(Call<List<TagModel.TagResponse>> call, Throwable t) {
+                    public void onFailure(Call<List<TagResponses.TagResponse>> call, Throwable t) {
                         inFlightEpcs.removeAll(newEpcs);
                         setProcessing(false);
                         for (String epc : newEpcs)
-                            addItemToList(new ItemModel.Item(epc, "", "Pending...", 1));
+                            addItemToList(new ItemResponses.Item(epc, "", "Pending...", 1));
                     }
                 });
     }
@@ -687,7 +687,7 @@ public class StockInActivity extends ScannerActivity
             return;
         }
 
-        for (ItemModel.Item t : scannedItemsList) {
+        for (ItemResponses.Item t : scannedItemsList) {
             if (t.getEpcTag().equalsIgnoreCase(key)) {
                 if (!switchRfid.isChecked()) {
                     playScanFeedback(1);
@@ -719,7 +719,7 @@ public class StockInActivity extends ScannerActivity
         if (batch.isEmpty()) return;
 
         for (String code : batch) {
-            scannedItemsList.add(0, new ItemModel.Item(code, "", "Loading...", 1));
+            scannedItemsList.add(0, new ItemResponses.Item(code, "", "Loading...", 1));
             totalScanCount++;
         }
         if (adapter != null) adapter.setLastScannedPosition(0);
@@ -764,10 +764,10 @@ public class StockInActivity extends ScannerActivity
 
         new Thread(() -> {
             try {
-                Response<List<TagModel.TagResponse>> res = ApiClient.getClient(StockInActivity.this)
+                Response<List<TagResponses.TagResponse>> res = ApiClient.getClient(StockInActivity.this)
                         .create(ApiService.class)
                         .getStockInTagsInfoBulk(token,
-                                new TagModel.BulkInfoReq(codes, scannerType))
+                                new TagResponses.BulkInfoReq(codes, scannerType))
                         .execute();
 
                 String resJson = "{\"http_code\":" + res.code()
@@ -788,8 +788,8 @@ public class StockInActivity extends ScannerActivity
                     return;
                 }
 
-                Map<String, TagModel.TagResponse> tagMap = new HashMap<>();
-                for (TagModel.TagResponse t : res.body()) {
+                Map<String, TagResponses.TagResponse> tagMap = new HashMap<>();
+                for (TagResponses.TagResponse t : res.body()) {
                     String matchKey = isRfid ? t.getEpc() : t.getTagId();
                     if (matchKey != null) tagMap.put(matchKey.toUpperCase(), t);
                 }
@@ -797,7 +797,7 @@ public class StockInActivity extends ScannerActivity
                 List<String> notFound = new ArrayList<>();
                 List<String[]> resolved = new ArrayList<>(); // [code, itemId, itemName, epc, tagId]
                 for (String code : codes) {
-                    TagModel.TagResponse t = tagMap.get(code.toUpperCase());
+                    TagResponses.TagResponse t = tagMap.get(code.toUpperCase());
                     if (t != null) {
                         resolved.add(new String[]{ code, t.getItemId(), t.getItemName(), t.getEpc(), t.getTagId() });
                         db.appDao().insertStockInScan(buildEntity(code, t.getItemId(), t.getItemName(), true));
@@ -817,7 +817,7 @@ public class StockInActivity extends ScannerActivity
                     boolean changed = false;
                     for (String[] r : resolved) {
                         for (int i = 0; i < scannedItemsList.size(); i++) {
-                            ItemModel.Item it = scannedItemsList.get(i);
+                            ItemResponses.Item it = scannedItemsList.get(i);
                             if (it.getEpcTag().equalsIgnoreCase(r[0])) {
                                 it.setItemId(r[1]);
                                 it.setItemName(r[2]);
@@ -889,7 +889,7 @@ public class StockInActivity extends ScannerActivity
 
         new Thread(() -> {
             List<StockInScanEntity> existing = db.appDao().getAllStockInScans();
-            for (ItemModel.Item item : scannedItemsList) {
+            for (ItemResponses.Item item : scannedItemsList) {
                 boolean found = false;
                 for (StockInScanEntity e : existing) {
                     if (e.epcTag.equalsIgnoreCase(item.getEpcTag())) { found = true; break; }
@@ -915,7 +915,7 @@ public class StockInActivity extends ScannerActivity
         String userId = new PrefManager(this).getUserId();
 
         List<String> codes = new ArrayList<>();
-        for (ItemModel.Item item : scannedItemsList) codes.add(item.getEpcTag());
+        for (ItemResponses.Item item : scannedItemsList) codes.add(item.getEpcTag());
 
         String submitReqJson = "{\"scannerType\":\"" + scannerType + "\",\"locationId\":\""
                 + selectedLocationId + "\",\"count\":" + codes.size() + "}";
@@ -960,7 +960,7 @@ public class StockInActivity extends ScannerActivity
                 });
     }
 
-    private void addItemToList(ItemModel.Item item) {
+    private void addItemToList(ItemResponses.Item item) {
         scannedItemsList.add(0, item);
         if (adapter != null) adapter.setLastScannedPosition(0);
         if (!isListProductTab) {
@@ -1021,13 +1021,13 @@ public class StockInActivity extends ScannerActivity
     }
 
     private void buildSumProductList() {
-        Map<String, ItemModel.SumProduct> map = new LinkedHashMap<>();
-        for (ItemModel.Item item : scannedItemsList) {
+        Map<String, ItemResponses.SumProduct> map = new LinkedHashMap<>();
+        for (ItemResponses.Item item : scannedItemsList) {
             if (map.containsKey(item.getItemId()))
                 map.get(item.getItemId()).addCount(1);
             else
                 map.put(item.getItemId(),
-                        new ItemModel.SumProduct(item.getItemId(), item.getItemName(), 1));
+                        new ItemResponses.SumProduct(item.getItemId(), item.getItemName(), 1));
         }
         sumProductList = new ArrayList<>(map.values());
     }
@@ -1049,7 +1049,7 @@ public class StockInActivity extends ScannerActivity
         dialog.show();
     }
 
-    private void showDeleteItemDialog(ItemModel.Item item, int position) {
+    private void showDeleteItemDialog(ItemResponses.Item item, int position) {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_regist);

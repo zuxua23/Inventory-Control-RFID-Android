@@ -20,14 +20,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.densowave.scannersdk.Common.CommScanner;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
-import com.example.inventory_system_ht.model.StockTakingModel;
+import com.example.inventory_system_ht.model.StockTakingResponses;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
-import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -43,7 +42,7 @@ public class StockTakingListActivity extends ScannerActivity {
     private com.facebook.shimmer.ShimmerFrameLayout shimmerLayout;
     private ApiService api;
     private String token;
-    private final List<StockTakingModel.ActiveRes> sessionList = new ArrayList<>();
+    private final List<StockTakingResponses.ActiveRes> sessionList = new ArrayList<>();
     private SessionAdapter adapter;
 
     @Override
@@ -135,10 +134,10 @@ public class StockTakingListActivity extends ScannerActivity {
         showLoading();
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"endpoint\":\"getActiveStockTaking\"}";
-        api.getActiveStockTaking(token).enqueue(new Callback<StockTakingModel.ActiveRes>() {
+        api.getActiveStockTaking(token).enqueue(new Callback<StockTakingResponses.ActiveRes>() {
             @Override
-            public void onResponse(@NonNull Call<StockTakingModel.ActiveRes> call,
-                                   @NonNull Response<StockTakingModel.ActiveRes> response) {
+            public void onResponse(@NonNull Call<StockTakingResponses.ActiveRes> call,
+                                   @NonNull Response<StockTakingResponses.ActiveRes> response) {
                 hideLoading();
                 String resJson = "{\"http_code\":" + response.code() + ",\"found\":"
                         + (response.body() != null) + "}";
@@ -165,7 +164,7 @@ public class StockTakingListActivity extends ScannerActivity {
             }
 
             @Override
-            public void onFailure(@NonNull Call<StockTakingModel.ActiveRes> call,
+            public void onFailure(@NonNull Call<StockTakingResponses.ActiveRes> call,
                                   @NonNull Throwable t) {
                 hideLoading();
                 String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
@@ -185,12 +184,12 @@ public class StockTakingListActivity extends ScannerActivity {
 
     static class SessionAdapter extends RecyclerView.Adapter<SessionAdapter.VH> {
 
-        interface OnClick { void onClick(StockTakingModel.ActiveRes s); }
+        interface OnClick { void onClick(StockTakingResponses.ActiveRes s); }
 
-        private final List<StockTakingModel.ActiveRes> list;
+        private final List<StockTakingResponses.ActiveRes> list;
         private final OnClick click;
 
-        SessionAdapter(List<StockTakingModel.ActiveRes> list, OnClick click) {
+        SessionAdapter(List<StockTakingResponses.ActiveRes> list, OnClick click) {
             this.list = list;
             this.click = click;
         }
@@ -205,7 +204,7 @@ public class StockTakingListActivity extends ScannerActivity {
 
         @Override
         public void onBindViewHolder(@NonNull VH h, int position) {
-            StockTakingModel.ActiveRes s = list.get(position);
+            StockTakingResponses.ActiveRes s = list.get(position);
 
             String locText;
             if (s.locations != null && !s.locations.isEmpty()) {

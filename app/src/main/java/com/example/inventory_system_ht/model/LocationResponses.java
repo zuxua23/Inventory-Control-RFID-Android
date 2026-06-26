@@ -2,7 +2,7 @@ package com.example.inventory_system_ht.model;
 
 import com.google.gson.annotations.SerializedName;
 
-public class LocationModel {
+public class LocationResponses {
     @SerializedName("id") private String id;
     @SerializedName("name") private String name;
 

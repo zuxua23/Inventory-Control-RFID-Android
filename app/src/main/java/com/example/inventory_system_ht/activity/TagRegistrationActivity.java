@@ -48,8 +48,8 @@ import com.example.inventory_system_ht.entity.ItemCacheEntity;
 import com.example.inventory_system_ht.entity.PendingTagRegistrationEntity;
 import com.example.inventory_system_ht.entity.TagLocalEntity;
 import com.example.inventory_system_ht.model.GeneralResponse;
-import com.example.inventory_system_ht.model.ItemModel;
-import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.model.ItemResponses;
+import com.example.inventory_system_ht.model.TagResponses;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
@@ -104,7 +104,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
     private String selectedItemName = null;
 
     // Items for autocomplete
-    private List<ItemModel.ItemResponse> allItems = new ArrayList<>();
+    private List<ItemResponses.ItemResponse> allItems = new ArrayList<>();
 
     // Flag to prevent onTextChanged from resetting selection when we programmatically set text
     private boolean isSettingText = false;
@@ -225,7 +225,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
             List<ItemCacheEntity> cached = db.appDao().getAllItemCache();
             if (!cached.isEmpty()) {
-                List<ItemModel.ItemResponse> fromCache = entityToModel(cached);
+                List<ItemResponses.ItemResponse> fromCache = entityToModel(cached);
                 handler.post(() -> {
                     allItems = fromCache;
                     setupAutoCompleteAdapter();
@@ -240,12 +240,12 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         String token = "Bearer " + new PrefManager(this).getToken();
         ApiClient.getClient(this).create(ApiService.class)
                 .getAllItems(token)
-                .enqueue(new Callback<List<ItemModel.ItemResponse>>() {
+                .enqueue(new Callback<List<ItemResponses.ItemResponse>>() {
                     @Override
-                    public void onResponse(@NonNull Call<List<ItemModel.ItemResponse>> call,
-                                           @NonNull Response<List<ItemModel.ItemResponse>> response) {
+                    public void onResponse(@NonNull Call<List<ItemResponses.ItemResponse>> call,
+                                           @NonNull Response<List<ItemResponses.ItemResponse>> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            List<ItemModel.ItemResponse> fresh = response.body();
+                            List<ItemResponses.ItemResponse> fresh = response.body();
                             if (!executor.isShutdown()) {
                                 executor.execute(() -> {
                                     AppDatabase db = AppDatabase.getDatabase(TagRegistrationActivity.this);
@@ -259,7 +259,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                     }
 
                     @Override
-                    public void onFailure(@NonNull Call<List<ItemModel.ItemResponse>> call,
+                    public void onFailure(@NonNull Call<List<ItemResponses.ItemResponse>> call,
                                           @NonNull Throwable t) {
                         if (allItems.isEmpty()) {
                             showWarning("Failed to load items. Check connection.");
@@ -268,18 +268,18 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 });
     }
 
-    private List<ItemModel.ItemResponse> entityToModel(List<ItemCacheEntity> entities) {
-        List<ItemModel.ItemResponse> list = new ArrayList<>();
+    private List<ItemResponses.ItemResponse> entityToModel(List<ItemCacheEntity> entities) {
+        List<ItemResponses.ItemResponse> list = new ArrayList<>();
         for (ItemCacheEntity e : entities) {
-            list.add(new ItemModel.ItemResponse(e.itemId, e.itemName));
+            list.add(new ItemResponses.ItemResponse(e.itemId, e.itemName));
         }
         return list;
     }
 
-    private List<ItemCacheEntity> modelToEntity(List<ItemModel.ItemResponse> models) {
+    private List<ItemCacheEntity> modelToEntity(List<ItemResponses.ItemResponse> models) {
         List<ItemCacheEntity> list = new ArrayList<>();
         long now = System.currentTimeMillis();
-        for (ItemModel.ItemResponse m : models) {
+        for (ItemResponses.ItemResponse m : models) {
             list.add(new ItemCacheEntity(m.getItemId(), m.getItemName(), now));
         }
         return list;
@@ -328,7 +328,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         });
 
         actvItemSearch.setOnItemClickListener((parent, view, position, id) -> {
-            ItemModel.ItemResponse selected = (ItemModel.ItemResponse) parent.getItemAtPosition(position);
+            ItemResponses.ItemResponse selected = (ItemResponses.ItemResponse) parent.getItemAtPosition(position);
             if (selected != null) {
                 selectedItemId = selected.getItemId();
                 selectedItemName = selected.getItemName();
@@ -349,7 +349,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
     }
 
     private void showRecentDropdown() {
-        LinkedList<ItemModel.ItemResponse> recents = loadRecentItems();
+        LinkedList<ItemResponses.ItemResponse> recents = loadRecentItems();
         if (recents.isEmpty()) return;
         actvItemSearch.setAdapter(new ItemAutoCompleteAdapter(new ArrayList<>(recents), true));
         actvItemSearch.showDropDown();
@@ -357,23 +357,23 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     // ─── Recent Items ─────────────────────────────────────────────────────────
 
-    private void saveRecentItem(ItemModel.ItemResponse item) {
+    private void saveRecentItem(ItemResponses.ItemResponse item) {
         SharedPreferences prefs = getSharedPreferences(PREF_RECENT, MODE_PRIVATE);
-        LinkedList<ItemModel.ItemResponse> recents = parseRecentList(prefs.getString("list", "[]"));
+        LinkedList<ItemResponses.ItemResponse> recents = parseRecentList(prefs.getString("list", "[]"));
         recents.removeIf(r -> r.getItemId().equals(item.getItemId()));
         recents.addFirst(item);
         while (recents.size() > MAX_RECENT) recents.removeLast();
         prefs.edit().putString("list", serializeRecentList(recents)).apply();
     }
 
-    private LinkedList<ItemModel.ItemResponse> loadRecentItems() {
+    private LinkedList<ItemResponses.ItemResponse> loadRecentItems() {
         SharedPreferences prefs = getSharedPreferences(PREF_RECENT, MODE_PRIVATE);
         return parseRecentList(prefs.getString("list", "[]"));
     }
 
-    private String serializeRecentList(List<ItemModel.ItemResponse> list) {
+    private String serializeRecentList(List<ItemResponses.ItemResponse> list) {
         JSONArray arr = new JSONArray();
-        for (ItemModel.ItemResponse item : list) {
+        for (ItemResponses.ItemResponse item : list) {
             try {
                 JSONObject obj = new JSONObject();
                 obj.put("itemId", item.getItemId());
@@ -384,8 +384,8 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         return arr.toString();
     }
 
-    private LinkedList<ItemModel.ItemResponse> parseRecentList(String json) {
-        LinkedList<ItemModel.ItemResponse> list = new LinkedList<>();
+    private LinkedList<ItemResponses.ItemResponse> parseRecentList(String json) {
+        LinkedList<ItemResponses.ItemResponse> list = new LinkedList<>();
         try {
             JSONArray arr = new JSONArray(json);
             for (int i = 0; i < arr.length(); i++) {
@@ -393,7 +393,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 String id = obj.optString("itemId", "");
                 String name = obj.optString("itemName", "");
                 if (!id.isEmpty() && !name.isEmpty()) {
-                    list.add(new ItemModel.ItemResponse(id, name));
+                    list.add(new ItemResponses.ItemResponse(id, name));
                 }
             }
         } catch (JSONException ignored) {}
@@ -512,12 +512,12 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
         String token = "Bearer " + new PrefManager(this).getToken();
         ApiClient.getClient(this).create(ApiService.class)
-                .validateTagEpc(token, new TagModel.BulkInfoReq(
+                .validateTagEpc(token, new TagResponses.BulkInfoReq(
                         Collections.singletonList(epc), "RFID"))
-                .enqueue(new Callback<List<TagModel.TagInfoDto>>() {
+                .enqueue(new Callback<List<TagResponses.TagInfoDto>>() {
                     @Override
-                    public void onResponse(@NonNull Call<List<TagModel.TagInfoDto>> call,
-                                           @NonNull Response<List<TagModel.TagInfoDto>> response) {
+                    public void onResponse(@NonNull Call<List<TagResponses.TagInfoDto>> call,
+                                           @NonNull Response<List<TagResponses.TagInfoDto>> response) {
                         if (tvProcessing != null) tvProcessing.setVisibility(View.GONE);
                         isProcessing = false;
 
@@ -529,7 +529,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                             return;
                         }
 
-                        TagModel.TagInfoDto info = response.body().get(0);
+                        TagResponses.TagInfoDto info = response.body().get(0);
                         String status = info.getStatus();
                         if (!"PRINTED".equalsIgnoreCase(status) && !"OUT".equalsIgnoreCase(status)) {
                             showWarning("Tag status '" + status + "' cannot be registered");
@@ -543,7 +543,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                     }
 
                     @Override
-                    public void onFailure(@NonNull Call<List<TagModel.TagInfoDto>> call,
+                    public void onFailure(@NonNull Call<List<TagResponses.TagInfoDto>> call,
                                           @NonNull Throwable t) {
                         if (tvProcessing != null) tvProcessing.setVisibility(View.GONE);
                         isProcessing = false;
@@ -574,7 +574,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         String userId = new PrefManager(this).getUserId();
 
         ApiClient.getClient(this).create(ApiService.class)
-                .registerTagWithItem(token, new TagModel.RegisterWithItemReq(epcTag, itemId))
+                .registerTagWithItem(token, new TagResponses.RegisterWithItemReq(epcTag, itemId))
                 .enqueue(new Callback<GeneralResponse>() {
                     @Override
                     public void onResponse(@NonNull Call<GeneralResponse> call,
@@ -687,17 +687,17 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     // ─── AutoComplete Adapter ─────────────────────────────────────────────────
 
-    private class ItemAutoCompleteAdapter extends ArrayAdapter<ItemModel.ItemResponse>
+    private class ItemAutoCompleteAdapter extends ArrayAdapter<ItemResponses.ItemResponse>
             implements Filterable {
 
         private static final int VIEW_TYPE_HEADER = 0;
         private static final int VIEW_TYPE_ITEM = 1;
 
-        private List<ItemModel.ItemResponse> filtered;
-        private final List<ItemModel.ItemResponse> original;
+        private List<ItemResponses.ItemResponse> filtered;
+        private final List<ItemResponses.ItemResponse> original;
         boolean isRecentMode;
 
-        ItemAutoCompleteAdapter(List<ItemModel.ItemResponse> items, boolean isRecentMode) {
+        ItemAutoCompleteAdapter(List<ItemResponses.ItemResponse> items, boolean isRecentMode) {
             super(TagRegistrationActivity.this, 0, items);
             this.original = new ArrayList<>(items);
             this.filtered = new ArrayList<>(items);
@@ -716,7 +716,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         }
 
         @Override
-        public ItemModel.ItemResponse getItem(int position) {
+        public ItemResponses.ItemResponse getItem(int position) {
             if (isRecentMode) {
                 if (position == 0) return null;
                 return filtered.get(position - 1);
@@ -751,7 +751,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                         .inflate(R.layout.item_autocomplete_dropdown, parent, false);
                 convertView.setTag("item");
             }
-            ItemModel.ItemResponse item = getItem(position);
+            ItemResponses.ItemResponse item = getItem(position);
             TextView tvItem = convertView.findViewById(R.id.tvAutoCompleteItem);
             if (tvItem != null) tvItem.setText(item != null ? item.getItemName() : "");
 
@@ -770,8 +770,8 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                         results.count = original.size();
                     } else {
                         String query = constraint.toString().toLowerCase().trim();
-                        List<ItemModel.ItemResponse> out = new ArrayList<>();
-                        for (ItemModel.ItemResponse item : original) {
+                        List<ItemResponses.ItemResponse> out = new ArrayList<>();
+                        for (ItemResponses.ItemResponse item : original) {
                             if (item.getItemName() != null && item.getItemName().toLowerCase().contains(query))
                                 out.add(item);
                         }
@@ -784,14 +784,14 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 @SuppressWarnings("unchecked")
                 @Override
                 protected void publishResults(CharSequence constraint, FilterResults results) {
-                    filtered = (List<ItemModel.ItemResponse>) results.values;
+                    filtered = (List<ItemResponses.ItemResponse>) results.values;
                     notifyDataSetChanged();
                 }
 
                 @Override
                 public CharSequence convertResultToString(Object resultValue) {
                     if (resultValue == null) return "";
-                    return ((ItemModel.ItemResponse) resultValue).getItemName();
+                    return ((ItemResponses.ItemResponse) resultValue).getItemName();
                 }
             };
         }

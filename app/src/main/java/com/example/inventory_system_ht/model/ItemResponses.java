@@ -2,7 +2,7 @@ package com.example.inventory_system_ht.model;
 
 import java.io.Serializable;
 
-public class ItemModel {
+public class ItemResponses {
 
     public static class Item implements Serializable {
         private String epcTag;

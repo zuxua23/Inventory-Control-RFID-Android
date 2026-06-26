@@ -7,7 +7,6 @@ public class RfidSettingsManager {
     public static final int DEFAULT_POWER = 27;
     public static final int DEFAULT_SESSION = 1;
     public static final int DEFAULT_Q = 4;
-
     private static final String PREF_NAME = "RfidSettingsPrefs";
     private static final String KEY_POWER = "rfid_power";
     private static final String KEY_SESSION = "rfid_session";

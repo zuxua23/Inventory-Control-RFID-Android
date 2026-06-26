@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.inventory_system_ht.model.StockTakingModel;
+import com.example.inventory_system_ht.model.StockTakingResponses;
 import com.example.inventory_system_ht.R;
 
 import java.util.List;
@@ -18,14 +18,14 @@ import java.util.List;
 public class StockTakingItemAdapter
         extends RecyclerView.Adapter<StockTakingItemAdapter.VH> {
     public interface OnItemClickListener {
-        void onItemClick(StockTakingModel.SessionItem item, int position);
+        void onItemClick(StockTakingResponses.SessionItem item, int position);
     }
     private static final int COLOR_PENDING = Color.parseColor("#0181CC");
     private static final int COLOR_DONE = Color.parseColor("#01C470");
-    private final List<StockTakingModel.SessionItem> list;
+    private final List<StockTakingResponses.SessionItem> list;
     private OnItemClickListener listener;
 
-    public StockTakingItemAdapter(List<StockTakingModel.SessionItem> list) {
+    public StockTakingItemAdapter(List<StockTakingResponses.SessionItem> list) {
         this.list = list;
     }
 
@@ -46,7 +46,7 @@ public class StockTakingItemAdapter
 
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
-        StockTakingModel.SessionItem item = list.get(position);
+        StockTakingResponses.SessionItem item = list.get(position);
 
         String displayName;
         if (item.itemName != null && !item.itemName.isEmpty()) {

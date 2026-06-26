@@ -10,20 +10,20 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.model.TagResponses;
 import com.example.inventory_system_ht.R;
 
 import java.util.List;
 
 public class SearchItemAdapter extends RecyclerView.Adapter<SearchItemAdapter.VH> {
-    private final List<TagModel.SearchItemDto> list;
+    private final List<TagResponses.SearchItemDto> list;
     private OnItemClickListener listener;
     private int lastScannedPosition = -1;
     public interface OnItemClickListener {
-        void onItemClick(TagModel.SearchItemDto item);
+        void onItemClick(TagResponses.SearchItemDto item);
     }
 
-    public SearchItemAdapter(List<TagModel.SearchItemDto> list) {
+    public SearchItemAdapter(List<TagResponses.SearchItemDto> list) {
         this.list = list;
     }
 
@@ -40,7 +40,7 @@ public class SearchItemAdapter extends RecyclerView.Adapter<SearchItemAdapter.VH
 
     @Override
     public void onBindViewHolder(@NonNull VH h, int pos) {
-        TagModel.SearchItemDto item = list.get(pos);
+        TagResponses.SearchItemDto item = list.get(pos);
         h.tvItemName.setText(item.getItemName() != null ? item.getItemName() : "-");
         h.tvTagId.setText(item.getTagId() != null ? item.getTagId() : "-");
         h.tvLocation.setText(item.getLocation() != null ? item.getLocation() : "-");

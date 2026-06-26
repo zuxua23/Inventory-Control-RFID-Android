@@ -1,15 +1,15 @@
 package com.example.inventory_system_ht.network;
 
-import com.example.inventory_system_ht.model.AuthModel;
-import com.example.inventory_system_ht.model.AvailableTagDto;
-import com.example.inventory_system_ht.model.DOModel;
+import com.example.inventory_system_ht.model.AuthResponses;
+import com.example.inventory_system_ht.model.AvailableTagResponses;
+import com.example.inventory_system_ht.model.DeliveryOrderResponses;
 import com.example.inventory_system_ht.model.GeneralResponse;
-import com.example.inventory_system_ht.model.ItemModel;
-import com.example.inventory_system_ht.model.LocationModel;
+import com.example.inventory_system_ht.model.ItemResponses;
+import com.example.inventory_system_ht.model.LocationResponses;
 import com.example.inventory_system_ht.model.StockInRequest;
 import com.example.inventory_system_ht.model.StockPrepBulkRequest;
-import com.example.inventory_system_ht.model.StockTakingModel;
-import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.model.StockTakingResponses;
+import com.example.inventory_system_ht.model.TagResponses;
 
 import java.util.List;
 
@@ -27,87 +27,87 @@ public interface ApiService {
     Call<GeneralResponse> ping();
 
     @POST("api/auth/login")
-    Call<AuthModel.LoginResponse> login(@Body AuthModel.LoginRequest loginRequest);
+    Call<AuthResponses.LoginResponse> login(@Body AuthResponses.LoginRequest loginRequest);
 
     @POST("api/tag/register")
     Call<GeneralResponse> registerTags(@Header("Authorization") String token,
-                                       @Body AuthModel.RegisterRequest request);
+                                       @Body AuthResponses.RegisterRequest request);
 
     @POST("api/tag/register-with-item")
     Call<GeneralResponse> registerTagWithItem(@Header("Authorization") String token,
-                                              @Body TagModel.RegisterWithItemReq request);
+                                              @Body TagResponses.RegisterWithItemReq request);
 
     @GET("api/tag/{id}")
-    Call<TagModel.TagDetailDto> getTagDetail(@Header("Authorization") String token,
-                                             @Path("id") String tagId);
+    Call<TagResponses.TagDetailDto> getTagDetail(@Header("Authorization") String token,
+                                                 @Path("id") String tagId);
 
     @GET("api/stockin")
-    Call<TagModel.TagResponse> getTagByCode(@Header("Authorization") String token,
-                                            @Query("code") String code,
-                                            @Query("scannerType") String scannerType);
+    Call<TagResponses.TagResponse> getTagByCode(@Header("Authorization") String token,
+                                                @Query("code") String code,
+                                                @Query("scannerType") String scannerType);
 
     @GET("api/stockin")
-    Call<TagModel.TagInfoDto> getTagInfo(@Header("Authorization") String token,
-                                         @Query("code") String code,
-                                         @Query("scannerType") String scannerType);
+    Call<TagResponses.TagInfoDto> getTagInfo(@Header("Authorization") String token,
+                                             @Query("code") String code,
+                                             @Query("scannerType") String scannerType);
 
     @POST("api/stockin")
     Call<GeneralResponse> stockIn(@Header("Authorization") String token,
                                   @Body StockInRequest request);
 
     @POST("api/stockin/bulk-info")
-    Call<List<TagModel.TagResponse>> getStockInTagsInfoBulk(@Header("Authorization") String token,
-                                                            @Body TagModel.BulkInfoReq request);
+    Call<List<TagResponses.TagResponse>> getStockInTagsInfoBulk(@Header("Authorization") String token,
+                                                                @Body TagResponses.BulkInfoReq request);
 
     @POST("api/preparation/bulk")
     Call<GeneralResponse> submitStockPrep(@Header("Authorization") String token,
                                           @Body StockPrepBulkRequest request);
 
     @GET("api/preparation/do")
-    Call<List<DOModel.DOResponse>> getDo(@Header("Authorization") String token);
+    Call<List<DeliveryOrderResponses.DOResponse>> getDo(@Header("Authorization") String token);
 
     @GET("api/pickinglist/{id}")
-    Call<DOModel.DOResponse> getPickingListById(@Header("Authorization") String token,
-                                                @Path("id") String id);
+    Call<DeliveryOrderResponses.DOResponse> getPickingListById(@Header("Authorization") String token,
+                                                               @Path("id") String id);
 
     @GET("api/do")
-    Call<List<DOModel.DOResponse>> getAllDO(@Header("Authorization") String token);
+    Call<List<DeliveryOrderResponses.DOResponse>> getAllDO(@Header("Authorization") String token);
 
     @GET("api/preparation/do/{id}")
-    Call<DOModel.DOResponse> getDoDetailForPrep(@Header("Authorization") String token,
-                                                @Path("id") String id);
+    Call<DeliveryOrderResponses.DOResponse> getDoDetailForPrep(@Header("Authorization") String token,
+                                                               @Path("id") String id);
 
     @POST("api/preparation/bulk-info")
-    Call<List<TagModel.TagInfoDto>> getTagsInfoBulk(@Header("Authorization") String token,
-                                                    @Body TagModel.PrepBulkInfoReq request);
+    Call<List<TagResponses.TagInfoDto>> getTagsInfoBulk(@Header("Authorization") String token,
+                                                        @Body TagResponses.PrepBulkInfoReq request);
 
     @POST("api/preparation/bulk-info")
-    Call<List<TagModel.TagInfoDto>> getTagsRegistBulk(@Header("Authorization") String token,
-                                                      @Body TagModel.BulkInfoReq request);
+    Call<List<TagResponses.TagInfoDto>> getTagsRegistBulk(@Header("Authorization") String token,
+                                                          @Body TagResponses.BulkInfoReq request);
 
     @GET("api/preparation/available-tags/{doId}")
-    Call<List<AvailableTagDto>> getAvailableTagsForDo(@Header("Authorization") String token,
-                                                      @Path("doId") String doId);
+    Call<List<AvailableTagResponses>> getAvailableTagsForDo(@Header("Authorization") String token,
+                                                            @Path("doId") String doId);
 
     @POST("api/tag/validate-epc")
-    Call<List<TagModel.TagInfoDto>> validateTagEpc(@Header("Authorization") String token,
-                                                   @Body TagModel.BulkInfoReq request);
+    Call<List<TagResponses.TagInfoDto>> validateTagEpc(@Header("Authorization") String token,
+                                                       @Body TagResponses.BulkInfoReq request);
 
     @GET("api/stock-taking/active")
-    Call<StockTakingModel.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);
+    Call<StockTakingResponses.ActiveRes> getActiveStockTaking(@Header("Authorization") String token);
 
     @GET("api/stock-taking/tags/{sttId}")
-    Call<List<StockTakingModel.SessionItem>> getSessionTags(@Header("Authorization") String token,
-                                                            @Path("sttId") String sttId);
+    Call<List<StockTakingResponses.SessionItem>> getSessionTags(@Header("Authorization") String token,
+                                                                @Path("sttId") String sttId);
 
     @GET("api/stock-taking/available-tags/{sttId}")
-    Call<List<StockTakingModel.AvailableTag>> getAvailableTags(
+    Call<List<StockTakingResponses.AvailableTag>> getAvailableTags(
             @Header("Authorization") String token,
             @Path("sttId") String sttId
     );
 
     @GET("api/stock-taking/validate-tag")
-    Call<StockTakingModel.ValidateTagResult> validateManualTag(
+    Call<StockTakingResponses.ValidateTagResult> validateManualTag(
             @Header("Authorization") String token,
             @Query("epc") String epc,
             @Query("sttId") String sttId
@@ -115,18 +115,18 @@ public interface ApiService {
 
     @POST("api/stock-taking/operator-submit")
     Call<GeneralResponse> operatorSubmit(@Header("Authorization") String token,
-                                         @Body StockTakingModel.OperatorSubmitReq request);
+                                         @Body StockTakingResponses.OperatorSubmitReq request);
 
     @GET("api/location")
-    Call<List<LocationModel>> getLocations(@Header("Authorization") String token);
+    Call<List<LocationResponses>> getLocations(@Header("Authorization") String token);
 
     @GET("api/item")
-    Call<List<ItemModel.ItemResponse>> getAllItems(@Header("Authorization") String token);
+    Call<List<ItemResponses.ItemResponse>> getAllItems(@Header("Authorization") String token);
 
     @GET("api/search-item")
-    Call<List<TagModel.SearchItemDto>> getSearchItems(@Header("Authorization") String token);
+    Call<List<TagResponses.SearchItemDto>> getSearchItems(@Header("Authorization") String token);
 
     @GET("api/search-item/{code}")
-    Call<TagModel.TagDetailDto> getTagDetailSearchItem(@Header("Authorization") String token,
-                                                       @Path("code") String code);
+    Call<TagResponses.TagDetailDto> getTagDetailSearchItem(@Header("Authorization") String token,
+                                                           @Path("code") String code);
 }

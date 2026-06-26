@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
 import java.util.List;
 
-public class TagModel {
+public class TagResponses {
 
     public static class SearchItemDto implements Serializable {
         @SerializedName("tagId") private String tagId;

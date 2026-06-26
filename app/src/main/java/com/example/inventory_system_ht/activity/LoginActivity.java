@@ -23,7 +23,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import com.densowave.scannersdk.Common.CommScanner;
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
-import com.example.inventory_system_ht.model.AuthModel;
+import com.example.inventory_system_ht.model.AuthResponses;
 import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
@@ -122,11 +122,11 @@ public class LoginActivity extends ScannerActivity {
         String reqJson = "{\"username\":\"" + username + "\",\"password\":\"***\"}";
 
         ApiService apiService = ApiClient.getClient(this).create(ApiService.class);
-        apiService.login(new AuthModel.LoginRequest(username, password))
-                .enqueue(new Callback<AuthModel.LoginResponse>() {
+        apiService.login(new AuthResponses.LoginRequest(username, password))
+                .enqueue(new Callback<AuthResponses.LoginResponse>() {
                     @Override
-                    public void onResponse(Call<AuthModel.LoginResponse> call,
-                                           Response<AuthModel.LoginResponse> response) {
+                    public void onResponse(Call<AuthResponses.LoginResponse> call,
+                                           Response<AuthResponses.LoginResponse> response) {
                         hideLoading();
                         String resJson = "{\"http_code\":" + response.code() + "}";
                         if (response.isSuccessful() && response.body() != null) {
@@ -142,7 +142,7 @@ public class LoginActivity extends ScannerActivity {
                     }
 
                     @Override
-                    public void onFailure(Call<AuthModel.LoginResponse> call, Throwable t) {
+                    public void onFailure(Call<AuthResponses.LoginResponse> call, Throwable t) {
                         hideLoading();
                         String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                         LogManager.get(LoginActivity.this).log(LogManager.ERROR, LogManager.ACTION_LOGIN,
@@ -152,7 +152,7 @@ public class LoginActivity extends ScannerActivity {
                 });
     }
 
-    private void handleLoginSuccess(AuthModel.LoginResponse body) {
+    private void handleLoginSuccess(AuthResponses.LoginResponse body) {
         String token = body.getToken();
         String username = body.getUser();
 

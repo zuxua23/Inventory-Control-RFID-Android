@@ -4,7 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
-import com.example.inventory_system_ht.model.StockTakingModel;
+import com.example.inventory_system_ht.model.StockTakingResponses;
 
 @Entity(tableName = "tb_session_items")
 public class SessionItemEntity {
@@ -18,8 +18,8 @@ public class SessionItemEntity {
     @ColumnInfo(name = "location") public String location;
     @ColumnInfo(name = "stt_id") public String sttId;
 
-    public StockTakingModel.SessionItem toSessionItem() {
-        StockTakingModel.SessionItem s = new StockTakingModel.SessionItem();
+    public StockTakingResponses.SessionItem toSessionItem() {
+        StockTakingResponses.SessionItem s = new StockTakingResponses.SessionItem();
         s.epcTag = epcTag;
         s.tagId = tagId;
         s.itemId = itemId;
@@ -30,7 +30,7 @@ public class SessionItemEntity {
         return s;
     }
 
-    public static SessionItemEntity from(String sttId, StockTakingModel.SessionItem s) {
+    public static SessionItemEntity from(String sttId, StockTakingResponses.SessionItem s) {
         SessionItemEntity e = new SessionItemEntity();
         e.sttId = sttId;
         e.epcTag = s.epcTag != null ? s.epcTag : "";

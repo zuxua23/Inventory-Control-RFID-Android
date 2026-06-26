@@ -2,7 +2,7 @@ package com.example.inventory_system_ht.model;
 
 import com.google.gson.annotations.SerializedName;
 
-public class AvailableTagDto {
+public class AvailableTagResponses {
 
     @SerializedName("epcTag")
     private String epcTag;

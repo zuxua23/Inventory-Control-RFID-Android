@@ -10,19 +10,19 @@ import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.inventory_system_ht.model.ItemModel;
+import com.example.inventory_system_ht.model.ItemResponses;
 import com.example.inventory_system_ht.R;
 
 import java.util.List;
 
 public class StockPrepProductAdapter extends RecyclerView.Adapter<StockPrepProductAdapter.ViewHolder> {
-    private List<ItemModel.SumProduct> list;
+    private List<ItemResponses.SumProduct> list;
 
-    public StockPrepProductAdapter(List<ItemModel.SumProduct> list) {
+    public StockPrepProductAdapter(List<ItemResponses.SumProduct> list) {
         this.list = list;
     }
 
-    public void updateData(List<ItemModel.SumProduct> newList) {
+    public void updateData(List<ItemResponses.SumProduct> newList) {
         this.list = newList;
         notifyDataSetChanged();
     }
@@ -40,7 +40,7 @@ public class StockPrepProductAdapter extends RecyclerView.Adapter<StockPrepProdu
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder h, int position) {
-        ItemModel.SumProduct item = list.get(position);
+        ItemResponses.SumProduct item = list.get(position);
 
         String name = item.getItemName();
         if (name == null || name.trim().isEmpty())

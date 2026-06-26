@@ -52,13 +52,13 @@ import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
 import com.example.inventory_system_ht.entity.TagCacheEntity;
 import com.example.inventory_system_ht.entity.TagLocalEntity;
-import com.example.inventory_system_ht.model.AvailableTagDto;
-import com.example.inventory_system_ht.model.DOModel;
+import com.example.inventory_system_ht.model.AvailableTagResponses;
+import com.example.inventory_system_ht.model.DeliveryOrderResponses;
 import com.example.inventory_system_ht.model.GeneralResponse;
-import com.example.inventory_system_ht.model.ItemModel;
-import com.example.inventory_system_ht.model.LocationModel;
+import com.example.inventory_system_ht.model.ItemResponses;
+import com.example.inventory_system_ht.model.LocationResponses;
 import com.example.inventory_system_ht.model.StockPrepBulkRequest;
-import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.model.TagResponses;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.network.ErrorParser;
@@ -100,7 +100,7 @@ public class StockPrepProductActivity extends ScannerActivity
     private TagAdapter adapter;
     private StockPrepProductAdapter sumAdapter;
     private List<TagLocalEntity> scannedList;
-    private List<ItemModel.SumProduct> sumProductList = new ArrayList<>();
+    private List<ItemResponses.SumProduct> sumProductList = new ArrayList<>();
     private final Map<String, Integer> requiredQtyMap = new HashMap<>();
     private final Map<String, String> itemNameMap = new HashMap<>();
     private final Set<String> scannedRawSet = new HashSet<>();
@@ -116,7 +116,7 @@ public class StockPrepProductActivity extends ScannerActivity
     private ApiService api;
     private String token;
     private AppDao appDao;
-    private List<LocationModel> masterLocationList = new ArrayList<>();
+    private List<LocationResponses> masterLocationList = new ArrayList<>();
     private final List<String> locationList = new ArrayList<>();
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
@@ -452,10 +452,10 @@ public class StockPrepProductActivity extends ScannerActivity
 
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"doId\":\"" + currentDoId + "\"}";
-        api.getDoDetailForPrep(token, currentDoId).enqueue(new Callback<DOModel.DOResponse>() {
+        api.getDoDetailForPrep(token, currentDoId).enqueue(new Callback<DeliveryOrderResponses.DOResponse>() {
             @Override
-            public void onResponse(Call<DOModel.DOResponse> call,
-                                   Response<DOModel.DOResponse> response) {
+            public void onResponse(Call<DeliveryOrderResponses.DOResponse> call,
+                                   Response<DeliveryOrderResponses.DOResponse> response) {
                 String resJson = "{\"http_code\":" + response.code() + ",\"hasDetails\":"
                         + (response.body() != null && response.body().getDetails() != null) + "}";
                 if (response.isSuccessful() && response.body() != null) {
@@ -464,9 +464,9 @@ public class StockPrepProductActivity extends ScannerActivity
                             userId, reqJson, resJson);
                     requiredQtyMap.clear();
                     itemNameMap.clear();
-                    DOModel.DOResponse body = response.body();
+                    DeliveryOrderResponses.DOResponse body = response.body();
                     if (body.getDetails() != null && !body.getDetails().isEmpty()) {
-                        for (DOModel.DODetailResponse d : body.getDetails()) {
+                        for (DeliveryOrderResponses.DODetailResponse d : body.getDetails()) {
                             if (d.getItemId() == null) continue;
                             requiredQtyMap.put(d.getItemId(), d.getQtyRequired() != null ? d.getQtyRequired() : 0);
                             if (d.getItemName() != null && !d.getItemName().isEmpty()) {
@@ -495,7 +495,7 @@ public class StockPrepProductActivity extends ScannerActivity
             }
 
             @Override
-            public void onFailure(Call<DOModel.DOResponse> call, Throwable t) {
+            public void onFailure(Call<DeliveryOrderResponses.DOResponse> call, Throwable t) {
                 String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                 LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                         "Stock Preparation", currentDoId, "Fetch DO detail error: " + t.getMessage(),
@@ -511,10 +511,10 @@ public class StockPrepProductActivity extends ScannerActivity
 
         String userId = new PrefManager(this).getUserId();
 
-        api.getAvailableTagsForDo(token, currentDoId).enqueue(new Callback<List<AvailableTagDto>>() {
+        api.getAvailableTagsForDo(token, currentDoId).enqueue(new Callback<List<AvailableTagResponses>>() {
             @Override
-            public void onResponse(Call<List<AvailableTagDto>> call,
-                                   Response<List<AvailableTagDto>> response) {
+            public void onResponse(Call<List<AvailableTagResponses>> call,
+                                   Response<List<AvailableTagResponses>> response) {
                 if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {
                     LogManager.get(StockPrepProductActivity.this).log(
                             LogManager.WARNING, LogManager.ACTION_READ,
@@ -524,14 +524,14 @@ public class StockPrepProductActivity extends ScannerActivity
                     return;
                 }
 
-                List<AvailableTagDto> tagList = response.body();
+                List<AvailableTagResponses> tagList = response.body();
 
                 new Thread(() -> {
                     try {
                         List<TagCacheEntity> cacheList = new ArrayList<>();
                         long now = System.currentTimeMillis();
 
-                        for (AvailableTagDto dto : tagList) {
+                        for (AvailableTagResponses dto : tagList) {
                             if (dto.getEpcTag() == null || dto.getEpcTag().isEmpty()) continue;
 
                             TagCacheEntity cache = new TagCacheEntity();
@@ -565,7 +565,7 @@ public class StockPrepProductActivity extends ScannerActivity
             }
 
             @Override
-            public void onFailure(Call<List<AvailableTagDto>> call, Throwable t) {
+            public void onFailure(Call<List<AvailableTagResponses>> call, Throwable t) {
                 LogManager.get(StockPrepProductActivity.this).log(
                         LogManager.ERROR, LogManager.ACTION_READ,
                         "Stock Preparation", currentDoId,
@@ -581,10 +581,10 @@ public class StockPrepProductActivity extends ScannerActivity
         }
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"endpoint\":\"getLocations\"}";
-        api.getLocations(token).enqueue(new Callback<List<LocationModel>>() {
+        api.getLocations(token).enqueue(new Callback<List<LocationResponses>>() {
             @Override
-            public void onResponse(Call<List<LocationModel>> call,
-                                   Response<List<LocationModel>> response) {
+            public void onResponse(Call<List<LocationResponses>> call,
+                                   Response<List<LocationResponses>> response) {
                 String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
                         + (response.body() != null ? response.body().size() : 0) + "}";
                 if (response.isSuccessful() && response.body() != null) {
@@ -594,7 +594,7 @@ public class StockPrepProductActivity extends ScannerActivity
                             userId, reqJson, resJson);
                     masterLocationList = response.body();
                     locationList.clear();
-                    for (LocationModel loc : masterLocationList)
+                    for (LocationResponses loc : masterLocationList)
                         locationList.add(loc.getName());
 
                     saveLocationCache(masterLocationList);
@@ -609,7 +609,7 @@ public class StockPrepProductActivity extends ScannerActivity
             }
 
             @Override
-            public void onFailure(Call<List<LocationModel>> call, Throwable t) {
+            public void onFailure(Call<List<LocationResponses>> call, Throwable t) {
                 String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                 LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                         "Stock Preparation", "Location",
@@ -620,11 +620,11 @@ public class StockPrepProductActivity extends ScannerActivity
         });
     }
 
-    private void saveLocationCache(List<LocationModel> locations) {
+    private void saveLocationCache(List<LocationResponses> locations) {
         new Thread(() -> {
             List<com.example.inventory_system_ht.entity.LocationCacheEntity> entities = new ArrayList<>();
             long now = System.currentTimeMillis();
-            for (LocationModel loc : locations) {
+            for (LocationResponses loc : locations) {
                 com.example.inventory_system_ht.entity.LocationCacheEntity e =
                         new com.example.inventory_system_ht.entity.LocationCacheEntity();
                 e.locId = loc.getId();
@@ -643,9 +643,9 @@ public class StockPrepProductActivity extends ScannerActivity
                     appDao.getAllLocationCache();
             if (cached == null || cached.isEmpty()) return;
 
-            List<LocationModel> fromCache = new ArrayList<>();
+            List<LocationResponses> fromCache = new ArrayList<>();
             for (com.example.inventory_system_ht.entity.LocationCacheEntity e : cached) {
-                LocationModel loc = new LocationModel();
+                LocationResponses loc = new LocationResponses();
                 loc.setId(e.locId);
                 loc.setName(e.locName);
                 fromCache.add(loc);
@@ -653,17 +653,17 @@ public class StockPrepProductActivity extends ScannerActivity
             runOnUiThread(() -> {
                 masterLocationList = fromCache;
                 locationList.clear();
-                for (LocationModel loc : masterLocationList) locationList.add(loc.getName());
+                for (LocationResponses loc : masterLocationList) locationList.add(loc.getName());
                 populateLocationSpinner(masterLocationList);
                 showWarning("Offline — location loaded from cache");
             });
         }).start();
     }
 
-    private void populateLocationSpinner(List<LocationModel> locations) {
+    private void populateLocationSpinner(List<LocationResponses> locations) {
         List<String> withHint = new ArrayList<>();
         withHint.add("Select Location");
-        for (LocationModel loc : locations) withHint.add(loc.getName());
+        for (LocationResponses loc : locations) withHint.add(loc.getName());
 
         locationSpinnerAdapter.clear();
         locationSpinnerAdapter.addAll(withHint);
@@ -683,10 +683,10 @@ public class StockPrepProductActivity extends ScannerActivity
         if (!isNetworkConnected()) return;
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"endpoint\":\"getAllItems\"}";
-        api.getAllItems(token).enqueue(new Callback<List<ItemModel.ItemResponse>>() {
+        api.getAllItems(token).enqueue(new Callback<List<ItemResponses.ItemResponse>>() {
             @Override
-            public void onResponse(Call<List<ItemModel.ItemResponse>> call,
-                                   Response<List<ItemModel.ItemResponse>> response) {
+            public void onResponse(Call<List<ItemResponses.ItemResponse>> call,
+                                   Response<List<ItemResponses.ItemResponse>> response) {
                 String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
                         + (response.body() != null ? response.body().size() : 0) + "}";
                 if (response.isSuccessful() && response.body() != null) {
@@ -694,7 +694,7 @@ public class StockPrepProductActivity extends ScannerActivity
                             "Stock Preparation", "Item Names",
                             "Fetch all items success: " + response.body().size() + " items",
                             userId, reqJson, resJson);
-                    for (ItemModel.ItemResponse item : response.body()) {
+                    for (ItemResponses.ItemResponse item : response.body()) {
                         if (requiredQtyMap.containsKey(item.getItemId())
                                 && !itemNameMap.containsKey(item.getItemId())) {
                             itemNameMap.put(item.getItemId(), item.getItemName());
@@ -713,7 +713,7 @@ public class StockPrepProductActivity extends ScannerActivity
             }
 
             @Override
-            public void onFailure(Call<List<ItemModel.ItemResponse>> call, Throwable t) {
+            public void onFailure(Call<List<ItemResponses.ItemResponse>> call, Throwable t) {
                 String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                 LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                         "Stock Preparation", "Item Names",
@@ -884,9 +884,9 @@ public class StockPrepProductActivity extends ScannerActivity
 
                 } else {
                     try {
-                        TagModel.PrepBulkInfoReq req = new TagModel.PrepBulkInfoReq(
+                        TagResponses.PrepBulkInfoReq req = new TagResponses.PrepBulkInfoReq(
                                 Arrays.asList(code), isRfid ? "RFID" : "QR", currentDoId);
-                        Response<List<TagModel.TagInfoDto>> response = api.getTagsInfoBulk(token, req).execute();
+                        Response<List<TagResponses.TagInfoDto>> response = api.getTagsInfoBulk(token, req).execute();
 
                         if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {
                             rejectionReasons.put(code, "Tag not registered");
@@ -895,7 +895,7 @@ public class StockPrepProductActivity extends ScannerActivity
                             continue;
                         }
 
-                        TagModel.TagInfoDto info = response.body().get(0);
+                        TagResponses.TagInfoDto info = response.body().get(0);
 
                         TagCacheEntity cache = new TagCacheEntity();
                         cache.epcTag = info.getEpcTag() != null ? info.getEpcTag() : code;
@@ -1166,7 +1166,7 @@ public class StockPrepProductActivity extends ScannerActivity
             }
         }
 
-        Map<String, ItemModel.SumProduct> map = new LinkedHashMap<>();
+        Map<String, ItemResponses.SumProduct> map = new LinkedHashMap<>();
 
         for (Map.Entry<String, Integer> e : requiredQtyMap.entrySet()) {
             String itemId = e.getKey();
@@ -1175,7 +1175,7 @@ public class StockPrepProductActivity extends ScannerActivity
             if (name == null || name.trim().isEmpty()) name = tagDerivedNames.get(itemId);
             if (name == null || name.trim().isEmpty()) name = itemId;
 
-            map.put(itemId, new ItemModel.SumProduct(itemId, name, 0, e.getValue()));
+            map.put(itemId, new ItemResponses.SumProduct(itemId, name, 0, e.getValue()));
         }
 
         for (TagLocalEntity item : scannedList) {
@@ -1188,7 +1188,7 @@ public class StockPrepProductActivity extends ScannerActivity
                 if (name == null || name.trim().isEmpty() || name.equals("Validating...")) {
                     name = itemId;
                 }
-                map.put(itemId, new ItemModel.SumProduct(itemId, name, 1, 0));
+                map.put(itemId, new ItemResponses.SumProduct(itemId, name, 1, 0));
             }
         }
 

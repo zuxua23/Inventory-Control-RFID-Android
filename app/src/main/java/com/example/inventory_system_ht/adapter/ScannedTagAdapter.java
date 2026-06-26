@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.inventory_system_ht.model.StockTakingModel;
+import com.example.inventory_system_ht.model.StockTakingResponses;
 import com.example.inventory_system_ht.R;
 
 import java.util.List;
@@ -18,9 +18,9 @@ import java.util.List;
 public class ScannedTagAdapter extends RecyclerView.Adapter<ScannedTagAdapter.VH> {
 
     private static final int COLOR_CARD = Color.parseColor("#0181CC");
-    private final List<StockTakingModel.ScannedTagItem> list;
+    private final List<StockTakingResponses.ScannedTagItem> list;
 
-    public ScannedTagAdapter(List<StockTakingModel.ScannedTagItem> list) {
+    public ScannedTagAdapter(List<StockTakingResponses.ScannedTagItem> list) {
         this.list = list;
     }
 
@@ -37,7 +37,7 @@ public class ScannedTagAdapter extends RecyclerView.Adapter<ScannedTagAdapter.VH
 
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
-        StockTakingModel.ScannedTagItem item = list.get(position);
+        StockTakingResponses.ScannedTagItem item = list.get(position);
         h.tvEpc.setText(item.epcTag != null && !item.epcTag.isEmpty() ? item.epcTag : "-");
         h.card.setCardBackgroundColor(COLOR_CARD);
     }

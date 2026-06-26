@@ -24,13 +24,8 @@ import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.util.SyncWorker;
 
-public class MyApplication extends Application
-        implements ScannerAcceptStatusListener, ScannerStatusListener {
-
-    // Unique name — WorkManager will deduplicate enqueues with this key
+public class MyApplication extends Application implements ScannerAcceptStatusListener, ScannerStatusListener {
     private static final String SYNC_WORK_NAME = "global_pending_sync";
-
-    // Debounce: prevent rapid onAvailable() calls from enqueueing multiple workers
     private volatile boolean syncScheduled = false;
     private final android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable syncRunnable = () -> {
@@ -59,11 +54,6 @@ public class MyApplication extends Application
         registerGlobalNetworkCallback();
     }
 
-    /**
-     * Global network callback — fires whenever network becomes available.
-     * Uses KEEP policy so duplicate enqueues from rapid onAvailable() calls
-     * are ignored if a SyncWorker is already queued or running.
-     */
     private void registerGlobalNetworkCallback() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         if (cm == null) return;
@@ -71,8 +61,6 @@ public class MyApplication extends Application
         networkCallback = new ConnectivityManager.NetworkCallback() {
             @Override
             public void onAvailable(@NonNull Network network) {
-                // Debounce: if already scheduled, cancel and reschedule (300ms window)
-                // This handles rapid multiple onAvailable() calls from ConnectivityManager
                 if (syncScheduled) {
                     mainHandler.removeCallbacks(syncRunnable);
                 }
@@ -99,8 +87,6 @@ public class MyApplication extends Application
             cm.unregisterNetworkCallback(networkCallback);
         }
     }
-
-    // ── Scanner lifecycle ─────────────────────────────────────────────────────
 
     public void startScannerAccept() {
         CommManager.addAcceptStatusListener(this);

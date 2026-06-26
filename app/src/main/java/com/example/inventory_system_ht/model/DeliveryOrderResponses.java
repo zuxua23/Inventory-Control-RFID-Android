@@ -3,7 +3,7 @@ package com.example.inventory_system_ht.model;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
-public class DOModel {
+public class DeliveryOrderResponses {
 
     public static class DODetailResponse {
         @SerializedName("itemId") private String itemId;

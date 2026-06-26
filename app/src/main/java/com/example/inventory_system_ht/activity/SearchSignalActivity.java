@@ -23,7 +23,7 @@ import com.densowave.scannersdk.RFID.RFIDData;
 import com.densowave.scannersdk.RFID.RFIDDataReceivedEvent;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
-import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.model.TagResponses;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
@@ -36,8 +36,8 @@ import java.util.ArrayList;
 
 public class SearchSignalActivity extends ScannerActivity implements RFIDDataDelegate {
 
-    private TagModel.SearchItemDto selectedItem;
-    private TagModel.TagDetailDto  selectedDetail;
+    private TagResponses.SearchItemDto selectedItem;
+    private TagResponses.TagDetailDto  selectedDetail;
     private LinearLayout containerSignalBars;
     private TextView tvItemTitle, tvRssiValue;
     private Button btnToggleScan;
@@ -158,8 +158,8 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             return insets;
         });
 
-        selectedItem = (TagModel.SearchItemDto) getIntent().getSerializableExtra("SELECTED_ITEM");
-        selectedDetail = (TagModel.TagDetailDto)  getIntent().getSerializableExtra("SELECTED_DETAIL");
+        selectedItem = (TagResponses.SearchItemDto) getIntent().getSerializableExtra("SELECTED_ITEM");
+        selectedDetail = (TagResponses.TagDetailDto)  getIntent().getSerializableExtra("SELECTED_DETAIL");
 
         initViews();
         setupListeners();

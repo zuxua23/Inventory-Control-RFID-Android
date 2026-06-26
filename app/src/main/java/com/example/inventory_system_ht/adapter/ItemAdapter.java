@@ -8,19 +8,19 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.inventory_system_ht.model.ItemModel;
+import com.example.inventory_system_ht.model.ItemResponses;
 import com.example.inventory_system_ht.R;
 
 import java.util.List;
 
 public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
-    private final List<ItemModel.Item> itemList;
+    private final List<ItemResponses.Item> itemList;
     private OnItemClickListener listener;
     public interface OnItemClickListener {
-        void onItemClick(ItemModel.Item item);
+        void onItemClick(ItemResponses.Item item);
     }
 
-    public ItemAdapter(List<ItemModel.Item> itemList) {
+    public ItemAdapter(List<ItemResponses.Item> itemList) {
         this.itemList = itemList;
     }
 
@@ -43,7 +43,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        ItemModel.Item item = itemList.get(position);
+        ItemResponses.Item item = itemList.get(position);
         holder.tvEpc.setText("EPC: " + (item.getEpcTag() != null ? item.getEpcTag() : "-"));
         String tagId = item.getTagId();
         boolean showTagId = tagId != null && !tagId.isEmpty() && !tagId.equalsIgnoreCase(item.getEpcTag());

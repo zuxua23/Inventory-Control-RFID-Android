@@ -186,7 +186,7 @@
                                 android:layout_width="30dp"
                                 android:layout_height="30dp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/stock_in_icon"
+                                android:src="@drawable/ic_stock_in"
                                 android:importantForAccessibility="no" />
                         </FrameLayout>
 
@@ -253,7 +253,7 @@
                                 android:layout_width="30dp"
                                 android:layout_height="30dp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/stock_preparation_icon"
+                                android:src="@drawable/ic_stock_preparation"
                                 android:importantForAccessibility="no" />
                         </FrameLayout>
 
@@ -320,7 +320,7 @@
                                 android:layout_width="30dp"
                                 android:layout_height="30dp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/stock_taking_icon"
+                                android:src="@drawable/ic_stock_taking"
                                 android:importantForAccessibility="no" />
                         </FrameLayout>
 
@@ -387,7 +387,7 @@
                                 android:layout_width="30dp"
                                 android:layout_height="30dp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/seacrh_item_icon"
+                                android:src="@drawable/ic_seacrh_item"
                                 android:importantForAccessibility="no" />
                         </FrameLayout>
 

@@ -34,7 +34,7 @@ public class RfidBulkHelper {
 
             RFIDScannerSettings settings = rfid.getSettings();
             int safePower = Math.max(4, Math.min(30, powerDbm));
-            settings.scan.powerLevelRead  = safePower;
+            settings.scan.powerLevelRead = safePower;
             settings.scan.powerLevelWrite = safePower;
             settings.scan.sessionFlag = RFIDScannerSettings.Scan.SessionFlag.S0;
             settings.scan.polarization = RFIDScannerSettings.Scan.Polarization.H;
@@ -68,15 +68,15 @@ public class RfidBulkHelper {
 
             RFIDScannerSettings settings = rfid.getSettings();
             int safePower = Math.max(4, Math.min(30, powerDbm));
-            settings.scan.powerLevelRead  = safePower;
+            settings.scan.powerLevelRead = safePower;
             settings.scan.powerLevelWrite = safePower;
-            settings.scan.sessionFlag     = RFIDScannerSettings.Scan.SessionFlag.S0;
-            settings.scan.polarization    = RFIDScannerSettings.Scan.Polarization.Both;
+            settings.scan.sessionFlag = RFIDScannerSettings.Scan.SessionFlag.S0;
+            settings.scan.polarization = RFIDScannerSettings.Scan.Polarization.Both;
             rfid.setSettings(settings);
 
             byte[] epcBytes = hexToBytes(targetEpc.trim());
             byte[] password = new byte[]{0x00, 0x00, 0x00, 0x00};
-            short  addr     = 0;
+            short addr = 0;
 
             rfid.openRead(
                     RFIDScannerSettings.RFIDBank.UII,
@@ -103,15 +103,15 @@ public class RfidBulkHelper {
             rfid.setDataDelegate(delegate);
 
             RFIDScannerSettings settings = rfid.getSettings();
-            settings.scan.triggerMode  = triggerMode;
+            settings.scan.triggerMode = triggerMode;
 
             int safePower = Math.max(4, Math.min(30, powerDbm));
-            settings.scan.powerLevelRead  = safePower;
+            settings.scan.powerLevelRead = safePower;
             settings.scan.powerLevelWrite = safePower;
-            settings.scan.doubleReading   = RFIDScannerSettings.Scan.DoubleReading.PREVENT1;
-            settings.scan.sessionFlag     = sessionFlagOf(session);
-            settings.scan.qParam          = (short) Math.max(0, Math.min(15, qFactor));
-            settings.scan.polarization    = RFIDScannerSettings.Scan.Polarization.Both;
+            settings.scan.doubleReading = RFIDScannerSettings.Scan.DoubleReading.PREVENT1;
+            settings.scan.sessionFlag = sessionFlagOf(session);
+            settings.scan.qParam = (short) Math.max(0, Math.min(15, qFactor));
+            settings.scan.polarization = RFIDScannerSettings.Scan.Polarization.Both;
 
             rfid.setSettings(settings);
             rfid.openInventory();
@@ -124,9 +124,9 @@ public class RfidBulkHelper {
 
     private static RFIDScannerSettings.Scan.SessionFlag sessionFlagOf(int s) {
         switch (s) {
-            case 0:  return RFIDScannerSettings.Scan.SessionFlag.S0;
-            case 2:  return RFIDScannerSettings.Scan.SessionFlag.S2;
-            case 3:  return RFIDScannerSettings.Scan.SessionFlag.S3;
+            case 0: return RFIDScannerSettings.Scan.SessionFlag.S0;
+            case 2: return RFIDScannerSettings.Scan.SessionFlag.S2;
+            case 3: return RFIDScannerSettings.Scan.SessionFlag.S3;
             default: return RFIDScannerSettings.Scan.SessionFlag.S1;
         }
     }
@@ -161,18 +161,18 @@ public class RfidBulkHelper {
 
             try {
                 BarcodeScannerSettings settings = barcode.getSettings();
-                settings.scan.triggerMode  = BarcodeScannerSettings.Scan.TriggerMode.MOMENTARY;
-                settings.scan.lightMode    = BarcodeScannerSettings.Scan.LightMode.AUTO;
-                settings.scan.markerMode   = BarcodeScannerSettings.Scan.MarkerMode.NORMAL;
+                settings.scan.triggerMode = BarcodeScannerSettings.Scan.TriggerMode.MOMENTARY;
+                settings.scan.lightMode = BarcodeScannerSettings.Scan.LightMode.AUTO;
+                settings.scan.markerMode = BarcodeScannerSettings.Scan.MarkerMode.NORMAL;
 
                 BarcodeScannerSettings.Decode.Symbologies sym = settings.decode.symbologies;
-                sym.qrCode.enabled                  = true;
-                sym.qrCode.model1.enabled           = false;
-                sym.qrCode.model2.enabled           = true;
-                sym.microQr.enabled                 = true;
-                sym.dataMatrix.enabled              = true;
-                sym.dataMatrix.square.enabled       = true;
-                sym.dataMatrix.rectangle.enabled    = true;
+                sym.qrCode.enabled = true;
+                sym.qrCode.model1.enabled = false;
+                sym.qrCode.model2.enabled = true;
+                sym.microQr.enabled = true;
+                sym.dataMatrix.enabled = true;
+                sym.dataMatrix.square.enabled = true;
+                sym.dataMatrix.rectangle.enabled = true;
 
                 barcode.setSettings(settings);
             } catch (Exception ignored) {}

@@ -35,7 +35,7 @@ import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.adapter.SearchItemAdapter;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.SearchItemEntity;
-import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.model.TagResponses;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
@@ -62,8 +62,8 @@ public class SearchItemActivity extends ScannerActivity
     private Spinner spinnerStatus;
     private Spinner spinnerWarehouse;
     private SearchItemAdapter adapter;
-    private List<TagModel.SearchItemDto> allItemList;
-    private List<TagModel.SearchItemDto> filteredList;
+    private List<TagResponses.SearchItemDto> allItemList;
+    private List<TagResponses.SearchItemDto> filteredList;
     private String selectedStatus = "All Status";
     private String selectedWarehouse = "All Warehouse";
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -216,9 +216,9 @@ public class SearchItemActivity extends ScannerActivity
     private void loadFromLocalAsync() {
         new Thread(() -> {
             List<SearchItemEntity> cached = db.appDao().getAllSearchItems();
-            List<TagModel.SearchItemDto> items = new ArrayList<>();
+            List<TagResponses.SearchItemDto> items = new ArrayList<>();
             for (SearchItemEntity e : cached) {
-                TagModel.SearchItemDto dto = new TagModel.SearchItemDto();
+                TagResponses.SearchItemDto dto = new TagResponses.SearchItemDto();
                 dto.setTagId(e.tagId);
                 dto.setEpcTag(e.epcTag);
                 dto.setItemName(e.itemName);
@@ -235,11 +235,11 @@ public class SearchItemActivity extends ScannerActivity
         }).start();
     }
 
-    private void saveToLocal(List<TagModel.SearchItemDto> items) {
+    private void saveToLocal(List<TagResponses.SearchItemDto> items) {
         new Thread(() -> {
             db.appDao().deleteAllSearchItems();
             List<SearchItemEntity> entities = new ArrayList<>();
-            for (TagModel.SearchItemDto dto : items) {
+            for (TagResponses.SearchItemDto dto : items) {
                 SearchItemEntity e = new SearchItemEntity();
                 e.tagId = dto.getTagId();
                 e.epcTag = dto.getEpcTag();
@@ -257,7 +257,7 @@ public class SearchItemActivity extends ScannerActivity
         Set<String> warehouses = new LinkedHashSet<>();
         statuses.add("All Status");
         warehouses.add("All Warehouse");
-        for (TagModel.SearchItemDto item : allItemList) {
+        for (TagResponses.SearchItemDto item : allItemList) {
             if (item.getStatus() != null && !item.getStatus().isEmpty())
                 statuses.add(item.getStatus());
             if (item.getLocation() != null && !item.getLocation().isEmpty()
@@ -279,15 +279,15 @@ public class SearchItemActivity extends ScannerActivity
         showLoading();
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"endpoint\":\"getSearchItems\"}";
-        api.getSearchItems(token).enqueue(new Callback<List<TagModel.SearchItemDto>>() {
+        api.getSearchItems(token).enqueue(new Callback<List<TagResponses.SearchItemDto>>() {
             @Override
-            public void onResponse(Call<List<TagModel.SearchItemDto>> call,
-                                   Response<List<TagModel.SearchItemDto>> response) {
+            public void onResponse(Call<List<TagResponses.SearchItemDto>> call,
+                                   Response<List<TagResponses.SearchItemDto>> response) {
                 hideLoading();
                 String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
                         + (response.body() != null ? response.body().size() : 0) + "}";
                 if (response.isSuccessful() && response.body() != null) {
-                    List<TagModel.SearchItemDto> data = response.body();
+                    List<TagResponses.SearchItemDto> data = response.body();
                     LogManager.get(SearchItemActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
                             "Search Item", "Item List", "Fetch items success: " + data.size() + " items",
                             userId, reqJson, resJson);
@@ -305,7 +305,7 @@ public class SearchItemActivity extends ScannerActivity
             }
 
             @Override
-            public void onFailure(Call<List<TagModel.SearchItemDto>> call, Throwable t) {
+            public void onFailure(Call<List<TagResponses.SearchItemDto>> call, Throwable t) {
                 hideLoading();
                 String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                 LogManager.get(SearchItemActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
@@ -316,16 +316,16 @@ public class SearchItemActivity extends ScannerActivity
         });
     }
 
-    private void fetchAndShowDetail(TagModel.SearchItemDto item) {
+    private void fetchAndShowDetail(TagResponses.SearchItemDto item) {
         if (!isNetworkConnected()) { showWarning("Offline, cannot view detail"); return; }
         showLoading();
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"tagId\":\"" + item.getTagId() + "\"}";
         api.getTagDetailSearchItem(token, item.getTagId())
-                .enqueue(new Callback<TagModel.TagDetailDto>() {
+                .enqueue(new Callback<TagResponses.TagDetailDto>() {
                     @Override
-                    public void onResponse(Call<TagModel.TagDetailDto> call,
-                                           Response<TagModel.TagDetailDto> response) {
+                    public void onResponse(Call<TagResponses.TagDetailDto> call,
+                                           Response<TagResponses.TagDetailDto> response) {
                         hideLoading();
                         String resJson = "{\"http_code\":" + response.code() + ",\"found\":"
                                 + (response.body() != null) + "}";
@@ -343,7 +343,7 @@ public class SearchItemActivity extends ScannerActivity
                     }
 
                     @Override
-                    public void onFailure(Call<TagModel.TagDetailDto> call, Throwable t) {
+                    public void onFailure(Call<TagResponses.TagDetailDto> call, Throwable t) {
                         hideLoading();
                         String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                         LogManager.get(SearchItemActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
@@ -354,8 +354,8 @@ public class SearchItemActivity extends ScannerActivity
                 });
     }
 
-    private void showTagDetailDialog(TagModel.SearchItemDto selectedItem,
-                                     TagModel.TagDetailDto detail) {
+    private void showTagDetailDialog(TagResponses.SearchItemDto selectedItem,
+                                     TagResponses.TagDetailDto detail) {
         android.app.Dialog dialog = new android.app.Dialog(this);
         dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_tag_detail);
@@ -424,7 +424,7 @@ public class SearchItemActivity extends ScannerActivity
     private void filter(String text) {
         filteredList.clear();
         String query = text.toLowerCase().trim();
-        for (TagModel.SearchItemDto item : allItemList) {
+        for (TagResponses.SearchItemDto item : allItemList) {
             if (!"All Status".equals(selectedStatus)) {
                 String itemStatus = item.getStatus() != null ? item.getStatus() : "";
                 if (!selectedStatus.equalsIgnoreCase(itemStatus)) continue;
@@ -454,8 +454,8 @@ public class SearchItemActivity extends ScannerActivity
             return;
         }
         String key = code != null ? code.trim() : "";
-        TagModel.SearchItemDto found = null;
-        for (TagModel.SearchItemDto item : allItemList) {
+        TagResponses.SearchItemDto found = null;
+        for (TagResponses.SearchItemDto item : allItemList) {
             String itemEpc = item.getEpcTag() != null ? item.getEpcTag().trim() : "";
             String itemTag = item.getTagId() != null ? item.getTagId().trim() : "";
             if (key.equalsIgnoreCase(itemEpc) || key.equalsIgnoreCase(itemTag)) {

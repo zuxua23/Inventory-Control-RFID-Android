@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -22,13 +21,12 @@ import com.densowave.scannersdk.Listener.BarcodeDataDelegate;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.util.LogManager;
-import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.example.inventory_system_ht.adapter.DeliveryOrderAdapter;
 import com.example.inventory_system_ht.database.AppDao;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.DeliveryOrderEntity;
-import com.example.inventory_system_ht.model.DOModel;
+import com.example.inventory_system_ht.model.DeliveryOrderResponses;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.PrefManager;
@@ -173,10 +171,10 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
 
         ApiClient.getClient(this).create(ApiService.class)
                 .getDo(token)
-                .enqueue(new retrofit2.Callback<List<DOModel.DOResponse>>() {
+                .enqueue(new retrofit2.Callback<List<DeliveryOrderResponses.DOResponse>>() {
                     @Override
-                    public void onResponse(Call<List<DOModel.DOResponse>> call,
-                                           retrofit2.Response<List<DOModel.DOResponse>> response) {
+                    public void onResponse(Call<List<DeliveryOrderResponses.DOResponse>> call,
+                                           retrofit2.Response<List<DeliveryOrderResponses.DOResponse>> response) {
                         String resJson = "{\"http_code\":" + response.code() + ",\"count\":"
                                 + (response.body() != null ? response.body().size() : 0) + "}";
                         if (response.isSuccessful() && response.body() != null) {
@@ -184,9 +182,9 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
                                     "Stock Preparation", "DO List",
                                     "Fetch DO success: " + response.body().size() + " items",
                                     userId, reqJson, resJson);
-                            List<DOModel.DOResponse> remoteList = response.body();
+                            List<DeliveryOrderResponses.DOResponse> remoteList = response.body();
                             List<DeliveryOrderEntity> entities = new ArrayList<>();
-                            for (DOModel.DOResponse r : remoteList) {
+                            for (DeliveryOrderResponses.DOResponse r : remoteList) {
                                 entities.add(new DeliveryOrderEntity(
                                         r.getDoId(),
                                         r.getDoNumber(),
@@ -217,7 +215,7 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
                     }
 
                     @Override
-                    public void onFailure(Call<List<DOModel.DOResponse>> call, Throwable t) {
+                    public void onFailure(Call<List<DeliveryOrderResponses.DOResponse>> call, Throwable t) {
                         String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                         LogManager.get(StockPrepActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                                 "Stock Preparation", "DO List",

@@ -11,11 +11,11 @@ import com.example.inventory_system_ht.database.AppDao;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
 import com.example.inventory_system_ht.entity.PendingTagRegistrationEntity;
 import com.example.inventory_system_ht.entity.StockInScanEntity;
-import com.example.inventory_system_ht.model.AuthModel;
+import com.example.inventory_system_ht.model.AuthResponses;
 import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.model.StockInRequest;
 import com.example.inventory_system_ht.model.StockPrepBulkRequest;
-import com.example.inventory_system_ht.model.TagModel;
+import com.example.inventory_system_ht.model.TagResponses;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.google.gson.Gson;
@@ -46,7 +46,6 @@ public class SyncWorker extends Worker {
         ApiService api = ApiClient.getClient(getApplicationContext()).create(ApiService.class);
         boolean hasNetworkFailure = false;
 
-        // ── 1. PendingSubmitEntity (Stock Prep / old bulk tag queue) ──────────
         List<PendingSubmitEntity> pendingList = appDao.getAllPendingSubmit();
         if (pendingList != null && !pendingList.isEmpty()) {
             Gson gson = new Gson();
@@ -58,40 +57,31 @@ public class SyncWorker extends Worker {
                     Response<GeneralResponse> response;
 
                     if ("TAG_REGISTRATION".equals(pending.doId)) {
-                        response = api.registerTags(token, new AuthModel.RegisterRequest(codes)).execute();
+                        response = api.registerTags(token, new AuthResponses.RegisterRequest(codes)).execute();
                     } else {
                         response = api.submitStockPrep(token, new StockPrepBulkRequest(
                                 pending.doId, codes, pending.scannerType, pending.locId)).execute();
                     }
-
-                    // FIX: delete on success (2xx) OR server error (4xx/5xx = data issue,
-                    // not network issue — retrying won't help and causes duplicates).
-                    // Only keep retrying on network failure (exception).
                     if (response.isSuccessful() || response.code() >= 400) {
                         appDao.deletePendingSubmitById(pending.id);
                     } else {
                         hasNetworkFailure = true;
                     }
                 } catch (Exception e) {
-                    // Genuine network error — retry later
                     hasNetworkFailure = true;
                 }
             }
         }
 
-        // ── 2. PendingTagRegistrationEntity (offline tag-with-item) ──────────
         List<PendingTagRegistrationEntity> pendingTagRegs = appDao.getAllPendingTagRegistrations();
         if (pendingTagRegs != null && !pendingTagRegs.isEmpty()) {
             for (PendingTagRegistrationEntity pending : pendingTagRegs) {
                 try {
                     Response<GeneralResponse> response = api.registerTagWithItem(
                             token,
-                            new TagModel.RegisterWithItemReq(pending.epcTag, pending.itemId)
+                            new TagResponses.RegisterWithItemReq(pending.epcTag, pending.itemId)
                     ).execute();
 
-                    // FIX: 200 = registered now, 500 = already registered (duplicate) → both
-                    // mean the tag is on the server. Delete from queue either way.
-                    // Only retry on network exception (ConnectException etc).
                     if (response.isSuccessful() || response.code() >= 400) {
                         appDao.deletePendingTagRegistrationById(pending.id);
                     } else {
@@ -103,7 +93,6 @@ public class SyncWorker extends Worker {
             }
         }
 
-        // ── 3. StockIn offline scans (is_resolved=true, is_synced=false) ─────
         List<StockInScanEntity> unsynced = appDao.getUnsyncedStockInScans();
         if (unsynced != null && !unsynced.isEmpty()) {
             Map<String, List<StockInScanEntity>> grouped = new LinkedHashMap<>();

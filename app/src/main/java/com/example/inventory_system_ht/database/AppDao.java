@@ -197,5 +197,4 @@ public interface AppDao {
 
     @Query("DELETE FROM tb_pending_tag_registration")
     void clearAllPendingTagRegistrations();
-
 }

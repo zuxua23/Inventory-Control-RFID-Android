@@ -46,7 +46,7 @@ import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
 import com.example.inventory_system_ht.entity.SessionItemEntity;
 import com.example.inventory_system_ht.model.GeneralResponse;
-import com.example.inventory_system_ht.model.StockTakingModel;
+import com.example.inventory_system_ht.model.StockTakingResponses;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
@@ -85,7 +85,7 @@ public class StockTakingActivity extends ScannerActivity
     private String token;
     private String sttId = "";
     private String remark = "";
-    private final List<StockTakingModel.SessionItem> sessionItems = new ArrayList<>();
+    private final List<StockTakingResponses.SessionItem> sessionItems = new ArrayList<>();
     private final Set<String> scannedEpcSet = new HashSet<>();
     private final Map<String, Integer> epcIndexMap = new HashMap<>();
     private final Map<String, Integer> tagIdIndexMap = new HashMap<>();
@@ -345,10 +345,10 @@ public class StockTakingActivity extends ScannerActivity
         showLoading();
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"sttId\":\"" + sttId + "\"}";
-        api.getSessionTags(token, sttId).enqueue(new Callback<List<StockTakingModel.SessionItem>>() {
+        api.getSessionTags(token, sttId).enqueue(new Callback<List<StockTakingResponses.SessionItem>>() {
             @Override
-            public void onResponse(Call<List<StockTakingModel.SessionItem>> call,
-                                   Response<List<StockTakingModel.SessionItem>> res) {
+            public void onResponse(Call<List<StockTakingResponses.SessionItem>> call,
+                                   Response<List<StockTakingResponses.SessionItem>> res) {
                 hideLoading();
                 String resJson = "{\"http_code\":" + res.code()
                         + ",\"count\":" + (res.body() != null ? res.body().size() : 0) + "}";
@@ -360,7 +360,7 @@ public class StockTakingActivity extends ScannerActivity
                     return;
                 }
 
-                List<StockTakingModel.SessionItem> fromServer = res.body();
+                List<StockTakingResponses.SessionItem> fromServer = res.body();
                 LogManager.get(StockTakingActivity.this).log(LogManager.INFO, LogManager.ACTION_READ,
                         "Stock Taking", sttId, "Load session tags success: " + fromServer.size(),
                         userId, reqJson, resJson);
@@ -371,7 +371,7 @@ public class StockTakingActivity extends ScannerActivity
                 scannedEpcSet.clear();
                 scannedCount = 0;
 
-                for (StockTakingModel.SessionItem item : fromServer) {
+                for (StockTakingResponses.SessionItem item : fromServer) {
                     if (item == null) continue;
 
                     String backendAction = item.action != null ? item.action.toUpperCase() : "SYSTEM";
@@ -408,7 +408,7 @@ public class StockTakingActivity extends ScannerActivity
             }
 
             @Override
-            public void onFailure(Call<List<StockTakingModel.SessionItem>> call, Throwable t) {
+            public void onFailure(Call<List<StockTakingResponses.SessionItem>> call, Throwable t) {
                 hideLoading();
                 String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
                 LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
@@ -436,7 +436,7 @@ public class StockTakingActivity extends ScannerActivity
                     Integer idx = epcIndexMap.get(q.epcTag.toUpperCase());
                     if (idx == null) idx = tagIdIndexMap.get(q.epcTag.toUpperCase());
                     if (idx == null) continue;
-                    StockTakingModel.SessionItem item = sessionItems.get(idx);
+                    StockTakingResponses.SessionItem item = sessionItems.get(idx);
                     boolean wasScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
                     if ("FOUND".equals(q.action)) {
                         item.state = "FOUND";
@@ -471,7 +471,7 @@ public class StockTakingActivity extends ScannerActivity
                 scannedEpcSet.clear();
                 scannedCount = 0;
                 for (SessionItemEntity e : cached) {
-                    StockTakingModel.SessionItem item = e.toSessionItem();
+                    StockTakingResponses.SessionItem item = e.toSessionItem();
                     int pos = sessionItems.size();
                     if (item.epcTag != null)
                         epcIndexMap.put(item.epcTag.toUpperCase(), pos);
@@ -487,11 +487,11 @@ public class StockTakingActivity extends ScannerActivity
         }).start();
     }
 
-    private void saveSessionItemsToCache(List<StockTakingModel.SessionItem> items) {
+    private void saveSessionItemsToCache(List<StockTakingResponses.SessionItem> items) {
         new Thread(() -> {
             db.appDao().clearSessionItemsBySttId(sttId);
             List<SessionItemEntity> entities = new ArrayList<>();
-            for (StockTakingModel.SessionItem item : items)
+            for (StockTakingResponses.SessionItem item : items)
                 entities.add(SessionItemEntity.from(sttId, item));
             if (!entities.isEmpty()) db.appDao().insertSessionItems(entities);
         }).start();
@@ -516,7 +516,7 @@ public class StockTakingActivity extends ScannerActivity
             return;
         }
 
-        StockTakingModel.SessionItem item = sessionItems.get(idx);
+        StockTakingResponses.SessionItem item = sessionItems.get(idx);
 
         if (!"PENDING".equals(item.state)) {
             LogManager.get(this).log(LogManager.WARNING, LogManager.ACTION_SCAN,
@@ -545,7 +545,7 @@ public class StockTakingActivity extends ScannerActivity
 
     private void rebuildLocationsCache() {
         List<String> locations = new ArrayList<>();
-        for (StockTakingModel.SessionItem item : sessionItems) {
+        for (StockTakingResponses.SessionItem item : sessionItems) {
             if (item.location != null && !item.location.isEmpty() && !locations.contains(item.location))
                 locations.add(item.location);
         }
@@ -577,9 +577,9 @@ public class StockTakingActivity extends ScannerActivity
         new Thread(() -> {
             List<ScanQueueEntity> queue = db.appDao().getUnsyncedBySttId(sttId);
 
-            List<StockTakingModel.OperatorSubmitItem> items = new ArrayList<>();
+            List<StockTakingResponses.OperatorSubmitItem> items = new ArrayList<>();
             for (ScanQueueEntity q : queue) {
-                StockTakingModel.OperatorSubmitItem submitItem = new StockTakingModel.OperatorSubmitItem();
+                StockTakingResponses.OperatorSubmitItem submitItem = new StockTakingResponses.OperatorSubmitItem();
                 submitItem.action = q.action;
                 if ("FOUND".equals(q.action)) {
                     submitItem.epc = q.epcTag;
@@ -598,7 +598,7 @@ public class StockTakingActivity extends ScannerActivity
                 return;
             }
 
-            StockTakingModel.OperatorSubmitReq req = new StockTakingModel.OperatorSubmitReq(sttId, items);
+            StockTakingResponses.OperatorSubmitReq req = new StockTakingResponses.OperatorSubmitReq(sttId, items);
             String reqJson = "{\"sttId\":\"" + sttId + "\",\"count\":" + items.size() + "}";
 
             ApiService longApi = ApiClient.getClientLongTimeout(StockTakingActivity.this)
@@ -645,15 +645,15 @@ public class StockTakingActivity extends ScannerActivity
 
     private void checkSessionStatus() {
         if (!isNetworkConnected()) return;
-        api.getActiveStockTaking(token).enqueue(new Callback<StockTakingModel.ActiveRes>() {
+        api.getActiveStockTaking(token).enqueue(new Callback<StockTakingResponses.ActiveRes>() {
             @Override
-            public void onResponse(Call<StockTakingModel.ActiveRes> call,
-                                   Response<StockTakingModel.ActiveRes> response) {
+            public void onResponse(Call<StockTakingResponses.ActiveRes> call,
+                                   Response<StockTakingResponses.ActiveRes> response) {
                 boolean ended = !response.isSuccessful() || response.body() == null
                         || !sttId.equals(response.body().sttId);
                 if (ended) showSessionEndedDialog();
             }
-            @Override public void onFailure(Call<StockTakingModel.ActiveRes> call, Throwable t) {}
+            @Override public void onFailure(Call<StockTakingResponses.ActiveRes> call, Throwable t) {}
         });
     }
 
@@ -662,7 +662,7 @@ public class StockTakingActivity extends ScannerActivity
         tvLocation.setText("Location: " + cachedLocationsString);
     }
 
-    private void showAdjustmentDialog(StockTakingModel.SessionItem item, int position) {
+    private void showAdjustmentDialog(StockTakingResponses.SessionItem item, int position) {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_adj);
@@ -682,7 +682,7 @@ public class StockTakingActivity extends ScannerActivity
         dialog.show();
     }
 
-    private void showRemoveConfirmDialog(StockTakingModel.SessionItem item, int position) {
+    private void showRemoveConfirmDialog(StockTakingResponses.SessionItem item, int position) {
         showCustomConfirmDialog("Remove this item? Qty will decrease.", () -> {
             if (item.tagId != null && !item.tagId.isEmpty()) {
                 saveToQueue(item.tagId, "REMOVE", null, null, null);
@@ -694,7 +694,7 @@ public class StockTakingActivity extends ScannerActivity
             epcIndexMap.remove(item.epcTag != null ? item.epcTag.toUpperCase() : "");
             if (item.tagId != null) tagIdIndexMap.remove(item.tagId.toUpperCase());
             for (int i = position; i < sessionItems.size(); i++) {
-                StockTakingModel.SessionItem si = sessionItems.get(i);
+                StockTakingResponses.SessionItem si = sessionItems.get(i);
                 if (si.epcTag != null) epcIndexMap.put(si.epcTag.toUpperCase(), i);
                 if (si.tagId != null) tagIdIndexMap.put(si.tagId.toUpperCase(), i);
             }
@@ -705,7 +705,7 @@ public class StockTakingActivity extends ScannerActivity
         });
     }
 
-    private void showManualAddDialog(StockTakingModel.SessionItem item, int position) {
+    private void showManualAddDialog(StockTakingResponses.SessionItem item, int position) {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_manual_add);
@@ -734,7 +734,7 @@ public class StockTakingActivity extends ScannerActivity
         etItemId.setText(displayItem);
         etItemId.setEnabled(false);
 
-        final StockTakingModel.ValidateTagResult[] validatedTag = {null};
+        final StockTakingResponses.ValidateTagResult[] validatedTag = {null};
 
         Runnable showPlaceholder = () -> {
             frameTagResult.setVisibility(View.GONE);
@@ -766,14 +766,14 @@ public class StockTakingActivity extends ScannerActivity
 
             isValidating[0] = true;
 
-            api.validateManualTag(token, epc, sttId).enqueue(new Callback<StockTakingModel.ValidateTagResult>() {
+            api.validateManualTag(token, epc, sttId).enqueue(new Callback<StockTakingResponses.ValidateTagResult>() {
                 @Override
-                public void onResponse(Call<StockTakingModel.ValidateTagResult> call,
-                                       Response<StockTakingModel.ValidateTagResult> response) {
+                public void onResponse(Call<StockTakingResponses.ValidateTagResult> call,
+                                       Response<StockTakingResponses.ValidateTagResult> response) {
                     isValidating[0] = false;
                     handler.post(() -> {
                         if (response.isSuccessful() && response.body() != null) {
-                            StockTakingModel.ValidateTagResult result = response.body();
+                            StockTakingResponses.ValidateTagResult result = response.body();
                             validatedTag[0] = result;
                             tvManualTagId.setText(result.tagId);
                             tvManualEpc.setText(result.epcTag);
@@ -786,7 +786,7 @@ public class StockTakingActivity extends ScannerActivity
                 }
 
                 @Override
-                public void onFailure(Call<StockTakingModel.ValidateTagResult> call, Throwable t) {
+                public void onFailure(Call<StockTakingResponses.ValidateTagResult> call, Throwable t) {
                     isValidating[0] = false;
                     handler.post(() -> {
                         showSagaFeedback(dialogRoot, "Connection failed: " + t.getMessage(), 1);
