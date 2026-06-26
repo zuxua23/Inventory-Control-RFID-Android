@@ -59,7 +59,6 @@ public class StockTakingResponses {
         public List<String> locations;
         @SerializedName(value = "CreatedAt", alternate = {"createdAt"})
         public String createdAt;
-
     }
 
     public static class SessionItem implements Serializable {
@@ -98,16 +97,12 @@ public class StockTakingResponses {
     public static class ValidateTagResult {
         @SerializedName(value = "TagId", alternate = {"tagId"})
         public String tagId;
-
         @SerializedName(value = "EpcTag", alternate = {"epcTag"})
         public String epcTag;
-
         @SerializedName(value = "Status", alternate = {"status"})
         public String status;
-
         @SerializedName(value = "ItemId", alternate = {"itemId"})
         public String itemId;
-
         @SerializedName(value = "ItemName", alternate = {"itemName"})
         public String itemName;
     }

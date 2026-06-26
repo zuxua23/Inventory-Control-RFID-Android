@@ -158,7 +158,7 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
 
     private void fetchDOFromServer() {
         if (!isNetworkConnected()) {
-            showWarning("Offline, showing cached data");
+            showWarning("Offline");
             playScanFeedback(2);
             loadDataFromLocalDB();
             return;

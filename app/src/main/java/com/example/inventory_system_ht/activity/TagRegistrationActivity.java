@@ -80,36 +80,22 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     private static final String PREF_RECENT = "tag_regis_recent_items";
     private static final int MAX_RECENT = 5;
-
-    // Power spinner
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"));
     private final int[] powerValues = {5, 10, 15, 18, 21, 24, 27, 30};
-
-    // Views
     private AutoCompleteTextView actvItemSearch;
     private TextView tvProcessing;
     private Button btnClear, btnSubmitRegis;
     private RecyclerView rvTags;
     private View tvEmpty;
-
-    // State
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private TagRegistrationAdapter adapter;
     private final List<TagLocalEntity> tagList = new ArrayList<>();
-
-    // Selected item
     private String selectedItemId = null;
     private String selectedItemName = null;
-
-    // Items for autocomplete
     private List<ItemResponses.ItemResponse> allItems = new ArrayList<>();
-
-    // Flag to prevent onTextChanged from resetting selection when we programmatically set text
     private boolean isSettingText = false;
-
-    // Scan guard — max 1 tag
     private String currentEpc = null;
     private boolean isProcessing = false;
 
@@ -205,8 +191,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         executor.shutdownNow();
     }
 
-    // ─── Bind Views ───────────────────────────────────────────────────────────
-
     private void bindViews() {
         actvItemSearch = findViewById(R.id.actvItemSearch);
         tvProcessing = findViewById(R.id.tvProcessing);
@@ -215,8 +199,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         rvTags = findViewById(R.id.rvTags);
         tvEmpty = findViewById(R.id.tvEmpty);
     }
-
-    // ─── Item Cache — Room DB ─────────────────────────────────────────────────
 
     private void loadItemsWithRoomCache() {
         if (executor.isShutdown()) return;
@@ -284,8 +266,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         }
         return list;
     }
-
-    // ─── Item Search / Autocomplete ───────────────────────────────────────────
 
     private void setupItemSearch() {
         actvItemSearch.setDropDownBackgroundResource(R.drawable.bg_spinner_dropdown);
@@ -355,8 +335,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         actvItemSearch.showDropDown();
     }
 
-    // ─── Recent Items ─────────────────────────────────────────────────────────
-
     private void saveRecentItem(ItemResponses.ItemResponse item) {
         SharedPreferences prefs = getSharedPreferences(PREF_RECENT, MODE_PRIVATE);
         LinkedList<ItemResponses.ItemResponse> recents = parseRecentList(prefs.getString("list", "[]"));
@@ -400,15 +378,12 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         return list;
     }
 
-    // ─── RecyclerView ─────────────────────────────────────────────────────────
-
     private void setupRecyclerView() {
         rvTags.setItemAnimator(null);
         rvTags.setLayoutManager(new LinearLayoutManager(this));
         rvTags.setNestedScrollingEnabled(false);
         adapter = new TagRegistrationAdapter(tagList);
         rvTags.setAdapter(adapter);
-        // FIX: show confirm dialog before deleting tag
         adapter.setOnItemClickListener(item -> showDeleteTagDialog(item));
         updateEmptyState();
     }
@@ -418,8 +393,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         tvEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
         rvTags.setVisibility(empty ? View.GONE : View.VISIBLE);
     }
-
-    // ─── Power Spinner ────────────────────────────────────────────────────────
 
     private void setupPowerSpinner() {
         android.widget.Spinner spinnerPower = findViewById(R.id.spinnerPower);
@@ -457,8 +430,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         });
     }
 
-    // ─── Buttons ─────────────────────────────────────────────────────────────
-
     private void setupButtonListeners() {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         btnClear.setOnClickListener(v -> resetAll());
@@ -474,8 +445,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
             hitApiRegisterTagWithItem(currentEpc, selectedItemId);
         });
     }
-
-    // ─── RFID ─────────────────────────────────────────────────────────────────
 
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
@@ -566,8 +535,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 new PrefManager(this).getUserId());
     }
 
-    // ─── API Submit ───────────────────────────────────────────────────────────
-
     private void hitApiRegisterTagWithItem(String epcTag, String itemId) {
         showLoading();
         String token = "Bearer " + new PrefManager(this).getToken();
@@ -605,14 +572,11 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                                 LogManager.ERROR, LogManager.ACTION_SUBMIT,
                                 "Tag Registration", epcTag,
                                 "Register error: " + t.getMessage(), userId);
-                        // FIX: save to Room offline queue instead of just showing error
                         saveTagRegistrationOffline(epcTag, itemId, selectedItemName);
                         playScanFeedback(2);
                     }
                 });
     }
-
-    // ─── Delete Tag Dialog ────────────────────────────────────────────────────
 
     private void showDeleteTagDialog(TagLocalEntity item) {
         Dialog dialog = new Dialog(this);
@@ -635,8 +599,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         });
         dialog.show();
     }
-
-    // ─── Offline Save ─────────────────────────────────────────────────────────
 
     private void saveTagRegistrationOffline(String epcTag, String itemId, String itemName) {
         executor.execute(() -> {
@@ -663,8 +625,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         resetScan();
     }
 
-    // ─── Reset ────────────────────────────────────────────────────────────────
-
     private void resetAll() {
         isSettingText = true;
         actvItemSearch.setText("");
@@ -685,10 +645,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         updateEmptyState();
     }
 
-    // ─── AutoComplete Adapter ─────────────────────────────────────────────────
-
-    private class ItemAutoCompleteAdapter extends ArrayAdapter<ItemResponses.ItemResponse>
-            implements Filterable {
+    private class ItemAutoCompleteAdapter extends ArrayAdapter<ItemResponses.ItemResponse> implements Filterable {
 
         private static final int VIEW_TYPE_HEADER = 0;
         private static final int VIEW_TYPE_ITEM = 1;
@@ -732,7 +689,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         @NonNull
         @Override
         public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-            // Header row (recent mode only)
             if (isRecentMode && position == 0) {
                 View headerView = LayoutInflater.from(getContext())
                         .inflate(android.R.layout.simple_list_item_1, parent, false);
@@ -745,7 +701,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 return headerView;
             }
 
-            // FIX: compact custom layout instead of simple_dropdown_item_1line (18sp default)
             if (convertView == null || "header".equals(convertView.getTag())) {
                 convertView = LayoutInflater.from(getContext())
                         .inflate(R.layout.item_autocomplete_dropdown, parent, false);

@@ -119,10 +119,8 @@ public class StockPrepProductActivity extends ScannerActivity
     private List<LocationResponses> masterLocationList = new ArrayList<>();
     private final List<String> locationList = new ArrayList<>();
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
-            "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
-    ));
+            "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"));
     private ArrayAdapter<String> locationSpinnerAdapter;
-
     private final Set<String> tagBuffer = new HashSet<>();
     private boolean isProcessingBuffer = false;
     private static final int BATCH_DELAY_MS = 500;
@@ -449,7 +447,7 @@ public class StockPrepProductActivity extends ScannerActivity
         if (currentDoId == null || currentDoId.isEmpty()) return;
 
         if (!isNetworkConnected()) {
-            showWarning("Offline: DO details not loaded. Connect to network and reopen.");
+            showWarning("Offline");
             return;
         }
 
@@ -658,7 +656,7 @@ public class StockPrepProductActivity extends ScannerActivity
                 locationList.clear();
                 for (LocationResponses loc : masterLocationList) locationList.add(loc.getName());
                 populateLocationSpinner(masterLocationList);
-                showWarning("Offline — location loaded from cache");
+                showWarning("Offline");
             });
         }).start();
     }
@@ -822,7 +820,6 @@ public class StockPrepProductActivity extends ScannerActivity
             Map<String, Integer> batchQtyMap = new HashMap<>();
             String userId = new PrefManager(this).getUserId();
 
-            // FIX: evaluate once — not per-iteration — to avoid race condition
             final boolean networkAvailable = isNetworkConnected();
 
             for (String code : codes) {
@@ -861,7 +858,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                     int batchQty = batchQtyMap.getOrDefault(cached.itemId, 0);
                     if (existingQty + batchQty >= requiredQtyMap.get(cached.itemId)) {
-                        rejectionReasons.put(code, "Qty sudah terpenuhi");
+                        rejectionReasons.put(code, "Quantity requirement met");
                         shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
@@ -921,7 +918,7 @@ public class StockPrepProductActivity extends ScannerActivity
                         }
                         int batchQty = batchQtyMap.getOrDefault(info.getItemId(), 0);
                         if (existingQty + batchQty >= requiredQtyMap.get(info.getItemId())) {
-                            rejectionReasons.put(code, "Qty sudah terpenuhi");
+                            rejectionReasons.put(code, "Quantity requirement met");
                             shouldNotify.put(code, false);
                             failedCodes.add(code);
                             continue;
@@ -1032,7 +1029,7 @@ public class StockPrepProductActivity extends ScannerActivity
                 if (entry.getKey().equals(t.getItmId())) scannedForItem++;
             }
             if (scannedForItem < entry.getValue()) {
-                showWarning("Belum semua item terpenuhi. Scan semua item terlebih dahulu.");
+                showWarning("Not all items have been accounted for yet. Please scan all items first");
                 return;
             }
         }

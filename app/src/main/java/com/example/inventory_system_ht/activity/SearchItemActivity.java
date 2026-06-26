@@ -110,7 +110,6 @@ public class SearchItemActivity extends ScannerActivity
         initViews();
         setupListeners();
 
-        // FIX: load from local on background thread, NOT main thread
         loadFromLocalAsync();
         if (isNetworkConnected()) fetchData();
         else showWarning("Offline mode");
@@ -136,10 +135,10 @@ public class SearchItemActivity extends ScannerActivity
             boolean ok = RfidBulkHelper.openInventory(scanner, this, 30);
             if (!ok) {
                 rfidActive = false;
-                showWarning("RFID unavailable - detail view only");
+                showWarning("RFID unavailable");
             }
         } else {
-            showWarning("RFID not connected - detail view only");
+            showWarning("RFID not connected");
         }
         updateReaderBattery(findViewById(R.id.ivReaderBattery), rfidActive);
 
@@ -212,7 +211,6 @@ public class SearchItemActivity extends ScannerActivity
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
     }
 
-    // FIX: Room query on background thread
     private void loadFromLocalAsync() {
         new Thread(() -> {
             List<SearchItemEntity> cached = db.appDao().getAllSearchItems();
@@ -473,7 +471,7 @@ public class SearchItemActivity extends ScannerActivity
             showSuccess("Found: " + found.getItemName());
         } else {
             playScanFeedback(2);
-            showError("Tag not registered: " + key);
+            showError("Tag not registered");
         }
     }
 

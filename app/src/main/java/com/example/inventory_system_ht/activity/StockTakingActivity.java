@@ -301,7 +301,7 @@ public class StockTakingActivity extends ScannerActivity
                     if (!isNetworkConnected()) {
                         new Thread(() -> db.appDao().clearScanQueueBySttId(sttId)).start();
                         loadSessionTagsFromCache();
-                        showWarning("Offline — scan queue cleared, loaded from cache");
+                        showWarning("Offline");
                         return;
                     }
 

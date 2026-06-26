@@ -75,8 +75,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
-public class StockInActivity extends ScannerActivity
-        implements BarcodeDataDelegate, RFIDDataDelegate {
+public class StockInActivity extends ScannerActivity implements BarcodeDataDelegate, RFIDDataDelegate {
     private ImageView btnBack;
     private Button btnClear, btnSave, btnListProduct, btnSumProduct;
     private Switch switchRfid;
@@ -93,8 +92,7 @@ public class StockInActivity extends ScannerActivity
     private List<LocationResponses> masterLocationList = new ArrayList<>();
     private final List<String> locationList = new ArrayList<>();
     private final List<String> powerList = new ArrayList<>(Arrays.asList(
-            "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"
-    ));
+            "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"));
     private ArrayAdapter<String> locationSpinnerAdapter;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private AppDatabase db;
@@ -102,12 +100,10 @@ public class StockInActivity extends ScannerActivity
     private boolean isListProductTab = true;
     private String selectedLocation = "";
     private String selectedLocationId = "";
-
     private final Set<String> tagBuffer = new HashSet<>();
     private boolean isProcessingBuffer = false;
     private String activeScannerType = null;
     private static final int BATCH_DELAY_MS = 300;
-
     private final Set<String> inFlightEpcs = new HashSet<>();
     private int inFlightCount = 0;
     private TextView tvProcessing;
@@ -364,7 +360,6 @@ public class StockInActivity extends ScannerActivity
 
     private void setupSwitchRfid() {
         switchRfid.setOnCheckedChangeListener((btn, isChecked) -> {
-            // FIX: block mode switch whenever list is non-empty, regardless of activeScannerType
             if (!scannedItemsList.isEmpty()) {
                 showWarning("Clear scanned items before switching mode");
                 btn.setOnCheckedChangeListener(null);
@@ -495,7 +490,6 @@ public class StockInActivity extends ScannerActivity
 
     private void fetchLocations() {
         if (!isNetworkConnected()) {
-            // Offline — load from Room cache
             loadLocationsFromCache();
             return;
         }
@@ -519,7 +513,6 @@ public class StockInActivity extends ScannerActivity
                             for (LocationResponses loc : masterLocationList)
                                 locationList.add(loc.getName());
 
-                            // Save to Room cache for offline use
                             saveLocationCache(masterLocationList);
 
                             runOnUiThread(() -> populateLocationSpinner(masterLocationList));
@@ -527,7 +520,6 @@ public class StockInActivity extends ScannerActivity
                             LogManager.get(StockInActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
                                     "Stock In", "Location", "Fetch locations failed: HTTP " + response.code(),
                                     userId, reqJson, resJson);
-                            // Fallback to cache even if response failed
                             loadLocationsFromCache();
                         }
                     }
@@ -538,7 +530,6 @@ public class StockInActivity extends ScannerActivity
                         LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                                 "Stock In", "Location", "Fetch locations error: " + t.getMessage(),
                                 userId, reqJson, resJson);
-                        // Network error — fallback to cache
                         loadLocationsFromCache();
                     }
                 });

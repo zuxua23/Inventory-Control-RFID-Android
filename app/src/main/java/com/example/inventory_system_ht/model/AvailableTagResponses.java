@@ -19,9 +19,9 @@ public class AvailableTagResponses {
     @SerializedName("status")
     private String status;
 
-    public String getEpcTag()   { return epcTag; }
-    public String getTagId()    { return tagId; }
-    public String getItemId()   { return itemId; }
+    public String getEpcTag() { return epcTag; }
+    public String getTagId() { return tagId; }
+    public String getItemId() { return itemId; }
     public String getItemName() { return itemName; }
-    public String getStatus()   { return status; }
+    public String getStatus() { return status; }
 }
