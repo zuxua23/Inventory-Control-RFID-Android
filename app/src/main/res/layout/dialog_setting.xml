@@ -47,8 +47,7 @@
                 android:inputType="text"
                 android:maxLines="1"
                 android:textColor="@color/black"
-                android:textColorHint="#9E9E9E"
-                android:textSize="14sp" />
+                android:textColorHint="#9E9E9E" />
 
             <ImageButton
                 android:id="@+id/buttonCekIp"
@@ -82,7 +81,7 @@
             <Button
                 android:id="@+id/btnCancel"
                 style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="52dp"
                 android:layout_marginEnd="8dp"
                 android:layout_weight="1"
@@ -93,14 +92,13 @@
                 android:text="@string/dialog_cancel"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
-                android:textSize="15sp"
                 app:cornerRadius="26dp"
                 tools:ignore="TextContrastCheck" />
 
             <Button
                 android:id="@+id/btnApplyIp"
                 style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="52dp"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
@@ -111,7 +109,6 @@
                 android:text="@string/action_apply"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
-                android:textSize="15sp"
                 app:cornerRadius="26dp"
                 tools:ignore="TextContrastCheck" />
         </LinearLayout>

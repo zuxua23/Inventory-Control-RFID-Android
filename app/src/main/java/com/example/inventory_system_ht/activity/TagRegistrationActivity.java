@@ -1,7 +1,10 @@
 package com.example.inventory_system_ht.activity;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -10,6 +13,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -25,6 +29,11 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Constraints;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Listener.RFIDDataDelegate;
@@ -36,6 +45,7 @@ import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.adapter.TagRegistrationAdapter;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.entity.ItemCacheEntity;
+import com.example.inventory_system_ht.entity.PendingTagRegistrationEntity;
 import com.example.inventory_system_ht.entity.TagLocalEntity;
 import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.model.ItemModel;
@@ -47,6 +57,7 @@ import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.RfidSettingsManager;
 import com.example.inventory_system_ht.util.ScannerManager;
+import com.example.inventory_system_ht.util.SyncWorker;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.json.JSONArray;
@@ -135,7 +146,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 new PrefManager(this).getUserId());
     }
 
-
     private void applyWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnBack), (v, insets) -> {
             Insets bars = insets.getInsets(
@@ -208,17 +218,11 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
 
     // ─── Item Cache — Room DB ─────────────────────────────────────────────────
 
-    /**
-     * Strategy:
-     * 1. Read from Room immediately → populate autocomplete (no delay, works offline)
-     * 2. Fetch API in background → upsert to Room + refresh adapter
-     */
     private void loadItemsWithRoomCache() {
         if (executor.isShutdown()) return;
         executor.execute(() -> {
             AppDatabase db = AppDatabase.getDatabase(this);
 
-            // Step 1: load from Room
             List<ItemCacheEntity> cached = db.appDao().getAllItemCache();
             if (!cached.isEmpty()) {
                 List<ItemModel.ItemResponse> fromCache = entityToModel(cached);
@@ -228,7 +232,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 });
             }
 
-            // Step 2: fetch fresh from API (always, to keep Room up to date)
             handler.post(this::fetchItemsFromApi);
         });
     }
@@ -243,7 +246,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                                            @NonNull Response<List<ItemModel.ItemResponse>> response) {
                         if (response.isSuccessful() && response.body() != null) {
                             List<ItemModel.ItemResponse> fresh = response.body();
-                            // Persist to Room on background thread
                             if (!executor.isShutdown()) {
                                 executor.execute(() -> {
                                     AppDatabase db = AppDatabase.getDatabase(TagRegistrationActivity.this);
@@ -251,7 +253,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                                     db.appDao().insertItemCache(modelToEntity(fresh));
                                 });
                             }
-                            // Update UI
                             allItems = fresh;
                             setupAutoCompleteAdapter();
                         }
@@ -260,7 +261,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                     @Override
                     public void onFailure(@NonNull Call<List<ItemModel.ItemResponse>> call,
                                           @NonNull Throwable t) {
-                        // Room cache already loaded — silently ignore if offline
                         if (allItems.isEmpty()) {
                             showWarning("Failed to load items. Check connection.");
                         }
@@ -346,7 +346,6 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         if (!actvItemSearch.getText().toString().isEmpty() && actvItemSearch.hasFocus()) {
             actvItemSearch.showDropDown();
         }
-
     }
 
     private void showRecentDropdown() {
@@ -356,7 +355,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         actvItemSearch.showDropDown();
     }
 
-    // ─── Recent Items (SharedPreferences) ────────────────────────────────────
+    // ─── Recent Items ─────────────────────────────────────────────────────────
 
     private void saveRecentItem(ItemModel.ItemResponse item) {
         SharedPreferences prefs = getSharedPreferences(PREF_RECENT, MODE_PRIVATE);
@@ -393,16 +392,15 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 JSONObject obj = arr.getJSONObject(i);
                 String id = obj.optString("itemId", "");
                 String name = obj.optString("itemName", "");
-                if (!id.isEmpty() && !name.isEmpty()){
+                if (!id.isEmpty() && !name.isEmpty()) {
                     list.add(new ItemModel.ItemResponse(id, name));
                 }
-
             }
         } catch (JSONException ignored) {}
         return list;
     }
 
-    // ─── RecyclerView ────────────────────────────────────────────────────────
+    // ─── RecyclerView ─────────────────────────────────────────────────────────
 
     private void setupRecyclerView() {
         rvTags.setItemAnimator(null);
@@ -410,7 +408,8 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         rvTags.setNestedScrollingEnabled(false);
         adapter = new TagRegistrationAdapter(tagList);
         rvTags.setAdapter(adapter);
-        adapter.setOnItemClickListener(item -> resetScan());
+        // FIX: show confirm dialog before deleting tag
+        adapter.setOnItemClickListener(item -> showDeleteTagDialog(item));
         updateEmptyState();
     }
 
@@ -420,8 +419,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         rvTags.setVisibility(empty ? View.GONE : View.VISIBLE);
     }
 
-
-    // ─── Power Spinner ───────────────────────────────────────────────────────────
+    // ─── Power Spinner ────────────────────────────────────────────────────────
 
     private void setupPowerSpinner() {
         android.widget.Spinner spinnerPower = findViewById(R.id.spinnerPower);
@@ -477,7 +475,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         });
     }
 
-    // ─── RFID ────────────────────────────────────────────────────────────────
+    // ─── RFID ─────────────────────────────────────────────────────────────────
 
     @Override
     public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
@@ -607,10 +605,62 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                                 LogManager.ERROR, LogManager.ACTION_SUBMIT,
                                 "Tag Registration", epcTag,
                                 "Register error: " + t.getMessage(), userId);
-                        handleFailure(t);
+                        // FIX: save to Room offline queue instead of just showing error
+                        saveTagRegistrationOffline(epcTag, itemId, selectedItemName);
                         playScanFeedback(2);
                     }
                 });
+    }
+
+    // ─── Delete Tag Dialog ────────────────────────────────────────────────────
+
+    private void showDeleteTagDialog(TagLocalEntity item) {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_confirm);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    (int) (getResources().getDisplayMetrics().widthPixels * 0.85),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        TextView tvMsg = dialog.findViewById(R.id.tvConfirmMessage);
+        if (tvMsg != null) tvMsg.setText("Remove scanned tag?\n" + item.getEpcTag());
+        View btnNo = dialog.findViewById(R.id.btnConfirmNo);
+        View btnYes = dialog.findViewById(R.id.btnConfirmYes);
+        if (btnNo != null) btnNo.setOnClickListener(v -> dialog.dismiss());
+        if (btnYes != null) btnYes.setOnClickListener(v -> {
+            dialog.dismiss();
+            resetScan();
+        });
+        dialog.show();
+    }
+
+    // ─── Offline Save ─────────────────────────────────────────────────────────
+
+    private void saveTagRegistrationOffline(String epcTag, String itemId, String itemName) {
+        executor.execute(() -> {
+            AppDatabase db = AppDatabase.getDatabase(this);
+            PendingTagRegistrationEntity pending = new PendingTagRegistrationEntity();
+            pending.epcTag = epcTag;
+            pending.itemId = itemId;
+            pending.itemName = itemName;
+            pending.createdAt = System.currentTimeMillis();
+            db.appDao().insertPendingTagRegistration(pending);
+        });
+
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+        WorkManager.getInstance(this).enqueueUniqueWork(
+                "global_pending_sync",
+                ExistingWorkPolicy.KEEP,
+                new OneTimeWorkRequest.Builder(SyncWorker.class)
+                        .setConstraints(constraints)
+                        .build());
+
+        showWarning("No connection — saved offline, will sync automatically");
+        resetScan();
     }
 
     // ─── Reset ────────────────────────────────────────────────────────────────
@@ -682,6 +732,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         @NonNull
         @Override
         public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+            // Header row (recent mode only)
             if (isRecentMode && position == 0) {
                 View headerView = LayoutInflater.from(getContext())
                         .inflate(android.R.layout.simple_list_item_1, parent, false);
@@ -694,16 +745,15 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 return headerView;
             }
 
+            // FIX: compact custom layout instead of simple_dropdown_item_1line (18sp default)
             if (convertView == null || "header".equals(convertView.getTag())) {
                 convertView = LayoutInflater.from(getContext())
-                        .inflate(android.R.layout.simple_dropdown_item_1line, parent, false);
+                        .inflate(R.layout.item_autocomplete_dropdown, parent, false);
                 convertView.setTag("item");
             }
             ItemModel.ItemResponse item = getItem(position);
-            TextView tvItem = convertView.findViewById(android.R.id.text1);
-
-            tvItem.setText(item != null ? item.getItemName() : "");
-            tvItem.setTextColor(0xFF000000);
+            TextView tvItem = convertView.findViewById(R.id.tvAutoCompleteItem);
+            if (tvItem != null) tvItem.setText(item != null ? item.getItemName() : "");
 
             return convertView;
         }

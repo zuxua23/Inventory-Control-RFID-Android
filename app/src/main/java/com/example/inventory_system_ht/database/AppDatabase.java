@@ -10,6 +10,7 @@ import com.example.inventory_system_ht.entity.AppLogEntity;
 import com.example.inventory_system_ht.entity.DeliveryOrderEntity;
 import com.example.inventory_system_ht.entity.ItemCacheEntity;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
+import com.example.inventory_system_ht.entity.PendingTagRegistrationEntity;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
 import com.example.inventory_system_ht.entity.SearchItemEntity;
 import com.example.inventory_system_ht.entity.SessionItemEntity;
@@ -25,6 +26,7 @@ import com.example.inventory_system_ht.entity.TagLocalEntity;
                 SearchItemEntity.class,
                 TagCacheEntity.class,
                 PendingSubmitEntity.class,
+                PendingTagRegistrationEntity.class,
                 ScanQueueEntity.class,
                 SessionItemEntity.class,
                 StockInScanEntity.class,

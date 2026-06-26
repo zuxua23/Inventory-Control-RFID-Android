@@ -8,6 +8,7 @@ import androidx.room.Query;
 import com.example.inventory_system_ht.entity.AppLogEntity;
 import com.example.inventory_system_ht.entity.DeliveryOrderEntity;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
+import com.example.inventory_system_ht.entity.PendingTagRegistrationEntity;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
 import com.example.inventory_system_ht.entity.SearchItemEntity;
 import com.example.inventory_system_ht.entity.SessionItemEntity;
@@ -178,5 +179,18 @@ public interface AppDao {
     void clearScanQueueBySttId(String sttId);
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertTagCacheList(List<TagCacheEntity> caches);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertPendingTagRegistration(PendingTagRegistrationEntity entity);
+
+    @Query("SELECT * FROM tb_pending_tag_registration ORDER BY created_at ASC")
+    List<PendingTagRegistrationEntity> getAllPendingTagRegistrations();
+
+    @Query("DELETE FROM tb_pending_tag_registration WHERE id = :id")
+    void deletePendingTagRegistrationById(int id);
+
+    @Query("DELETE FROM tb_pending_tag_registration")
+    void clearAllPendingTagRegistrations();
+
 
 }
