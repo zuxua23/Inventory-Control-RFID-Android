@@ -175,7 +175,6 @@ public class StockInActivity extends ScannerActivity
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock In", "", "Opened Stock In", new PrefManager(this).getUserId());
 
         fetchLocations();
-        restoreFromRoom();
     }
 
     @Override
@@ -203,9 +202,8 @@ public class StockInActivity extends ScannerActivity
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (isFinishing()) {
-            new Thread(() -> db.appDao().clearAllStockInScans()).start();
-        }
+        // Room data intentionally preserved for restore on next open.
+        // Cleared only after successful submit (hitApiStockIn) or explicit Clear button.
     }
 
     private void bindViews() {
@@ -527,7 +525,7 @@ public class StockInActivity extends ScannerActivity
     }
 
     private void fetchLocations() {
-        if (!isNetworkConnected()) return;
+        if (!isNetworkConnected()) { restoreFromRoom(); return; }
         String token = "Bearer " + new PrefManager(this).getToken();
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"endpoint\":\"getLocations\"}";
@@ -565,6 +563,7 @@ public class StockInActivity extends ScannerActivity
                                         }
                                     }
                                 }
+                                restoreFromRoom();
                             });
                         } else {
                             LogManager.get(StockInActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
@@ -579,6 +578,7 @@ public class StockInActivity extends ScannerActivity
                         LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                                 "Stock In", "Location", "Fetch locations error: " + t.getMessage(),
                                 userId, reqJson, resJson);
+                        restoreFromRoom();
                     }
                 });
     }

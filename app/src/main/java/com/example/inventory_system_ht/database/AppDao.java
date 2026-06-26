@@ -36,6 +36,12 @@ public interface AppDao {
     @Query("SELECT epc_tag, tag_id, itm_id, product_name, do_id_ref, sync_status FROM tb_Tag_Local WHERE sync_status = 0")
     List<TagLocalEntity> getPendingTags();
 
+    @Query("UPDATE tb_Tag_Local SET location_id = :locationId WHERE do_id_ref = :doNo")
+    void updateTagLocalLocation(String doNo, String locationId);
+
+    @Query("SELECT location_id FROM tb_Tag_Local WHERE do_id_ref = :doNo LIMIT 1")
+    String getTagLocalLocation(String doNo);
+
     @Query("UPDATE tb_Tag_Local SET sync_status = 1 WHERE epc_tag = :epc")
     void markTagAsSynced(String epc);
 

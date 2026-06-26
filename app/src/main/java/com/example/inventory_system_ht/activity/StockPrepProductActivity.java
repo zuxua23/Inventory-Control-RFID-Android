@@ -174,7 +174,6 @@ public class StockPrepProductActivity extends ScannerActivity
 
         fetchLocations();
         fetchDoDetail();
-        restoreScannedTagsFromRoom();
         setupListeners();
 
         FloatingActionButton fabLog = findViewById(R.id.fabLog);
@@ -282,6 +281,8 @@ public class StockPrepProductActivity extends ScannerActivity
                 if (realPos >= masterLocationList.size()) return;
                 selectedLocation = masterLocationList.get(realPos).getName();
                 selectedLocationId = masterLocationList.get(realPos).getId();
+                final String locId = selectedLocationId;
+                new Thread(() -> appDao.updateTagLocalLocation(currentDoNo, locId)).start();
             }
             @Override public void onNothingSelected(AdapterView<?> parent) {}
         });
@@ -578,7 +579,7 @@ public class StockPrepProductActivity extends ScannerActivity
         });
     }
     private void fetchLocations() {
-        if (!isNetworkConnected()) return;
+        if (!isNetworkConnected()) { restoreScannedTagsFromRoom(); return; }
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"endpoint\":\"getLocations\"}";
         api.getLocations(token).enqueue(new Callback<List<LocationModel>>() {
@@ -614,6 +615,7 @@ public class StockPrepProductActivity extends ScannerActivity
                                 }
                             }
                         }
+                        restoreScannedTagsFromRoom();
                     });
                 } else {
                     LogManager.get(StockPrepProductActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
@@ -629,6 +631,7 @@ public class StockPrepProductActivity extends ScannerActivity
                         "Stock Preparation", "Location",
                         "Fetch locations error: " + t.getMessage(),
                         userId, reqJson, resJson);
+                restoreScannedTagsFromRoom();
             }
         });
     }
@@ -690,6 +693,8 @@ public class StockPrepProductActivity extends ScannerActivity
                     if (currentDoNo != null && currentDoNo.equalsIgnoreCase(t.getDoIdRef()))
                         forThis.add(t);
                 }
+                String restoredLocId = appDao.getTagLocalLocation(currentDoNo);
+
                 runOnUiThread(() -> {
                     scannedList.clear(); scannedRawSet.clear(); scannedEpcSet.clear(); scanCount = 0;
                     for (TagLocalEntity t : forThis) {
@@ -700,10 +705,27 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                     adapter.notifyDataSetChanged();
                     tvScanned.setText("Scanned : " + scanCount);
+
+                    if (restoredLocId != null && !restoredLocId.isEmpty()) {
+                        selectedLocationId = restoredLocId;
+                        for (int i = 0; i < masterLocationList.size(); i++) {
+                            if (masterLocationList.get(i).getId().equals(restoredLocId)) {
+                                selectedLocation = masterLocationList.get(i).getName();
+                                spinnerLocation.setSelection(i + 1);
+                                break;
+                            }
+                        }
+                    }
+
                     if (!forThis.isEmpty())
                         showWarning("Restored data");
                 });
-            } catch (Exception e) { LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ, "Stock Preparation", "Session", "Failed to restore scan session: " + e.getMessage(), new PrefManager(StockPrepProductActivity.this).getUserId()); }
+            } catch (Exception e) {
+                LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR,
+                        LogManager.ACTION_READ, "Stock Preparation", "Session",
+                        "Failed to restore scan session: " + e.getMessage(),
+                        new PrefManager(StockPrepProductActivity.this).getUserId());
+            }
         }).start();
     }
 
@@ -830,6 +852,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     if (dupInBatchCached) continue;
 
                     candidate = new TagLocalEntity(cached.epcTag, cached.tagId, cached.itemId, cached.itemName, currentDoNo, 0);
+                    candidate.setLocationId(selectedLocationId);
                     batchQtyMap.put(cached.itemId, batchQty + 1);
 
                 } else {
@@ -892,6 +915,7 @@ public class StockPrepProductActivity extends ScannerActivity
                         candidate = new TagLocalEntity(
                                 info.getEpcTag() != null ? info.getEpcTag() : code,
                                 info.getTagId(), info.getItemId(), info.getItemName(), currentDoNo, 0);
+                        candidate.setLocationId(selectedLocationId);
                         batchQtyMap.put(info.getItemId(), batchQty + 1);
 
                     } catch (Exception e) {

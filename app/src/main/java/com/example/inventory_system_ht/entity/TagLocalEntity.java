@@ -18,6 +18,7 @@ public class TagLocalEntity implements Serializable {
     @SerializedName("itemName") @ColumnInfo(name = "product_name") private final String productName;
     @ColumnInfo(name = "do_id_ref") private final String doIdRef;
     @ColumnInfo(name = "sync_status") private final int syncStatus;
+    @ColumnInfo(name = "location_id") private String locationId;
     @Ignore private boolean isScanned = false;
 
     public TagLocalEntity(@NonNull String epcTag, String tagId, String itmId,
@@ -28,6 +29,7 @@ public class TagLocalEntity implements Serializable {
         this.productName = productName;
         this.doIdRef = doIdRef;
         this.syncStatus = syncStatus;
+        this.locationId = "";
     }
 
     @NonNull public String getEpcTag() { return epcTag; }
@@ -37,6 +39,8 @@ public class TagLocalEntity implements Serializable {
     public String getItemName() { return productName; }
     public String getDoIdRef() { return doIdRef; }
     public int getSyncStatus() { return syncStatus; }
+    public String getLocationId() { return locationId != null ? locationId : ""; }
+    public void setLocationId(String locationId) { this.locationId = locationId; }
     public boolean isScanned() { return isScanned; }
     public void setScanned(boolean scanned) { isScanned = scanned; }
 }

@@ -30,13 +30,22 @@ import com.example.inventory_system_ht.entity.TagLocalEntity;
                 StockInScanEntity.class,
                 ItemCacheEntity.class
         },
-        version = 11,
+        version = 12,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
     public abstract AppDao appDao();
 
     private static volatile AppDatabase INSTANCE;
+
+    static final Migration MIGRATION_11_12 = new Migration(11, 12) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL(
+                    "ALTER TABLE tb_Tag_Local ADD COLUMN location_id TEXT NOT NULL DEFAULT ''"
+            );
+        }
+    };
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
@@ -46,7 +55,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     context.getApplicationContext(),
                                     AppDatabase.class,
                                     "sato_inventory_db")
-                            .fallbackToDestructiveMigration()
+                            .addMigrations(MIGRATION_11_12)
                             .build();
                 }
             }
