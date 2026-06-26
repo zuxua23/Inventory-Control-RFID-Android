@@ -49,6 +49,8 @@ public class ApiClient {
                 new SharedPrefsCookiePersistor(context)
         );
 
+        String normalizedBase = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+
         OkHttpClient client = new OkHttpClient.Builder()
                 .cookieJar(cookieJar)
                 .addInterceptor(loggingInterceptor)
@@ -59,9 +61,9 @@ public class ApiClient {
                 .retryOnConnectionFailure(false)
                 .build();
 
-        if (retrofit == null || !retrofit.baseUrl().toString().equals(baseUrl)) {
+        if (retrofit == null || !retrofit.baseUrl().toString().equals(normalizedBase)) {
             retrofit = new Retrofit.Builder()
-                    .baseUrl(baseUrl)
+                    .baseUrl(normalizedBase)
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();

@@ -94,6 +94,12 @@ public abstract class ScannerActivity extends AppCompatActivity {
             toneGen.release();
             toneGen = null;
         }
+        // Remove any banner overlays still attached to prevent WindowLeaked
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        for (View banner : activeBanners) {
+            try { wm.removeView(banner); } catch (Exception ignored) {}
+        }
+        activeBanners.clear();
     }
 
     @Override
@@ -195,6 +201,8 @@ public abstract class ScannerActivity extends AppCompatActivity {
                         .withEndAction(() -> root.removeView(bannerView)).start(), 2000);
     }
 
+    private final List<View> activeBanners = new ArrayList<>();
+
     public void showBannerOverlay(String pesan, int type) {
         if (isFinishing() || isDestroyed()) return;
         View bannerView = getLayoutInflater().inflate(R.layout.layout_message_banner, null);
@@ -232,6 +240,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         wrapper.setAlpha(0f);
         wrapper.setTranslationY(-60f);
         wm.addView(wrapper, params);
+        activeBanners.add(wrapper);
 
         wrapper.animate().alpha(1f).translationY(0f).setDuration(200)
                 .setInterpolator(new android.view.animation.OvershootInterpolator(1.2f)).start();
@@ -239,7 +248,10 @@ public abstract class ScannerActivity extends AppCompatActivity {
         wrapper.postDelayed(() ->
                 wrapper.animate().alpha(0f).translationY(-40f).setDuration(250)
                         .withEndAction(() -> {
-                            try { wm.removeView(wrapper); } catch (Exception ignored) {}
+                            try {
+                                wm.removeView(wrapper);
+                                activeBanners.remove(wrapper);
+                            } catch (Exception ignored) {}
                         }).start(), 2000);
     }
 
@@ -351,21 +363,27 @@ public abstract class ScannerActivity extends AppCompatActivity {
     public void updateReaderBattery(ImageView ivBattery) {
         if (ivBattery == null) return;
         CommScanner scanner = getScannerInstance();
-        if (scanner == null) {
-            ivBattery.setVisibility(View.GONE);
-            return;
-        }
-        try {
-            CommConst.CommBattery battery = scanner.getRemainingBattery();
-            ivBattery.setVisibility(View.VISIBLE);
-            int color;
-            if (battery == CommConst.CommBattery.UNDER10) color = Color.parseColor("#F44336");
-            else if (battery == CommConst.CommBattery.UNDER40) color = Color.parseColor("#FFC107");
-            else color = Color.parseColor("#4CAF50");
-            ivBattery.setColorFilter(color);
-        } catch (Exception e) {
-            ivBattery.setVisibility(View.GONE);
-        }
+        if (scanner == null) { ivBattery.setVisibility(View.GONE); return; }
+        new Thread(() -> {
+            try {
+                CommConst.CommBattery battery = scanner.getRemainingBattery();
+                int color;
+                if (battery == CommConst.CommBattery.UNDER10) color = Color.parseColor("#F44336");
+                else if (battery == CommConst.CommBattery.UNDER40) color = Color.parseColor("#FFC107");
+                else color = Color.parseColor("#4CAF50");
+                final int c = color;
+                batteryHandler.post(() -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        ivBattery.setVisibility(View.VISIBLE);
+                        ivBattery.setColorFilter(c);
+                    }
+                });
+            } catch (Exception e) {
+                batteryHandler.post(() -> {
+                    if (!isFinishing() && !isDestroyed()) ivBattery.setVisibility(View.GONE);
+                });
+            }
+        }).start();
     }
 
     public void updateReaderBattery(ImageView ivBattery, boolean switchOn) {

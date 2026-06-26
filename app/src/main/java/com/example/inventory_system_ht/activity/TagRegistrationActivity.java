@@ -181,7 +181,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        executor.shutdown();
+        executor.shutdownNow();
     }
 
     // ─── Bind Views ───────────────────────────────────────────────────────────
@@ -203,6 +203,7 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
      * 2. Fetch API in background → upsert to Room + refresh adapter
      */
     private void loadItemsWithRoomCache() {
+        if (executor.isShutdown()) return;
         executor.execute(() -> {
             AppDatabase db = AppDatabase.getDatabase(this);
 
@@ -232,11 +233,13 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                         if (response.isSuccessful() && response.body() != null) {
                             List<ItemModel.ItemResponse> fresh = response.body();
                             // Persist to Room on background thread
-                            executor.execute(() -> {
-                                AppDatabase db = AppDatabase.getDatabase(TagRegistrationActivity.this);
-                                db.appDao().clearItemCache();
-                                db.appDao().insertItemCache(modelToEntity(fresh));
-                            });
+                            if (!executor.isShutdown()) {
+                                executor.execute(() -> {
+                                    AppDatabase db = AppDatabase.getDatabase(TagRegistrationActivity.this);
+                                    db.appDao().clearItemCache();
+                                    db.appDao().insertItemCache(modelToEntity(fresh));
+                                });
+                            }
                             // Update UI
                             allItems = fresh;
                             setupAutoCompleteAdapter();
