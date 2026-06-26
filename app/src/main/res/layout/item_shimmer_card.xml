@@ -11,7 +11,7 @@
     <View
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:background="@drawable/shimmer_placeholder" />
+        android:background="@drawable/bg_shimmer_placeholder" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -24,11 +24,11 @@
             android:layout_width="160dp"
             android:layout_height="14dp"
             android:layout_marginBottom="8dp"
-            android:background="@drawable/shimmer_placeholder" />
+            android:background="@drawable/bg_shimmer_placeholder" />
 
         <View
             android:layout_width="100dp"
             android:layout_height="10dp"
-            android:background="@drawable/shimmer_placeholder" />
+            android:background="@drawable/bg_shimmer_placeholder" />
     </LinearLayout>
 </LinearLayout>

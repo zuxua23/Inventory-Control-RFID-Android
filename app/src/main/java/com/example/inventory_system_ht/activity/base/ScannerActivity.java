@@ -47,7 +47,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
     private ToneGenerator toneGen;
     private Vibrator vibrator;
     private PopupWindow activePowerPopup;
-
     private static final long FAB_HIDE_DELAY_MS = 5000L;
     private final Handler fabHideHandler = new Handler(Looper.getMainLooper());
     private View[] fabAutoHideViews;
@@ -97,7 +96,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
             toneGen.release();
             toneGen = null;
         }
-        // Remove any banner overlays still attached to prevent WindowLeaked
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         for (View banner : activeBanners) {
             try { wm.removeView(banner); } catch (Exception ignored) {}
@@ -138,11 +136,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
         scheduleFabHide();
     }
 
-    /**
-     * Check if system is locked due to active Stock Taking session.
-     * @param onLocked   called if locked — use to disable scan input / show persistent banner
-     * @param onUnlocked called if not locked — safe to proceed normally
-     */
     public void checkInventoryLock(Runnable onLocked, Runnable onUnlocked) {
         if (!isNetworkConnected()) {
             if (onUnlocked != null) onUnlocked.run();
@@ -213,9 +206,9 @@ public abstract class ScannerActivity extends AppCompatActivity {
         TextView tvMessage = bannerView.findViewById(R.id.tvBannerMessage);
 
         switch (type) {
-            case 1: dot.setImageResource(R.drawable.dot_warning); break;
-            case 2: dot.setImageResource(R.drawable.dot_error); break;
-            default: dot.setImageResource(R.drawable.dot_success); break;
+            case 1: dot.setImageResource(R.drawable.ic_dot_warning); break;
+            case 2: dot.setImageResource(R.drawable.ic_dot_error); break;
+            default: dot.setImageResource(R.drawable.ic_dot_success); break;
         }
         tvMessage.setText(pesan);
 
@@ -250,9 +243,9 @@ public abstract class ScannerActivity extends AppCompatActivity {
         TextView tvMessage = bannerView.findViewById(R.id.tvBannerMessage);
 
         switch (type) {
-            case 1: dot.setImageResource(R.drawable.dot_warning); break;
-            case 2: dot.setImageResource(R.drawable.dot_error); break;
-            default: dot.setImageResource(R.drawable.dot_success); break;
+            case 1: dot.setImageResource(R.drawable.ic_dot_warning); break;
+            case 2: dot.setImageResource(R.drawable.ic_dot_error); break;
+            default: dot.setImageResource(R.drawable.ic_dot_success); break;
         }
         tvMessage.setText(pesan);
 

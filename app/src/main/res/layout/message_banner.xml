@@ -24,7 +24,7 @@
             android:id="@+id/dotIndicator"
             android:layout_width="16dp"
             android:layout_height="16dp"
-            android:src="@drawable/dot_success"/>
+            android:src="@drawable/ic_dot_success"/>
 
         <TextView
             android:id="@+id/tvBannerMessage"
