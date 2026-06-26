@@ -1251,6 +1251,5 @@ public class StockPrepProductActivity extends ScannerActivity
             SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
             SimpleDateFormat out = new SimpleDateFormat("dd MMMM yyyy", Locale.ENGLISH);
             return out.format(in.parse(datePart));
-        } catch (Exception e) { return rawDate; }
-    }
+        } catch (Exception e) { return rawDate; }}
 }

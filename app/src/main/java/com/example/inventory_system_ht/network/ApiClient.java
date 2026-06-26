@@ -53,10 +53,10 @@ public class ApiClient {
                 .cookieJar(cookieJar)
                 .addInterceptor(loggingInterceptor)
                 .addInterceptor(authInterceptor)
-                .connectTimeout(8, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
-                .writeTimeout(15, TimeUnit.SECONDS)
-                .retryOnConnectionFailure(true)
+                .connectTimeout(3, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(false)
                 .build();
 
         if (retrofit == null || !retrofit.baseUrl().toString().equals(baseUrl)) {

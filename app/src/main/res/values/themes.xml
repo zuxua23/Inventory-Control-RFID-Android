@@ -5,7 +5,7 @@
         <item name="colorOnPrimary">@color/white</item>
         <item name="android:statusBarColor">@color/blue_theme</item>
 
-        <item name="android:windowBackground">@drawable/bg_launch</item>
+        <item name="android:windowBackground">@color/bg_white</item>
 
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
