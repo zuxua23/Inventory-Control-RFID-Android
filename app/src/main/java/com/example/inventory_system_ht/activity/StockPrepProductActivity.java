@@ -830,7 +830,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                     int batchQty = batchQtyMap.getOrDefault(cached.itemId, 0);
                     if (existingQty + batchQty >= requiredQtyMap.get(cached.itemId)) {
-                        rejectionReasons.put(code, "Qty sudah terpenuhi");
+                        rejectionReasons.put(code, "Qty already fulfilled");
                         shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
@@ -891,7 +891,7 @@ public class StockPrepProductActivity extends ScannerActivity
                         }
                         int batchQty = batchQtyMap.getOrDefault(info.getItemId(), 0);
                         if (existingQty + batchQty >= requiredQtyMap.get(info.getItemId())) {
-                            rejectionReasons.put(code, "Qty sudah terpenuhi");
+                            rejectionReasons.put(code, "Qty already fulfilled");
                             shouldNotify.put(code, false);
                             failedCodes.add(code);
                             continue;
