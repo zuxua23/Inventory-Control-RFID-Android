@@ -258,30 +258,16 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
             if (event.getAction() == android.view.KeyEvent.ACTION_DOWN) {
                 if (!triggerCurrentlyHeld) {
                     triggerCurrentlyHeld = true;
+                    if (isScanning) stopScanning();
+                    else startScanning();
                 }
                 return true;
             } else if (event.getAction() == android.view.KeyEvent.ACTION_UP) {
-                if (triggerCurrentlyHeld) {
-                    triggerCurrentlyHeld = false;
-                    if (isScanning) {
-                        onTriggerReleased();
-                    }
-                }
+                triggerCurrentlyHeld = false;
                 return true;
             }
         }
         return super.dispatchKeyEvent(event);
-    }
-
-    private void onTriggerReleased() {
-        handler.removeCallbacks(rssiAverageRunnable);
-        handler.removeCallbacks(noSignalRunnable);
-        handler.removeCallbacks(barAnimRunnable);
-        handler.removeCallbacks(beepRunnable);
-        synchronized (rssiBuffer) {
-            rssiBuffer.clear();
-        }
-        handler.post(this::resetSignalDisplay);
     }
 
 

@@ -689,6 +689,7 @@ public class StockTakingActivity extends ScannerActivity
             }
             boolean wasScanned = "FOUND".equals(item.state) || "MANUAL_ADD".equals(item.state);
             if (wasScanned) scannedCount--;
+            scannedEpcSet.remove(item.epcTag != null ? item.epcTag.toUpperCase() : "");
             sessionItems.remove(position);
             epcIndexMap.remove(item.epcTag != null ? item.epcTag.toUpperCase() : "");
             if (item.tagId != null) tagIdIndexMap.remove(item.tagId.toUpperCase());

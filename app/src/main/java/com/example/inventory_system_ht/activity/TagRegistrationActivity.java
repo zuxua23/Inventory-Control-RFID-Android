@@ -490,8 +490,10 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         if (tvProcessing != null) tvProcessing.setVisibility(View.VISIBLE);
 
         if (!isNetworkConnected()) {
-            addTagToList(epc);
+            showWarning("Internet connection required to validate tag");
+            playScanFeedback(2);
             isProcessing = false;
+            currentEpc = null;
             if (tvProcessing != null) tvProcessing.setVisibility(View.GONE);
             return;
         }
@@ -533,7 +535,9 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                                           @NonNull Throwable t) {
                         if (tvProcessing != null) tvProcessing.setVisibility(View.GONE);
                         isProcessing = false;
-                        addTagToList(epc); // offline fallback
+                        currentEpc = null;
+                        showWarning("Failed to validate tag, check connection");
+                        playScanFeedback(2);
                     }
                 });
     }

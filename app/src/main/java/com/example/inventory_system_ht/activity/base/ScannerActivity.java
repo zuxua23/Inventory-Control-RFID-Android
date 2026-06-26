@@ -196,6 +196,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     public void showBannerOverlay(String pesan, int type) {
+        if (isFinishing() || isDestroyed()) return;
         View bannerView = getLayoutInflater().inflate(R.layout.layout_message_banner, null);
         ImageView dot = bannerView.findViewById(R.id.dotIndicator);
         TextView tvMessage = bannerView.findViewById(R.id.tvBannerMessage);
@@ -243,39 +244,15 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     public void showSuccess(String pesan) {
-        showSagaFeedback(pesan, 0);
-        LogManager.get(this).log(
-                LogManager.INFO,
-                LogManager.ACTION_MESSAGE,
-                getClass().getSimpleName(),
-                "",
-                pesan,
-                new PrefManager(this).getUserId()
-        );
+        showBannerOverlay(pesan, 0);
     }
 
     public void showError(String pesan) {
-        showSagaFeedback(pesan, 2);
-        LogManager.get(this).log(
-                LogManager.ERROR,
-                LogManager.ACTION_MESSAGE,
-                getClass().getSimpleName(),
-                "",
-                pesan,
-                new PrefManager(this).getUserId()
-        );
+        showBannerOverlay(pesan, 2);
     }
 
     public void showWarning(String pesan) {
-        showSagaFeedback(pesan, 1);
-        LogManager.get(this).log(
-                LogManager.WARNING,
-                LogManager.ACTION_MESSAGE,
-                getClass().getSimpleName(),
-                "",
-                pesan,
-                new PrefManager(this).getUserId()
-        );
+        showBannerOverlay(pesan, 1);
     }
 
     public void showLoading() {

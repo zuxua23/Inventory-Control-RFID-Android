@@ -193,6 +193,7 @@ public class LoginActivity extends ScannerActivity {
 
         TextView tvSettingStatus = dialog.findViewById(R.id.tvSettingStatus);
         java.util.function.BiConsumer<String, Integer> showStatus = (msg, type) -> {
+            if (!dialog.isShowing()) return;
             int color;
             switch (type) {
                 case 1: color = 0xFFF57C00; break;

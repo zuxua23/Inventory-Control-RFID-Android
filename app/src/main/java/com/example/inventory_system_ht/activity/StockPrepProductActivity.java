@@ -400,6 +400,9 @@ public class StockPrepProductActivity extends ScannerActivity
                     else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
                     scanCount = 0;
                     tvScanned.setText("Scanned : 0");
+                    selectedLocation = "";
+                    selectedLocationId = "";
+                    spinnerLocation.setSelection(0);
                 });
             }).start();
         });
@@ -976,7 +979,7 @@ public class StockPrepProductActivity extends ScannerActivity
                 if (entry.getKey().equals(t.getItmId())) scannedForItem++;
             }
             if (scannedForItem < entry.getValue()) {
-                showWarning("Belum semua item terpenuhi. Scan semua item terlebih dahulu.");
+                showWarning("Not all items fulfilled. Please scan all required items first.");
                 return;
             }
         }

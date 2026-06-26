@@ -24,6 +24,7 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.graphics.Insets;
@@ -423,8 +424,33 @@ public class StockInActivity extends ScannerActivity
                 keyCode == android.view.KeyEvent.KEYCODE_ENTER);
     }
 
+    private void confirmExit() {
+        if (scannedItemsList.isEmpty()) { finish(); return; }
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_confirm);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    (int) (getResources().getDisplayMetrics().widthPixels * 0.85),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        ((TextView) dialog.findViewById(R.id.tvConfirmMessage))
+                .setText("Exit? Scanned data will be saved locally.");
+        dialog.findViewById(R.id.btnConfirmNo).setOnClickListener(v -> dialog.dismiss());
+        dialog.findViewById(R.id.btnConfirmYes).setOnClickListener(v -> {
+            dialog.dismiss();
+            finish();
+        });
+        dialog.show();
+    }
+
     private void setupButtonListeners() {
-        btnBack.setOnClickListener(v -> finish());
+        btnBack.setOnClickListener(v -> confirmExit());
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { confirmExit(); }
+        });
 
         btnClear.setOnClickListener(v -> {
             if (scannedItemsList.isEmpty()) { showWarning("Nothing to clear"); return; }
@@ -450,6 +476,12 @@ public class StockInActivity extends ScannerActivity
         btnSave.setOnClickListener(v -> {
             if (scannedItemsList.isEmpty()) { showWarning("No items scanned"); return; }
             if (selectedLocationId.isEmpty()) { showWarning("Select location first"); return; }
+            for (ItemModel.Item item : scannedItemsList) {
+                if ("Loading...".equals(item.getItemName())) {
+                    showWarning("Please wait, tags are still being validated");
+                    return;
+                }
+            }
             showSaveConfirmDialog();
         });
     }
