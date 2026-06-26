@@ -95,7 +95,7 @@ public class StockPrepProductActivity extends ScannerActivity
     private Switch switchRfid;
     private RecyclerView rvTags;
     private Spinner spinnerLocation, spinnerPower;
-    private Button btnListProduct, btnSumProduct, btnSave;
+    private Button btnListProduct, btnSumProduct;
     private FloatingActionButton fabScanCamera;
     private TagAdapter adapter;
     private StockPrepProductAdapter sumAdapter;
@@ -174,6 +174,7 @@ public class StockPrepProductActivity extends ScannerActivity
 
         fetchLocations();
         fetchDoDetail();
+        restoreScannedTagsFromRoom();
         setupListeners();
 
         FloatingActionButton fabLog = findViewById(R.id.fabLog);
@@ -190,32 +191,17 @@ public class StockPrepProductActivity extends ScannerActivity
     @Override
     protected void onResume() {
         super.onResume();
+        CommScanner scanner = getScannerInstance();
         updateReaderBattery(findViewById(R.id.ivReaderBattery), switchRfid.isChecked());
+
+        if (!switchRfid.isChecked() && scanner != null)
+            RfidBulkHelper.openBarcode(scanner, this);
+
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");
             playScanFeedback(2);
         }
-        checkInventoryLock(
-                () -> {
-                    // locked — close scanner, disable save
-                    CommScanner sc = getScannerInstance();
-                    RfidBulkHelper.closeInventory(sc);
-                    RfidBulkHelper.closeBarcode(sc);
-                    if (btnSave != null) btnSave.setEnabled(false);
-                    if (switchRfid != null) switchRfid.setEnabled(false);
-                    if (resultScan != null) resultScan.setEnabled(false);
-                },
-                () -> {
-                    // unlocked — normal startup
-                    if (btnSave != null) btnSave.setEnabled(true);
-                    if (switchRfid != null) switchRfid.setEnabled(true);
-                    if (resultScan != null && !switchRfid.isChecked()) resultScan.setEnabled(true);
-                    CommScanner scanner = getScannerInstance();
-                    if (!switchRfid.isChecked() && scanner != null)
-                        RfidBulkHelper.openBarcode(scanner, StockPrepProductActivity.this);
-                }
-        );
     }
 
     @Override
@@ -296,8 +282,6 @@ public class StockPrepProductActivity extends ScannerActivity
                 if (realPos >= masterLocationList.size()) return;
                 selectedLocation = masterLocationList.get(realPos).getName();
                 selectedLocationId = masterLocationList.get(realPos).getId();
-                final String locId = selectedLocationId;
-                new Thread(() -> appDao.updateTagLocalLocation(currentDoNo, locId)).start();
             }
             @Override public void onNothingSelected(AdapterView<?> parent) {}
         });
@@ -335,16 +319,6 @@ public class StockPrepProductActivity extends ScannerActivity
 
     private void setupSwitchRfid() {
         switchRfid.setOnCheckedChangeListener((btn, isChecked) -> {
-
-            if (!scannedList.isEmpty()) {
-                showWarning("Clear scanned items before switching mode");
-
-                btn.setOnCheckedChangeListener(null);
-                btn.setChecked(!isChecked);
-                setupSwitchRfid();
-                return;
-            }
-
             CommScanner scanner = getScannerInstance();
             updateReaderBattery(findViewById(R.id.ivReaderBattery), isChecked);
 
@@ -375,6 +349,7 @@ public class StockPrepProductActivity extends ScannerActivity
                 spinnerPower.setVisibility(View.GONE);
             }
         });
+
     }
 
     private void setupListeners() {
@@ -425,9 +400,6 @@ public class StockPrepProductActivity extends ScannerActivity
                     else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
                     scanCount = 0;
                     tvScanned.setText("Scanned : 0");
-                    selectedLocation = "";
-                    selectedLocationId = "";
-                    spinnerLocation.setSelection(0);
                 });
             }).start();
         });
@@ -603,7 +575,10 @@ public class StockPrepProductActivity extends ScannerActivity
         });
     }
     private void fetchLocations() {
-        if (!isNetworkConnected()) { restoreScannedTagsFromRoom(); return; }
+        if (!isNetworkConnected()) {
+            loadLocationsFromCache();
+            return;
+        }
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"endpoint\":\"getLocations\"}";
         api.getLocations(token).enqueue(new Callback<List<LocationModel>>() {
@@ -621,33 +596,18 @@ public class StockPrepProductActivity extends ScannerActivity
                     locationList.clear();
                     for (LocationModel loc : masterLocationList)
                         locationList.add(loc.getName());
-                    runOnUiThread(() -> {
-                        List<String> withHint = new ArrayList<>();
-                        withHint.add("Select Location");
-                        for (LocationModel loc : masterLocationList)
-                            withHint.add(loc.getName());
 
-                        locationSpinnerAdapter.clear();
-                        locationSpinnerAdapter.addAll(withHint);
-                        locationSpinnerAdapter.notifyDataSetChanged();
-
-                        if (!selectedLocationId.isEmpty()) {
-                            for (int i = 0; i < masterLocationList.size(); i++) {
-                                if (masterLocationList.get(i).getId().equals(selectedLocationId)) {
-                                    spinnerLocation.setSelection(i + 1);
-                                    break;
-                                }
-                            }
-                        }
-                        restoreScannedTagsFromRoom();
-                    });
+                    saveLocationCache(masterLocationList);
+                    runOnUiThread(() -> populateLocationSpinner(masterLocationList));
                 } else {
                     LogManager.get(StockPrepProductActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
                             "Stock Preparation", "Location",
                             "Fetch locations failed: HTTP " + response.code(),
                             userId, reqJson, resJson);
+                    loadLocationsFromCache();
                 }
             }
+
             @Override
             public void onFailure(Call<List<LocationModel>> call, Throwable t) {
                 String resJson = "{\"error\":\"" + t.getMessage() + "\"}";
@@ -655,9 +615,68 @@ public class StockPrepProductActivity extends ScannerActivity
                         "Stock Preparation", "Location",
                         "Fetch locations error: " + t.getMessage(),
                         userId, reqJson, resJson);
-                restoreScannedTagsFromRoom();
+                loadLocationsFromCache();
             }
         });
+    }
+
+    private void saveLocationCache(List<LocationModel> locations) {
+        new Thread(() -> {
+            List<com.example.inventory_system_ht.entity.LocationCacheEntity> entities = new ArrayList<>();
+            long now = System.currentTimeMillis();
+            for (LocationModel loc : locations) {
+                com.example.inventory_system_ht.entity.LocationCacheEntity e =
+                        new com.example.inventory_system_ht.entity.LocationCacheEntity();
+                e.locId = loc.getId();
+                e.locName = loc.getName();
+                e.cachedAt = now;
+                entities.add(e);
+            }
+            appDao.clearLocationCache();
+            appDao.insertLocationCache(entities);
+        }).start();
+    }
+
+    private void loadLocationsFromCache() {
+        new Thread(() -> {
+            List<com.example.inventory_system_ht.entity.LocationCacheEntity> cached =
+                    appDao.getAllLocationCache();
+            if (cached == null || cached.isEmpty()) return;
+
+            List<LocationModel> fromCache = new ArrayList<>();
+            for (com.example.inventory_system_ht.entity.LocationCacheEntity e : cached) {
+                LocationModel loc = new LocationModel();
+                loc.setId(e.locId);
+                loc.setName(e.locName);
+                fromCache.add(loc);
+            }
+            runOnUiThread(() -> {
+                masterLocationList = fromCache;
+                locationList.clear();
+                for (LocationModel loc : masterLocationList) locationList.add(loc.getName());
+                populateLocationSpinner(masterLocationList);
+                showWarning("Offline — location loaded from cache");
+            });
+        }).start();
+    }
+
+    private void populateLocationSpinner(List<LocationModel> locations) {
+        List<String> withHint = new ArrayList<>();
+        withHint.add("Select Location");
+        for (LocationModel loc : locations) withHint.add(loc.getName());
+
+        locationSpinnerAdapter.clear();
+        locationSpinnerAdapter.addAll(withHint);
+        locationSpinnerAdapter.notifyDataSetChanged();
+
+        if (!selectedLocationId.isEmpty()) {
+            for (int i = 0; i < locations.size(); i++) {
+                if (locations.get(i).getId().equals(selectedLocationId)) {
+                    spinnerLocation.setSelection(i + 1);
+                    break;
+                }
+            }
+        }
     }
 
     private void fetchItemNamesForDo() {
@@ -717,8 +736,6 @@ public class StockPrepProductActivity extends ScannerActivity
                     if (currentDoNo != null && currentDoNo.equalsIgnoreCase(t.getDoIdRef()))
                         forThis.add(t);
                 }
-                String restoredLocId = appDao.getTagLocalLocation(currentDoNo);
-
                 runOnUiThread(() -> {
                     scannedList.clear(); scannedRawSet.clear(); scannedEpcSet.clear(); scanCount = 0;
                     for (TagLocalEntity t : forThis) {
@@ -729,27 +746,10 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                     adapter.notifyDataSetChanged();
                     tvScanned.setText("Scanned : " + scanCount);
-
-                    if (restoredLocId != null && !restoredLocId.isEmpty()) {
-                        selectedLocationId = restoredLocId;
-                        for (int i = 0; i < masterLocationList.size(); i++) {
-                            if (masterLocationList.get(i).getId().equals(restoredLocId)) {
-                                selectedLocation = masterLocationList.get(i).getName();
-                                spinnerLocation.setSelection(i + 1);
-                                break;
-                            }
-                        }
-                    }
-
                     if (!forThis.isEmpty())
                         showWarning("Restored data");
                 });
-            } catch (Exception e) {
-                LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR,
-                        LogManager.ACTION_READ, "Stock Preparation", "Session",
-                        "Failed to restore scan session: " + e.getMessage(),
-                        new PrefManager(StockPrepProductActivity.this).getUserId());
-            }
+            } catch (Exception e) { LogManager.get(StockPrepProductActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ, "Stock Preparation", "Session", "Failed to restore scan session: " + e.getMessage(), new PrefManager(StockPrepProductActivity.this).getUserId()); }
         }).start();
     }
 
@@ -819,10 +819,13 @@ public class StockPrepProductActivity extends ScannerActivity
             Map<String, Integer> batchQtyMap = new HashMap<>();
             String userId = new PrefManager(this).getUserId();
 
+            // FIX: evaluate once — not per-iteration — to avoid race condition
+            final boolean networkAvailable = isNetworkConnected();
+
             for (String code : codes) {
                 TagLocalEntity candidate = null;
 
-                if (!isNetworkConnected()) {
+                if (!networkAvailable) {
                     TagCacheEntity cached = appDao.getTagCacheByKey(code);
                     if (cached == null) {
                         rejectionReasons.put(code, "Tag not found in cache");
@@ -830,7 +833,8 @@ public class StockPrepProductActivity extends ScannerActivity
                         failedCodes.add(code);
                         continue;
                     }
-                    if (System.currentTimeMillis() - cached.cachedAt > CACHE_EXPIRY_MS) {
+                    if (System.currentTimeMillis() - cached.cachedAt > CACHE_EXPIRY_MS
+                            && cached.cachedAt > 0) {
                         rejectionReasons.put(code, "Cache expired, go online to re-validate");
                         shouldNotify.put(code, true);
                         failedCodes.add(code);
@@ -854,7 +858,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                     int batchQty = batchQtyMap.getOrDefault(cached.itemId, 0);
                     if (existingQty + batchQty >= requiredQtyMap.get(cached.itemId)) {
-                        rejectionReasons.put(code, "Qty already fulfilled");
+                        rejectionReasons.put(code, "Qty sudah terpenuhi");
                         shouldNotify.put(code, false);
                         failedCodes.add(code);
                         continue;
@@ -876,7 +880,6 @@ public class StockPrepProductActivity extends ScannerActivity
                     if (dupInBatchCached) continue;
 
                     candidate = new TagLocalEntity(cached.epcTag, cached.tagId, cached.itemId, cached.itemName, currentDoNo, 0);
-                    candidate.setLocationId(selectedLocationId);
                     batchQtyMap.put(cached.itemId, batchQty + 1);
 
                 } else {
@@ -915,7 +918,7 @@ public class StockPrepProductActivity extends ScannerActivity
                         }
                         int batchQty = batchQtyMap.getOrDefault(info.getItemId(), 0);
                         if (existingQty + batchQty >= requiredQtyMap.get(info.getItemId())) {
-                            rejectionReasons.put(code, "Qty already fulfilled");
+                            rejectionReasons.put(code, "Qty sudah terpenuhi");
                             shouldNotify.put(code, false);
                             failedCodes.add(code);
                             continue;
@@ -939,7 +942,6 @@ public class StockPrepProductActivity extends ScannerActivity
                         candidate = new TagLocalEntity(
                                 info.getEpcTag() != null ? info.getEpcTag() : code,
                                 info.getTagId(), info.getItemId(), info.getItemName(), currentDoNo, 0);
-                        candidate.setLocationId(selectedLocationId);
                         batchQtyMap.put(info.getItemId(), batchQty + 1);
 
                     } catch (Exception e) {
@@ -1027,7 +1029,7 @@ public class StockPrepProductActivity extends ScannerActivity
                 if (entry.getKey().equals(t.getItmId())) scannedForItem++;
             }
             if (scannedForItem < entry.getValue()) {
-                showWarning("Not all items fulfilled. Please scan all required items first.");
+                showWarning("Belum semua item terpenuhi. Scan semua item terlebih dahulu.");
                 return;
             }
         }

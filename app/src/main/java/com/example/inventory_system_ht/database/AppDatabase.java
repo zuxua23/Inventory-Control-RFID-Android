@@ -9,6 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.example.inventory_system_ht.entity.AppLogEntity;
 import com.example.inventory_system_ht.entity.DeliveryOrderEntity;
 import com.example.inventory_system_ht.entity.ItemCacheEntity;
+import com.example.inventory_system_ht.entity.LocationCacheEntity;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
 import com.example.inventory_system_ht.entity.PendingTagRegistrationEntity;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
@@ -27,27 +28,19 @@ import com.example.inventory_system_ht.entity.TagLocalEntity;
                 TagCacheEntity.class,
                 PendingSubmitEntity.class,
                 PendingTagRegistrationEntity.class,
+                LocationCacheEntity.class,
                 ScanQueueEntity.class,
                 SessionItemEntity.class,
                 StockInScanEntity.class,
                 ItemCacheEntity.class
         },
-        version = 12,
+        version = 13,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
     public abstract AppDao appDao();
 
     private static volatile AppDatabase INSTANCE;
-
-    static final Migration MIGRATION_11_12 = new Migration(11, 12) {
-        @Override
-        public void migrate(SupportSQLiteDatabase database) {
-            database.execSQL(
-                    "ALTER TABLE tb_Tag_Local ADD COLUMN location_id TEXT NOT NULL DEFAULT ''"
-            );
-        }
-    };
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
@@ -57,7 +50,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     context.getApplicationContext(),
                                     AppDatabase.class,
                                     "sato_inventory_db")
-                            .addMigrations(MIGRATION_11_12)
+                            .fallbackToDestructiveMigration()
                             .build();
                 }
             }

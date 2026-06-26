@@ -24,7 +24,6 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.graphics.Insets;
@@ -175,36 +174,21 @@ public class StockInActivity extends ScannerActivity
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock In", "", "Opened Stock In", new PrefManager(this).getUserId());
 
         fetchLocations();
+        restoreFromRoom();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        CommScanner scanner = getScannerInstance();
         updateReaderBattery(findViewById(R.id.ivReaderBattery), switchRfid.isChecked());
+        if (!switchRfid.isChecked() && scanner != null) RfidBulkHelper.openBarcode(scanner, this);
+
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");
             playScanFeedback(2);
         }
-        checkInventoryLock(
-                () -> {
-                    // locked — close scanner, disable input
-                    CommScanner sc = getScannerInstance();
-                    RfidBulkHelper.closeInventory(sc);
-                    RfidBulkHelper.closeBarcode(sc);
-                    if (btnSave != null) btnSave.setEnabled(false);
-                    if (switchRfid != null) switchRfid.setEnabled(false);
-                    if (resultScan != null) resultScan.setEnabled(false);
-                },
-                () -> {
-                    // unlocked — normal startup
-                    if (btnSave != null) btnSave.setEnabled(true);
-                    if (switchRfid != null) switchRfid.setEnabled(true);
-                    if (resultScan != null && !switchRfid.isChecked()) resultScan.setEnabled(true);
-                    CommScanner scanner = getScannerInstance();
-                    if (!switchRfid.isChecked() && scanner != null) RfidBulkHelper.openBarcode(scanner, StockInActivity.this);
-                }
-        );
     }
 
     @Override
@@ -218,8 +202,9 @@ public class StockInActivity extends ScannerActivity
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Room data intentionally preserved for restore on next open.
-        // Cleared only after successful submit (hitApiStockIn) or explicit Clear button.
+        if (isFinishing()) {
+            new Thread(() -> db.appDao().clearAllStockInScans()).start();
+        }
     }
 
     private void bindViews() {
@@ -379,6 +364,7 @@ public class StockInActivity extends ScannerActivity
 
     private void setupSwitchRfid() {
         switchRfid.setOnCheckedChangeListener((btn, isChecked) -> {
+            // FIX: block mode switch whenever list is non-empty, regardless of activeScannerType
             if (!scannedItemsList.isEmpty()) {
                 showWarning("Clear scanned items before switching mode");
                 btn.setOnCheckedChangeListener(null);
@@ -386,7 +372,6 @@ public class StockInActivity extends ScannerActivity
                 setupSwitchRfid();
                 return;
             }
-
             CommScanner scanner = getScannerInstance();
             updateReaderBattery(findViewById(R.id.ivReaderBattery), isChecked);
 
@@ -417,6 +402,7 @@ public class StockInActivity extends ScannerActivity
                 spinnerPower.setVisibility(View.GONE);
             }
         });
+
     }
 
     private void setupBarcodeTextWatcher() {
@@ -436,33 +422,8 @@ public class StockInActivity extends ScannerActivity
                 keyCode == android.view.KeyEvent.KEYCODE_ENTER);
     }
 
-    private void confirmExit() {
-        if (scannedItemsList.isEmpty()) { finish(); return; }
-        Dialog dialog = new Dialog(this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.dialog_confirm);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            dialog.getWindow().setLayout(
-                    (int) (getResources().getDisplayMetrics().widthPixels * 0.85),
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-        }
-        ((TextView) dialog.findViewById(R.id.tvConfirmMessage))
-                .setText("Exit? Scanned data will be saved locally.");
-        dialog.findViewById(R.id.btnConfirmNo).setOnClickListener(v -> dialog.dismiss());
-        dialog.findViewById(R.id.btnConfirmYes).setOnClickListener(v -> {
-            dialog.dismiss();
-            finish();
-        });
-        dialog.show();
-    }
-
     private void setupButtonListeners() {
-        btnBack.setOnClickListener(v -> confirmExit());
-
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override public void handleOnBackPressed() { confirmExit(); }
-        });
+        btnBack.setOnClickListener(v -> finish());
 
         btnClear.setOnClickListener(v -> {
             if (scannedItemsList.isEmpty()) { showWarning("Nothing to clear"); return; }
@@ -488,12 +449,6 @@ public class StockInActivity extends ScannerActivity
         btnSave.setOnClickListener(v -> {
             if (scannedItemsList.isEmpty()) { showWarning("No items scanned"); return; }
             if (selectedLocationId.isEmpty()) { showWarning("Select location first"); return; }
-            for (ItemModel.Item item : scannedItemsList) {
-                if ("Loading...".equals(item.getItemName())) {
-                    showWarning("Please wait, tags are still being validated");
-                    return;
-                }
-            }
             showSaveConfirmDialog();
         });
     }
@@ -539,7 +494,11 @@ public class StockInActivity extends ScannerActivity
     }
 
     private void fetchLocations() {
-        if (!isNetworkConnected()) { restoreFromRoom(); return; }
+        if (!isNetworkConnected()) {
+            // Offline — load from Room cache
+            loadLocationsFromCache();
+            return;
+        }
         String token = "Bearer " + new PrefManager(this).getToken();
         String userId = new PrefManager(this).getUserId();
         String reqJson = "{\"endpoint\":\"getLocations\"}";
@@ -559,30 +518,17 @@ public class StockInActivity extends ScannerActivity
                             locationList.clear();
                             for (LocationModel loc : masterLocationList)
                                 locationList.add(loc.getName());
-                            runOnUiThread(() -> {
-                                List<String> withHint = new ArrayList<>();
-                                withHint.add("Select Location");
-                                for (LocationModel loc : masterLocationList)
-                                    withHint.add(loc.getName());
 
-                                locationSpinnerAdapter.clear();
-                                locationSpinnerAdapter.addAll(withHint);
-                                locationSpinnerAdapter.notifyDataSetChanged();
+                            // Save to Room cache for offline use
+                            saveLocationCache(masterLocationList);
 
-                                if (!selectedLocationId.isEmpty()) {
-                                    for (int i = 0; i < masterLocationList.size(); i++) {
-                                        if (masterLocationList.get(i).getId().equals(selectedLocationId)) {
-                                            spinnerLocation.setSelection(i + 1);
-                                            break;
-                                        }
-                                    }
-                                }
-                                restoreFromRoom();
-                            });
+                            runOnUiThread(() -> populateLocationSpinner(masterLocationList));
                         } else {
                             LogManager.get(StockInActivity.this).log(LogManager.WARNING, LogManager.ACTION_READ,
                                     "Stock In", "Location", "Fetch locations failed: HTTP " + response.code(),
                                     userId, reqJson, resJson);
+                            // Fallback to cache even if response failed
+                            loadLocationsFromCache();
                         }
                     }
 
@@ -592,9 +538,69 @@ public class StockInActivity extends ScannerActivity
                         LogManager.get(StockInActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                                 "Stock In", "Location", "Fetch locations error: " + t.getMessage(),
                                 userId, reqJson, resJson);
-                        restoreFromRoom();
+                        // Network error — fallback to cache
+                        loadLocationsFromCache();
                     }
                 });
+    }
+
+    private void saveLocationCache(List<LocationModel> locations) {
+        new Thread(() -> {
+            List<com.example.inventory_system_ht.entity.LocationCacheEntity> entities = new ArrayList<>();
+            long now = System.currentTimeMillis();
+            for (LocationModel loc : locations) {
+                com.example.inventory_system_ht.entity.LocationCacheEntity e =
+                        new com.example.inventory_system_ht.entity.LocationCacheEntity();
+                e.locId = loc.getId();
+                e.locName = loc.getName();
+                e.cachedAt = now;
+                entities.add(e);
+            }
+            db.appDao().clearLocationCache();
+            db.appDao().insertLocationCache(entities);
+        }).start();
+    }
+
+    private void loadLocationsFromCache() {
+        new Thread(() -> {
+            List<com.example.inventory_system_ht.entity.LocationCacheEntity> cached =
+                    db.appDao().getAllLocationCache();
+            if (cached == null || cached.isEmpty()) return;
+
+            List<LocationModel> fromCache = new ArrayList<>();
+            for (com.example.inventory_system_ht.entity.LocationCacheEntity e : cached) {
+                LocationModel loc = new LocationModel();
+                loc.setId(e.locId);
+                loc.setName(e.locName);
+                fromCache.add(loc);
+            }
+            runOnUiThread(() -> {
+                masterLocationList = fromCache;
+                locationList.clear();
+                for (LocationModel loc : masterLocationList) locationList.add(loc.getName());
+                populateLocationSpinner(masterLocationList);
+                showWarning("Offline — location loaded from cache");
+            });
+        }).start();
+    }
+
+    private void populateLocationSpinner(List<LocationModel> locations) {
+        List<String> withHint = new ArrayList<>();
+        withHint.add("Select Location");
+        for (LocationModel loc : locations) withHint.add(loc.getName());
+
+        locationSpinnerAdapter.clear();
+        locationSpinnerAdapter.addAll(withHint);
+        locationSpinnerAdapter.notifyDataSetChanged();
+
+        if (!selectedLocationId.isEmpty()) {
+            for (int i = 0; i < locations.size(); i++) {
+                if (locations.get(i).getId().equals(selectedLocationId)) {
+                    spinnerLocation.setSelection(i + 1);
+                    break;
+                }
+            }
+        }
     }
 
     private void setProcessing(boolean active) {
@@ -604,7 +610,11 @@ public class StockInActivity extends ScannerActivity
     }
 
     private void processRfidBatch(List<String> rawEpcs) {
-        if (selectedLocationId.isEmpty()) return;
+        if (selectedLocationId.isEmpty()) {
+            // FIX: same validation as barcode mode - show warning for RFID too
+            showWarning("Select location first");
+            return;
+        }
         List<String> newEpcs = new ArrayList<>();
         for (String epc : rawEpcs) {
             if (inFlightEpcs.contains(epc)) continue;
@@ -744,7 +754,11 @@ public class StockInActivity extends ScannerActivity
                 for (String code : codes)
                     db.appDao().insertStockInScan(buildEntity(code, "", "Loading...", false));
             }).start();
-            showWarning("Saved offline (" + codes.size() + ")");
+            // FIX: reset list after offline save so user knows it's queued
+            runOnUiThread(() -> {
+                clearAllData();
+                showWarning("Saved offline (" + codes.size() + ")");
+            });
             return;
         }
 

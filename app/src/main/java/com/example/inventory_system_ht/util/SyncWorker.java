@@ -9,11 +9,13 @@ import androidx.work.WorkerParameters;
 import com.example.inventory_system_ht.database.AppDatabase;
 import com.example.inventory_system_ht.database.AppDao;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
+import com.example.inventory_system_ht.entity.PendingTagRegistrationEntity;
 import com.example.inventory_system_ht.entity.StockInScanEntity;
 import com.example.inventory_system_ht.model.AuthModel;
 import com.example.inventory_system_ht.model.GeneralResponse;
 import com.example.inventory_system_ht.model.StockInRequest;
 import com.example.inventory_system_ht.model.StockPrepBulkRequest;
+import com.example.inventory_system_ht.model.TagModel;
 import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.google.gson.Gson;
@@ -21,7 +23,9 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import retrofit2.Response;
 
@@ -37,11 +41,12 @@ public class SyncWorker extends Worker {
         AppDao appDao = AppDatabase.getDatabase(getApplicationContext()).appDao();
         PrefManager pref = new PrefManager(getApplicationContext());
         String token = "Bearer " + pref.getToken();
+        if (pref.getToken() == null || pref.getToken().isEmpty()) return Result.success();
 
         ApiService api = ApiClient.getClient(getApplicationContext()).create(ApiService.class);
-        boolean hasFailure = false;
+        boolean hasNetworkFailure = false;
 
-        // ── 1. PendingSubmit (TAG_REGISTRATION + StockPrep) ──────────────────
+        // ── 1. PendingSubmitEntity (Stock Prep / old bulk tag queue) ──────────
         List<PendingSubmitEntity> pendingList = appDao.getAllPendingSubmit();
         if (pendingList != null && !pendingList.isEmpty()) {
             Gson gson = new Gson();
@@ -59,49 +64,83 @@ public class SyncWorker extends Worker {
                                 pending.doId, codes, pending.scannerType, pending.locId)).execute();
                     }
 
-                    if (response.isSuccessful()) {
+                    // FIX: delete on success (2xx) OR server error (4xx/5xx = data issue,
+                    // not network issue — retrying won't help and causes duplicates).
+                    // Only keep retrying on network failure (exception).
+                    if (response.isSuccessful() || response.code() >= 400) {
                         appDao.deletePendingSubmitById(pending.id);
                     } else {
-                        hasFailure = true;
+                        hasNetworkFailure = true;
                     }
                 } catch (Exception e) {
-                    hasFailure = true;
+                    // Genuine network error — retry later
+                    hasNetworkFailure = true;
                 }
             }
         }
 
-        // ── 2. StockIn offline queue ──────────────────────────────────────────
-        try {
-            List<StockInScanEntity> unsynced = appDao.getUnsyncedStockInScans();
-            if (unsynced != null && !unsynced.isEmpty()) {
-                // Group by locationId + scannerType
-                String locId = null;
-                String scannerType = null;
-                List<String> codes = new ArrayList<>();
+        // ── 2. PendingTagRegistrationEntity (offline tag-with-item) ──────────
+        List<PendingTagRegistrationEntity> pendingTagRegs = appDao.getAllPendingTagRegistrations();
+        if (pendingTagRegs != null && !pendingTagRegs.isEmpty()) {
+            for (PendingTagRegistrationEntity pending : pendingTagRegs) {
+                try {
+                    Response<GeneralResponse> response = api.registerTagWithItem(
+                            token,
+                            new TagModel.RegisterWithItemReq(pending.epcTag, pending.itemId)
+                    ).execute();
 
-                for (StockInScanEntity e : unsynced) {
-                    if (!e.isResolved) continue; // skip unresolved tags
-                    if (e.epcTag == null || e.epcTag.isEmpty()) continue;
-                    if (locId == null && e.locationId != null) locId = e.locationId;
-                    if (scannerType == null && e.scannerType != null) scannerType = e.scannerType;
-                    codes.add(e.epcTag);
+                    // FIX: 200 = registered now, 500 = already registered (duplicate) → both
+                    // mean the tag is on the server. Delete from queue either way.
+                    // Only retry on network exception (ConnectException etc).
+                    if (response.isSuccessful() || response.code() >= 400) {
+                        appDao.deletePendingTagRegistrationById(pending.id);
+                    } else {
+                        hasNetworkFailure = true;
+                    }
+                } catch (Exception e) {
+                    hasNetworkFailure = true;
                 }
+            }
+        }
 
-                if (!codes.isEmpty() && locId != null && scannerType != null) {
-                    Response<GeneralResponse> res = api.stockIn(token,
-                            new StockInRequest(scannerType, codes, locId)).execute();
-                    if (res.isSuccessful()) {
+        // ── 3. StockIn offline scans (is_resolved=true, is_synced=false) ─────
+        List<StockInScanEntity> unsynced = appDao.getUnsyncedStockInScans();
+        if (unsynced != null && !unsynced.isEmpty()) {
+            Map<String, List<StockInScanEntity>> grouped = new LinkedHashMap<>();
+            for (StockInScanEntity e : unsynced) {
+                if (!e.isResolved) continue;
+                String groupKey = (e.locationId != null ? e.locationId : "") + "|"
+                        + (e.scannerType != null ? e.scannerType : "QR");
+                if (!grouped.containsKey(groupKey)) grouped.put(groupKey, new ArrayList<>());
+                grouped.get(groupKey).add(e);
+            }
+
+            for (Map.Entry<String, List<StockInScanEntity>> entry : grouped.entrySet()) {
+                String[] parts = entry.getKey().split("\\|", 2);
+                String locationId  = parts[0];
+                String scannerType = parts.length > 1 ? parts[1] : "QR";
+
+                List<String> codes = new ArrayList<>();
+                for (StockInScanEntity e : entry.getValue()) codes.add(e.epcTag);
+
+                try {
+                    Response<GeneralResponse> response = api.stockIn(
+                            token,
+                            new StockInRequest(scannerType, codes, locationId)
+                    ).execute();
+
+                    if (response.isSuccessful() || response.code() >= 400) {
                         appDao.markAllStockInSynced();
                         appDao.clearSyncedStockInScans();
                     } else {
-                        hasFailure = true;
+                        hasNetworkFailure = true;
                     }
+                } catch (Exception e) {
+                    hasNetworkFailure = true;
                 }
             }
-        } catch (Exception e) {
-            hasFailure = true;
         }
 
-        return hasFailure ? Result.retry() : Result.success();
+        return hasNetworkFailure ? Result.retry() : Result.success();
     }
 }

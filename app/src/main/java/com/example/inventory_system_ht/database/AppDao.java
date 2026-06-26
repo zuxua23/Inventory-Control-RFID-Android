@@ -7,6 +7,7 @@ import androidx.room.Query;
 
 import com.example.inventory_system_ht.entity.AppLogEntity;
 import com.example.inventory_system_ht.entity.DeliveryOrderEntity;
+import com.example.inventory_system_ht.entity.LocationCacheEntity;
 import com.example.inventory_system_ht.entity.PendingSubmitEntity;
 import com.example.inventory_system_ht.entity.PendingTagRegistrationEntity;
 import com.example.inventory_system_ht.entity.ScanQueueEntity;
@@ -36,12 +37,6 @@ public interface AppDao {
 
     @Query("SELECT epc_tag, tag_id, itm_id, product_name, do_id_ref, sync_status FROM tb_Tag_Local WHERE sync_status = 0")
     List<TagLocalEntity> getPendingTags();
-
-    @Query("UPDATE tb_Tag_Local SET location_id = :locationId WHERE do_id_ref = :doNo")
-    void updateTagLocalLocation(String doNo, String locationId);
-
-    @Query("SELECT location_id FROM tb_Tag_Local WHERE do_id_ref = :doNo LIMIT 1")
-    String getTagLocalLocation(String doNo);
 
     @Query("UPDATE tb_Tag_Local SET sync_status = 1 WHERE epc_tag = :epc")
     void markTagAsSynced(String epc);
@@ -180,6 +175,17 @@ public interface AppDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertTagCacheList(List<TagCacheEntity> caches);
 
+    // --- Location Cache ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertLocationCache(List<LocationCacheEntity> locations);
+
+    @Query("SELECT * FROM tb_location_cache ORDER BY loc_name ASC")
+    List<LocationCacheEntity> getAllLocationCache();
+
+    @Query("DELETE FROM tb_location_cache")
+    void clearLocationCache();
+
+    // --- Pending Tag Registration (offline queue) ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertPendingTagRegistration(PendingTagRegistrationEntity entity);
 
@@ -191,6 +197,5 @@ public interface AppDao {
 
     @Query("DELETE FROM tb_pending_tag_registration")
     void clearAllPendingTagRegistrations();
-
 
 }

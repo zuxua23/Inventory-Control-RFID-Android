@@ -110,7 +110,8 @@ public class SearchItemActivity extends ScannerActivity
         initViews();
         setupListeners();
 
-        loadFromLocal();
+        // FIX: load from local on background thread, NOT main thread
+        loadFromLocalAsync();
         if (isNetworkConnected()) fetchData();
         else showWarning("Offline mode");
 
@@ -211,20 +212,27 @@ public class SearchItemActivity extends ScannerActivity
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
     }
 
-    private void loadFromLocal() {
-        List<SearchItemEntity> cached = db.appDao().getAllSearchItems();
-        allItemList.clear();
-        for (SearchItemEntity e : cached) {
-            TagModel.SearchItemDto dto = new TagModel.SearchItemDto();
-            dto.setTagId(e.tagId);
-            dto.setEpcTag(e.epcTag);
-            dto.setItemName(e.itemName);
-            dto.setLocation(e.location);
-            dto.setStatus(e.status);
-            allItemList.add(dto);
-        }
-        populateFilters();
-        filter(etSearchItem != null ? etSearchItem.getText().toString() : "");
+    // FIX: Room query on background thread
+    private void loadFromLocalAsync() {
+        new Thread(() -> {
+            List<SearchItemEntity> cached = db.appDao().getAllSearchItems();
+            List<TagModel.SearchItemDto> items = new ArrayList<>();
+            for (SearchItemEntity e : cached) {
+                TagModel.SearchItemDto dto = new TagModel.SearchItemDto();
+                dto.setTagId(e.tagId);
+                dto.setEpcTag(e.epcTag);
+                dto.setItemName(e.itemName);
+                dto.setLocation(e.location);
+                dto.setStatus(e.status);
+                items.add(dto);
+            }
+            handler.post(() -> {
+                allItemList.clear();
+                allItemList.addAll(items);
+                populateFilters();
+                filter(etSearchItem != null ? etSearchItem.getText().toString() : "");
+            });
+        }).start();
     }
 
     private void saveToLocal(List<TagModel.SearchItemDto> items) {
