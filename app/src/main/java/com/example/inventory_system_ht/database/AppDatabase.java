@@ -34,7 +34,7 @@ import com.example.inventory_system_ht.entity.TagLocalEntity;
                 StockInScanEntity.class,
                 ItemCacheEntity.class
         },
-        version = 13,
+        version = 14,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {

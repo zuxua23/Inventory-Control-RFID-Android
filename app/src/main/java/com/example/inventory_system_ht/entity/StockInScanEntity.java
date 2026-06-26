@@ -3,9 +3,16 @@ package com.example.inventory_system_ht.entity;
 import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "tb_stockin_scan")
+@Entity(
+        tableName = "tb_stockin_scan",
+        indices = {
+                @Index(value = "is_synced"),
+                @Index(value = "epc_tag")
+        }
+)
 public class StockInScanEntity {
     @PrimaryKey(autoGenerate = true)
     public int id;

@@ -3,11 +3,14 @@ package com.example.inventory_system_ht.entity;
 import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import com.example.inventory_system_ht.model.StockTakingResponses;
 
-@Entity(tableName = "tb_session_items")
-public class SessionItemEntity {
+@Entity(
+        tableName = "tb_session_items",
+        indices = {@Index(value = "stt_id")}
+)public class SessionItemEntity {
     @PrimaryKey
     @NonNull
     @ColumnInfo(name = "epc_tag") public String epcTag = "";

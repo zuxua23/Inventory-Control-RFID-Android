@@ -2,9 +2,14 @@ package com.example.inventory_system_ht.entity;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "tb_app_log")
+@Entity(
+        tableName = "tb_app_log",
+        indices = {@Index(value = "timestamp")}
+)
+
 public class AppLogEntity {
     @PrimaryKey(autoGenerate = true) public int id;
     @ColumnInfo(name = "timestamp") public long timestamp;

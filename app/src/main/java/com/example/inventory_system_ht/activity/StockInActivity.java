@@ -754,7 +754,6 @@ public class StockInActivity extends ScannerActivity
                 for (String code : codes)
                     db.appDao().insertStockInScan(buildEntity(code, "", "Loading...", false));
             }).start();
-            // FIX: reset list after offline save so user knows it's queued
             runOnUiThread(() -> {
                 clearAllData();
                 showWarning("Saved offline (" + codes.size() + ")");

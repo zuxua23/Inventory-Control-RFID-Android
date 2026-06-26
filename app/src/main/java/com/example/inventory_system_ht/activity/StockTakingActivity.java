@@ -8,6 +8,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -544,13 +546,14 @@ public class StockTakingActivity extends ScannerActivity
     }
 
     private void rebuildLocationsCache() {
-        List<String> locations = new ArrayList<>();
+        LinkedHashSet<String> seen = new LinkedHashSet<>();
         for (StockTakingResponses.SessionItem item : sessionItems) {
-            if (item.location != null && !item.location.isEmpty() && !locations.contains(item.location))
-                locations.add(item.location);
+            if (item.location != null && !item.location.isEmpty())
+                seen.add(item.location);
         }
-        cachedLocationsString = locations.isEmpty() ? "-" : String.join(", ", locations);
+        cachedLocationsString = seen.isEmpty() ? "-" : (String) TextUtils.join(", ", seen);
     }
+
 
     private void saveToQueue(String epc, String action, String itemId, String newTagId, String remarkText) {
         new Thread(() -> {

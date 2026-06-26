@@ -2,6 +2,7 @@ package com.example.inventory_system_ht.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -208,7 +209,7 @@ public class StockTakingListActivity extends ScannerActivity {
 
             String locText;
             if (s.locations != null && !s.locations.isEmpty()) {
-                locText = String.join(", ", s.locations);
+                locText = TextUtils.join(", ", s.locations);
             } else if (s.location != null && !s.location.isEmpty()) {
                 locText = s.location;
             } else {
