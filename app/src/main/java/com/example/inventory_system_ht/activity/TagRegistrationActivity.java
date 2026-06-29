@@ -160,7 +160,8 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
         }
         checkInventoryLock(
                 () -> {
-                    RfidBulkHelper.closeInventory(getScannerInstance());
+                    CommScanner scannerToClose = getScannerInstance();
+                    new Thread(() -> RfidBulkHelper.closeInventory(scannerToClose)).start();
                     if (btnSubmitRegis != null) btnSubmitRegis.setEnabled(false);
                     if (actvItemSearch != null) actvItemSearch.setEnabled(false);
                 },
@@ -185,7 +186,8 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
     @Override
     protected void onPause() {
         super.onPause();
-        RfidBulkHelper.closeInventory(getScannerInstance());
+        CommScanner scanner = getScannerInstance();
+        new Thread(() -> RfidBulkHelper.closeInventory(scanner)).start();
     }
 
     @Override
@@ -424,9 +426,11 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                 mgr.save(power, mgr.getSession(), mgr.getQFactor());
                 CommScanner scanner = getScannerInstance();
                 if (scanner != null) {
-                    RfidBulkHelper.closeInventory(scanner);
-                    RfidBulkHelper.openInventory(scanner, TagRegistrationActivity.this,
-                            TagRegistrationActivity.this);
+                    new Thread(() -> {
+                        RfidBulkHelper.closeInventory(scanner);
+                        RfidBulkHelper.openInventory(scanner, TagRegistrationActivity.this,
+                                TagRegistrationActivity.this);
+                    }).start();
                 }
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}

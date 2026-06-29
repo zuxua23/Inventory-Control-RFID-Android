@@ -232,22 +232,25 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         tagFoundNotified = false;
         rssiBuffer.clear();
 
-        RfidBulkHelper.closeBarcode(scanner);
-
         int power = new RfidSettingsManager(this).getPower();
-        boolean ok = RfidBulkHelper.openInventoryLocate(scanner, this, power, selectedItem.getEpcTag());
-        if (!ok) {
-            isScanning = false;
-            showWarning("RFID unavailable");
-            setButtonStartState();
-            return;
-        }
-
-        handler.removeCallbacks(rssiAverageRunnable);
-        handler.postDelayed(rssiAverageRunnable, RSSI_INTERVAL_MS);
-        handler.removeCallbacks(noSignalRunnable);
-        handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
-        setButtonStopState();
+        String targetEpc = selectedItem.getEpcTag();
+        new Thread(() -> {
+            RfidBulkHelper.closeBarcode(scanner);
+            boolean ok = RfidBulkHelper.openInventoryLocate(scanner, SearchSignalActivity.this, power, targetEpc);
+            runOnUiThread(() -> {
+                if (!ok) {
+                    isScanning = false;
+                    showWarning("RFID unavailable");
+                    setButtonStartState();
+                    return;
+                }
+                handler.removeCallbacks(rssiAverageRunnable);
+                handler.postDelayed(rssiAverageRunnable, RSSI_INTERVAL_MS);
+                handler.removeCallbacks(noSignalRunnable);
+                handler.postDelayed(noSignalRunnable, NO_SIGNAL_TIMEOUT_MS);
+                setButtonStopState();
+            });
+        }).start();
     }
 
     @Override
@@ -278,7 +281,8 @@ public class SearchSignalActivity extends ScannerActivity implements RFIDDataDel
         handler.removeCallbacks(barAnimRunnable);
         handler.removeCallbacks(beepRunnable);
         rssiBuffer.clear();
-        RfidBulkHelper.closeInventoryKeepDelegate(getScannerInstance());
+        CommScanner scanner = getScannerInstance();
+        new Thread(() -> RfidBulkHelper.closeInventoryKeepDelegate(scanner)).start();
         tagFoundNotified = false;
         resetSignalDisplay();
         setButtonStartState();

@@ -192,8 +192,10 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
     protected void onPause() {
         super.onPause();
         CommScanner scanner = getScannerInstance();
-        RfidBulkHelper.closeInventory(scanner);
-        RfidBulkHelper.closeBarcode(scanner);
+        new Thread(() -> {
+            RfidBulkHelper.closeInventory(scanner);
+            RfidBulkHelper.closeBarcode(scanner);
+        }).start();
     }
 
     @Override
@@ -351,8 +353,10 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
                 CommScanner scanner = getScannerInstance();
                 if (scanner != null) {
                     int power = parsePower(powerList.get(position), 27);
-                    RfidBulkHelper.closeInventory(scanner);
-                    RfidBulkHelper.openInventory(scanner, StockInActivity.this, power);
+                    new Thread(() -> {
+                        RfidBulkHelper.closeInventory(scanner);
+                        RfidBulkHelper.openInventory(scanner, StockInActivity.this, power);
+                    }).start();
                 }
             }
             @Override public void onNothingSelected(AdapterView<?> parent) {}
@@ -378,27 +382,31 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
                     updateReaderBattery(findViewById(R.id.ivReaderBattery), false);
                     return;
                 }
-                RfidBulkHelper.closeBarcode(scanner);
                 int power = parsePower(
                         spinnerPower.getSelectedItem() != null
                                 ? spinnerPower.getSelectedItem().toString() : "27 dBm", 27);
-                boolean ok = RfidBulkHelper.openInventory(scanner, this, power);
-                if (ok) {
-                    resultScan.setEnabled(false);
-                    spinnerPower.setVisibility(View.VISIBLE);
-                } else {
-                    showError("Failed to start RFID");
-                    switchRfid.setChecked(false);
-                }
+                new Thread(() -> {
+                    RfidBulkHelper.closeBarcode(scanner);
+                    boolean ok = RfidBulkHelper.openInventory(scanner, StockInActivity.this, power);
+                    runOnUiThread(() -> {
+                        if (ok) {
+                            resultScan.setEnabled(false);
+                            spinnerPower.setVisibility(View.VISIBLE);
+                        } else {
+                            showError("Failed to start RFID");
+                            switchRfid.setChecked(false);
+                        }
+                    });
+                }).start();
             } else {
-                RfidBulkHelper.closeInventory(scanner);
-                if (scanner != null) {
-                    CommScanner s = scanner;
-                    new Thread(() -> RfidBulkHelper.openBarcode(s, StockInActivity.this)).start();
-                }
                 resultScan.setEnabled(true);
                 resultScan.requestFocus();
                 spinnerPower.setVisibility(View.GONE);
+                new Thread(() -> {
+                    RfidBulkHelper.closeInventory(scanner);
+                    if (scanner != null) RfidBulkHelper.openBarcode(scanner, StockInActivity.this);
+                }).start();
+
             }
         });
 

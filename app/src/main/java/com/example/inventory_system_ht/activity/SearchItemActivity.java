@@ -23,13 +23,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.densowave.scannersdk.Barcode.BarcodeData;
-import com.densowave.scannersdk.Barcode.BarcodeDataReceivedEvent;
 import com.densowave.scannersdk.Common.CommScanner;
-import com.densowave.scannersdk.Listener.BarcodeDataDelegate;
-import com.densowave.scannersdk.Listener.RFIDDataDelegate;
-import com.densowave.scannersdk.RFID.RFIDData;
-import com.densowave.scannersdk.RFID.RFIDDataReceivedEvent;
 
 import com.example.inventory_system_ht.activity.base.ScannerActivity;
 import com.example.inventory_system_ht.adapter.SearchItemAdapter;
@@ -40,7 +34,6 @@ import com.example.inventory_system_ht.network.ApiClient;
 import com.example.inventory_system_ht.network.ApiService;
 import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
-import com.example.inventory_system_ht.util.RfidBulkHelper;
 import com.example.inventory_system_ht.util.ScannerManager;
 import com.example.inventory_system_ht.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -54,8 +47,8 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class SearchItemActivity extends ScannerActivity
-        implements BarcodeDataDelegate, RFIDDataDelegate {
+public class SearchItemActivity extends ScannerActivity {
+
     private EditText etSearchItem;
     private RecyclerView rvTags;
     private View tvEmpty;
@@ -70,7 +63,6 @@ public class SearchItemActivity extends ScannerActivity
     private ApiService api;
     private String token;
     private AppDatabase db;
-    private boolean rfidActive = false;
 
     @Override
     protected CommScanner getScannerInstance() {
@@ -128,31 +120,11 @@ public class SearchItemActivity extends ScannerActivity
     @Override
     protected void onResume() {
         super.onResume();
-        CommScanner scanner = getScannerInstance();
-        rfidShownEpcs.clear();
-        rfidActive = scanner != null && scanner.getRFIDScanner() != null;
-        if (rfidActive) {
-            boolean ok = RfidBulkHelper.openInventory(scanner, this, 30);
-            if (!ok) {
-                rfidActive = false;
-                showWarning("RFID unavailable");
-            }
-        } else {
-            showWarning("RFID not connected");
-        }
-        updateReaderBattery(findViewById(R.id.ivReaderBattery), rfidActive);
-
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");
             playScanFeedback(2);
         }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (rfidActive) RfidBulkHelper.closeInventory(getScannerInstance());
     }
 
     private void initViews() {
@@ -378,7 +350,6 @@ public class SearchItemActivity extends ScannerActivity
 
         view.findViewById(R.id.btnSearchSignal).setOnClickListener(v -> {
             if (getScannerInstance() == null || getScannerInstance().getRFIDScanner() == null) {
-                dialog.dismiss();
                 showError("RFID not connected");
                 playScanFeedback(2);
                 return;
@@ -391,32 +362,6 @@ public class SearchItemActivity extends ScannerActivity
         });
 
         dialog.show();
-    }
-
-    private final Set<String> rfidShownEpcs = new LinkedHashSet<>();
-
-    @Override
-    public void onRFIDDataReceived(CommScanner scanner, RFIDDataReceivedEvent event) {
-        for (RFIDData data : event.getRFIDData()) {
-            String epc = RfidBulkHelper.bytesToHex(data.getUII());
-            if (epc == null || epc.isEmpty()) continue;
-            final String epcKey = epc.trim().toUpperCase();
-            if (!rfidShownEpcs.add(epcKey)) continue;
-            handler.post(() -> moveScannedItemToTop(epcKey));
-        }
-    }
-
-    @Override
-    public void onBarcodeDataReceived(CommScanner scanner, BarcodeDataReceivedEvent event) {
-        List<BarcodeData> dataList = event.getBarcodeData();
-        if (!dataList.isEmpty()) {
-            String barcode = new String(dataList.get(0).getData()).trim();
-            handler.post(() -> {
-                etSearchItem.setText(barcode);
-                etSearchItem.setSelection(etSearchItem.getText().length());
-                moveScannedItemToTop(barcode);
-            });
-        }
     }
 
     private void filter(String text) {
@@ -443,36 +388,6 @@ public class SearchItemActivity extends ScannerActivity
         }
         adapter.notifyDataSetChanged();
         updateEmptyState();
-    }
-
-    private void moveScannedItemToTop(String code) {
-        if (allItemList.isEmpty()) {
-            playScanFeedback(2);
-            showError("Item list empty - tap Refresh first");
-            return;
-        }
-        String key = code != null ? code.trim() : "";
-        TagResponses.SearchItemDto found = null;
-        for (TagResponses.SearchItemDto item : allItemList) {
-            String itemEpc = item.getEpcTag() != null ? item.getEpcTag().trim() : "";
-            String itemTag = item.getTagId() != null ? item.getTagId().trim() : "";
-            if (key.equalsIgnoreCase(itemEpc) || key.equalsIgnoreCase(itemTag)) {
-                found = item; break;
-            }
-        }
-        if (found != null) {
-            playScanFeedback(0);
-            filteredList.remove(found);
-            filteredList.add(0, found);
-            adapter.setLastScannedPosition(0);
-            adapter.notifyDataSetChanged();
-            updateEmptyState();
-            rvTags.scrollToPosition(0);
-            showSuccess("Found: " + found.getItemName());
-        } else {
-            playScanFeedback(2);
-            showError("Tag not registered");
-        }
     }
 
     private int statusColor(String status) {
