@@ -506,6 +506,7 @@ public class StockPrepProductActivity extends ScannerActivity
             }
         });
     }
+
     private void prefetchAvailableTags() {
         if (currentDoId == null || currentDoId.isEmpty()) return;
         if (!isNetworkConnected()) return;
@@ -575,6 +576,7 @@ public class StockPrepProductActivity extends ScannerActivity
             }
         });
     }
+
     private void fetchLocations() {
         if (!isNetworkConnected()) {
             loadLocationsFromCache();
@@ -742,6 +744,8 @@ public class StockPrepProductActivity extends ScannerActivity
                     for (TagLocalEntity t : forThis) {
                         scannedList.add(t);
                         scannedEpcSet.add(t.getEpcTag().toUpperCase());
+                        if (t.getTagId() != null && !t.getTagId().isEmpty())
+                            scannedEpcSet.add(t.getTagId().toUpperCase());
                         scannedRawSet.add(t.getEpcTag().toUpperCase());
                         scanCount++;
                     }
@@ -964,6 +968,8 @@ public class StockPrepProductActivity extends ScannerActivity
                 for (TagLocalEntity real : successfulTags) {
                     scannedList.add(0, real);
                     scannedEpcSet.add(real.getEpcTag().toUpperCase());
+                    if (real.getTagId() != null && !real.getTagId().isEmpty())
+                        scannedEpcSet.add(real.getTagId().toUpperCase());
                     scanCount++;
                 }
 
@@ -1220,6 +1226,7 @@ public class StockPrepProductActivity extends ScannerActivity
                 runOnUiThread(() -> {
                     scannedRawSet.remove(tag.getEpcTag().toUpperCase());
                     scannedEpcSet.remove(tag.getEpcTag().toUpperCase());
+                    if (tag.getTagId() != null) scannedEpcSet.remove(tag.getTagId().toUpperCase());
                     scannedList.remove(position);
                     scanCount = Math.max(0, scanCount - 1);
                     if (isListProductTab) {
