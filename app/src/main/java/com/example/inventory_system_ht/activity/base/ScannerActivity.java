@@ -32,6 +32,7 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.inventory_system_ht.util.ScannerManager;
 import com.densowave.scannersdk.Common.CommScanner;
 import com.densowave.scannersdk.Const.CommConst;
 import com.example.inventory_system_ht.activity.LoginActivity;
@@ -395,6 +396,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
 
     public void updateReaderBattery(ImageView ivBattery) {
         if (ivBattery == null) return;
+        if (!ScannerManager.getInstance().isClaimed()) { ivBattery.setVisibility(View.GONE); return; }
         CommScanner scanner = getScannerInstance();
         if (scanner == null) { ivBattery.setVisibility(View.GONE); return; }
         new Thread(() -> {

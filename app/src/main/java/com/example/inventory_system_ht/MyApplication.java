@@ -100,6 +100,7 @@ public class MyApplication extends Application implements ScannerAcceptStatusLis
         try {
             scanner.claim();
             ScannerManager.getInstance().setScanner(scanner);
+            ScannerManager.getInstance().setClaimed(true);
             scanner.addStatusListener(this);
         } catch (Exception ignored) {}
     }

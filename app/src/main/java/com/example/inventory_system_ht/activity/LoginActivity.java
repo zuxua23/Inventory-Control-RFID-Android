@@ -31,6 +31,7 @@ import com.example.inventory_system_ht.util.LogManager;
 import com.example.inventory_system_ht.util.PrefManager;
 import com.example.inventory_system_ht.R;
 
+import okhttp3.HttpUrl;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -121,7 +122,17 @@ public class LoginActivity extends ScannerActivity {
 
         String reqJson = "{\"username\":\"" + username + "\",\"password\":\"***\"}";
 
-        ApiService apiService = ApiClient.getClient(this).create(ApiService.class);
+        ApiService apiService;
+        try {
+            apiService = ApiClient.getClient(this).create(ApiService.class);
+        } catch (IllegalArgumentException e) {
+            hideLoading();
+            LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_LOGIN,
+                    "Login", username, "Invalid server URL: " + e.getMessage(), "");
+            showSagaFeedback("Invalid server URL, please check settings", 2);
+            return;
+        }
+
         apiService.login(new AuthResponses.LoginRequest(username, password))
                 .enqueue(new Callback<AuthResponses.LoginResponse>() {
                     @Override
@@ -177,9 +188,14 @@ public class LoginActivity extends ScannerActivity {
         finish();
     }
 
-    private boolean isValidUrl(String url) {
-        return url.startsWith("http://") || url.startsWith("https://");
+    private String validateUrl(String url) {
+        if (!url.startsWith("http://") && !url.startsWith("https://"))
+            return "Wrong format, must start with http:// or https://";
+        if (HttpUrl.parse(url) == null)
+            return "Invalid URL (check host and port number)";
+        return null;
     }
+
 
     private void showSettingDialog() {
         Dialog dialog = new Dialog(this);
@@ -222,7 +238,8 @@ public class LoginActivity extends ScannerActivity {
         btnCekIp.setOnClickListener(v -> {
             String ip = etIpAPI.getText().toString().trim();
             if (ip.isEmpty()) { dWarn.accept("Server IP is empty"); return; }
-            if (!isValidUrl(ip)) { dError.accept("Wrong format, must start with http:// or https://"); return; }
+            String urlErr = validateUrl(ip);
+            if (urlErr != null) { dError.accept(urlErr); return; }
 
             showLoading();
             prefManager.saveIp(ip);
@@ -258,7 +275,8 @@ public class LoginActivity extends ScannerActivity {
         btnApplyIp.setOnClickListener(v -> {
             String ip = etIpAPI.getText().toString().trim();
             if (ip.isEmpty()) { dWarn.accept("Server IP is empty"); return; }
-            if (!isValidUrl(ip)) { dError.accept("Wrong format, must start with http:// or https://"); return; }
+            String urlErr = validateUrl(ip);
+            if (urlErr != null) { dError.accept(urlErr); return; }
 
             prefManager.saveIp(ip);
             LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_SETTING,

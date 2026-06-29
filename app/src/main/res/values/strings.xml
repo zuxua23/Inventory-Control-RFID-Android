@@ -104,7 +104,7 @@
     <string name="menu_tag_registration_desc">Reuse RFID tag</string>
     <string name="menu_stock_taking_desc">Taking Your Goods</string>
     <string name="menu_search_item_desc">Search &amp; track items</string>
-    <string name="title_setting_rfid">Setting RFID</string>
+    <string name="title_setting_rfid">RFID Setting</string>
     <string name="menu_setting_rfid_desc">Configure power, session &amp; Q factor</string>
     <string name="label_rfid_session">Session</string>
     <string name="label_rfid_qfactor">Q Factor</string>

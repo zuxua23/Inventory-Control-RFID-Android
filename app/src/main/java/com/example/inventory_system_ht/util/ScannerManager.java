@@ -5,6 +5,7 @@ import com.densowave.scannersdk.Common.CommScanner;
 public class ScannerManager {
     private static ScannerManager instance;
     private CommScanner scanner;
+    private volatile boolean claimed = false;
 
     private ScannerManager() {}
 
@@ -26,8 +27,16 @@ public class ScannerManager {
     public boolean isConnected() {
         return scanner != null;
     }
+    public void setClaimed(boolean claimed) {
+        this.claimed = claimed;
+    }
+
+    public boolean isClaimed() {
+        return scanner != null && claimed;
+    }
 
     public void clearScanner() {
+        this.claimed = false;
         this.scanner = null;
     }
 }

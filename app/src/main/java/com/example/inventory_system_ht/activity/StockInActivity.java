@@ -177,8 +177,7 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
     protected void onResume() {
         super.onResume();
         CommScanner scanner = getScannerInstance();
-        updateReaderBattery(findViewById(R.id.ivReaderBattery), switchRfid.isChecked());
-        if (!switchRfid.isChecked() && scanner != null) RfidBulkHelper.openBarcode(scanner, this);
+        if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) RfidBulkHelper.openBarcode(scanner, this);
 
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
