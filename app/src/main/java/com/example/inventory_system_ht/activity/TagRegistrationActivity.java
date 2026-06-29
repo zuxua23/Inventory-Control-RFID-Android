@@ -171,9 +171,12 @@ public class TagRegistrationActivity extends ScannerActivity implements RFIDData
                     if (scanner == null) {
                         showError("RFID not connected");
                     } else {
-                        boolean ok = RfidBulkHelper.openInventory(scanner, this, this);
-                        if (!ok) showError("Failed to start RFID");
-                        else playScanFeedback(1);
+                        new Thread(() -> {
+                            boolean ok = RfidBulkHelper.openInventory(scanner, TagRegistrationActivity.this,
+                                    TagRegistrationActivity.this);
+                            if (!ok) runOnUiThread(() -> showError("Failed to start RFID"));
+                            else runOnUiThread(() -> playScanFeedback(1));
+                        }).start();
                     }
                 }
         );

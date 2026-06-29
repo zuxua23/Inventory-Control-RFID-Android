@@ -166,7 +166,10 @@ public class StockTakingActivity extends ScannerActivity
     protected void onResume() {
         super.onResume();
         CommScanner scanner = getScannerInstance();
-        if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) RfidBulkHelper.openBarcode(scanner, this);
+        if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
+            CommScanner s = scanner;
+            new Thread(() -> RfidBulkHelper.openBarcode(s, StockTakingActivity.this)).start();
+        }
         checkSessionStatus();
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
@@ -275,7 +278,10 @@ public class StockTakingActivity extends ScannerActivity
                 }
             } else {
                 RfidBulkHelper.closeInventory(scanner);
-                if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
+                if (scanner != null) {
+                    CommScanner s = scanner;
+                    new Thread(() -> RfidBulkHelper.openBarcode(s, StockTakingActivity.this)).start();
+                }
                 resultScan.setEnabled(true);
                 resultScan.requestFocus();
                 spinnerPower.setVisibility(View.GONE);
