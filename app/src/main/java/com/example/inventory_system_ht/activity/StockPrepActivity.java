@@ -83,7 +83,6 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
 
         initViews();
         setupListeners();
-        loadDataFromLocalDB();
 
         FloatingActionButton fabLog = findViewById(R.id.fabLog);
         if (fabLog != null) {
@@ -103,7 +102,7 @@ public class StockPrepActivity extends ScannerActivity implements BarcodeDataDel
         updateReaderBattery(findViewById(R.id.ivReaderBattery), false);
         if (scanner != null) RfidBulkHelper.openBarcode(scanner, this);
         loadDataFromLocalDB();
-
+        fetchDOFromServer();
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");

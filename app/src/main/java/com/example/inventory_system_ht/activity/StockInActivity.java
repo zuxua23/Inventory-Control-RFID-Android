@@ -602,7 +602,6 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
 
     private void processRfidBatch(List<String> rawEpcs) {
         if (selectedLocationId.isEmpty()) {
-            // FIX: same validation as barcode mode - show warning for RFID too
             showWarning("Select location first");
             return;
         }
@@ -679,7 +678,8 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
         }
 
         for (ItemResponses.Item t : scannedItemsList) {
-            if (t.getEpcTag().equalsIgnoreCase(key)) {
+            if (t.getEpcTag().equalsIgnoreCase(key) ||
+                    (t.getTagId() != null && t.getTagId().equalsIgnoreCase(key))) {
                 if (!switchRfid.isChecked()) {
                     playScanFeedback(1);
                     showWarning("Already scanned");
@@ -745,10 +745,7 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
                 for (String code : codes)
                     db.appDao().insertStockInScan(buildEntity(code, "", "Loading...", false));
             }).start();
-            runOnUiThread(() -> {
-                clearAllData();
-                showWarning("Saved offline (" + codes.size() + ")");
-            });
+            runOnUiThread(() -> showWarning("Saved offline (" + codes.size() + ")"));
             return;
         }
 
@@ -840,7 +837,7 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
                     }
                     if (!notFound.isEmpty()) {
                         playScanFeedback(2);
-                        showError(notFound.size() + " tag(s) not found");
+                        showError(" tag not found");
                     }
                 });
             } catch (Exception e) {
@@ -903,9 +900,15 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
         showLoading();
         String token = "Bearer " + new PrefManager(this).getToken();
         String userId = new PrefManager(this).getUserId();
+        boolean isRfidSubmit = "RFID".equals(scannerType);
 
         List<String> codes = new ArrayList<>();
-        for (ItemResponses.Item item : scannedItemsList) codes.add(item.getEpcTag());
+        for (ItemResponses.Item item : scannedItemsList) {
+            String code = (!isRfidSubmit && item.getTagId() != null && !item.getTagId().isEmpty())
+                    ? item.getTagId()
+                    : item.getEpcTag();
+            codes.add(code);
+        }
 
         String submitReqJson = "{\"scannerType\":\"" + scannerType + "\",\"locationId\":\""
                 + selectedLocationId + "\",\"count\":" + codes.size() + "}";
