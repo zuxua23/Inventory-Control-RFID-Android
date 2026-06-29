@@ -102,7 +102,11 @@ public class MyApplication extends Application implements ScannerAcceptStatusLis
             ScannerManager.getInstance().setScanner(scanner);
             ScannerManager.getInstance().setClaimed(true);
             scanner.addStatusListener(this);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            android.util.Log.e("CommScanner", "claim() failed, restarting accept: " + e.getMessage());
+            try { scanner.close(); } catch (Exception ignored) {}
+            startScannerAccept();
+        }
     }
 
     @Override
