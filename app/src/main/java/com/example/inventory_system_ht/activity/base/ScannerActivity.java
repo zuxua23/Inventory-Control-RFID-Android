@@ -90,7 +90,6 @@ public abstract class ScannerActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         fabHideHandler.removeCallbacksAndMessages(null);
         batteryHandler.removeCallbacksAndMessages(null);
         if (toneGen != null) {
@@ -98,10 +97,11 @@ public abstract class ScannerActivity extends AppCompatActivity {
             toneGen = null;
         }
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        for (View banner : activeBanners) {
+        for (View banner : new java.util.ArrayList<>(activeBanners)) {
             try { wm.removeView(banner); } catch (Exception ignored) {}
         }
         activeBanners.clear();
+        super.onDestroy();
     }
 
     @Override
@@ -271,6 +271,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
         params.gravity = Gravity.TOP;
         params.y = getTopInset() + (int)(8 * getResources().getDisplayMetrics().density);
 
+        if (isFinishing() || isDestroyed()) return;
         wrapper.setAlpha(0f);
         wrapper.setTranslationY(-60f);
         wm.addView(wrapper, params);
