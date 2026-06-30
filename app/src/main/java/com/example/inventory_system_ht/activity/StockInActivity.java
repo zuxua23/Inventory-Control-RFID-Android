@@ -582,7 +582,7 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
                 locationList.clear();
                 for (LocationResponses loc : masterLocationList) locationList.add(loc.getName());
                 populateLocationSpinner(masterLocationList);
-                showWarning("Offline — location loaded from cache");
+                showWarning("Offline");
             });
         }).start();
     }

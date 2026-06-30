@@ -563,7 +563,7 @@ public class StockPrepProductActivity extends ScannerActivity
                         LogManager.get(StockPrepProductActivity.this).log(
                                 LogManager.INFO, LogManager.ACTION_READ,
                                 "Stock Preparation", currentDoId,
-                                "Pre-fetched " + cacheList.size() + " tags into cache for offline use.",
+                                "Pre-fetched " + cacheList.size() + " tags fetch.",
                                 userId);
 
                     } catch (Exception e) {
@@ -849,7 +849,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     }
                     if (System.currentTimeMillis() - cached.cachedAt > CACHE_EXPIRY_MS
                             && cached.cachedAt > 0) {
-                        rejectionReasons.put(code, "Cache expired, go online to re-validate");
+                        rejectionReasons.put(code, "Go online to re-validate");
                         shouldNotify.put(code, true);
                         failedCodes.add(code);
                         continue;

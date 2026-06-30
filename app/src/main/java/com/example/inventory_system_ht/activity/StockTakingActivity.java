@@ -428,7 +428,7 @@ public class StockTakingActivity extends ScannerActivity
                 LogManager.get(StockTakingActivity.this).log(LogManager.ERROR, LogManager.ACTION_READ,
                         "Stock Taking", sttId, "Load session tags error: " + t.getMessage(),
                         userId, reqJson, resJson);
-                showWarning("Failed to load tags, using cache");
+                showWarning("Failed to load tags");
                 loadSessionTagsFromCache();
             }
         });
@@ -475,7 +475,7 @@ public class StockTakingActivity extends ScannerActivity
                 hideLoading();
                 if (cached.isEmpty()) {
                     if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
-                    showWarning("No cached data, tap Refresh");
+                    showWarning("No data, tap Refresh");
                     return;
                 }
                 if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
