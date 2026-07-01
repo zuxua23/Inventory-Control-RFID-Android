@@ -79,16 +79,31 @@
                 android:layout_height="wrap_content"
                 android:padding="12dp">
 
-                <TextView
-                    android:id="@+id/tvItemLabel"
+                <LinearLayout
+                    android:id="@+id/layoutItemLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Select Item"
-                    android:textColor="@color/blue_theme"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/raleway_bold"
+                    android:orientation="horizontal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:id="@+id/tvItemLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Select Item"
+                        android:textColor="@color/blue_theme"
+                        android:textSize="13sp"
+                        android:fontFamily="@font/raleway_bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" *"
+                        android:textColor="@color/red"
+                        android:textSize="13sp"
+                        android:fontFamily="@font/raleway_bold" />
+                </LinearLayout>
 
                 <AutoCompleteTextView
                     android:id="@+id/actvItemSearch"
@@ -105,7 +120,7 @@
                     android:completionThreshold="1"
                     android:inputType="text"
                     android:imeOptions="actionDone"
-                    app:layout_constraintTop_toBottomOf="@id/tvItemLabel"
+                    app:layout_constraintTop_toBottomOf="@id/layoutItemLabel"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
 

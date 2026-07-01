@@ -126,7 +126,8 @@ public class StockPrepProductActivity extends ScannerActivity
     private static final int BATCH_DELAY_MS = 500;
     private int inFlightCount = 0;
     private TextView tvProcessing;
-
+    private final Object qtyLock = new Object();
+    private final Map<String, Integer> reservedQtyMap = new HashMap<>();
     @Override
     protected CommScanner getScannerInstance() {
         return ScannerManager.getInstance().getScanner();
@@ -872,16 +873,19 @@ public class StockPrepProductActivity extends ScannerActivity
                         failedCodes.add(code);
                         continue;
                     }
-                    int existingQty = 0;
-                    for (TagLocalEntity t : scannedList) {
-                        if (cached.itemId.equals(t.getItmId())) existingQty++;
-                    }
-                    int batchQty = batchQtyMap.getOrDefault(cached.itemId, 0);
-                    if (existingQty + batchQty >= requiredQtyMap.get(cached.itemId)) {
-                        rejectionReasons.put(code, "Quantity requirement met");
-                        shouldNotify.put(code, false);
-                        failedCodes.add(code);
-                        continue;
+                    synchronized (qtyLock) {
+                        int existingQty = 0;
+                        for (TagLocalEntity t : scannedList) {
+                            if (cached.itemId.equals(t.getItmId())) existingQty++;
+                        }
+                        int reserved = reservedQtyMap.getOrDefault(cached.itemId, 0);
+                        if (existingQty + reserved >= requiredQtyMap.get(cached.itemId)) {
+                            rejectionReasons.put(code, "Quantity requirement met");
+                            shouldNotify.put(code, false);
+                            failedCodes.add(code);
+                            continue;
+                        }
+                        reservedQtyMap.put(cached.itemId, reserved + 1);
                     }
                     String epcKeyCached = cached.epcTag != null ? cached.epcTag.toUpperCase() : code;
                     if (scannedEpcSet.contains(epcKeyCached)) {
@@ -932,16 +936,19 @@ public class StockPrepProductActivity extends ScannerActivity
                             failedCodes.add(code);
                             continue;
                         }
-                        int existingQty = 0;
-                        for (TagLocalEntity t : scannedList) {
-                            if (info.getItemId().equals(t.getItmId())) existingQty++;
-                        }
-                        int batchQty = batchQtyMap.getOrDefault(info.getItemId(), 0);
-                        if (existingQty + batchQty >= requiredQtyMap.get(info.getItemId())) {
-                            rejectionReasons.put(code, "Quantity requirement met");
-                            shouldNotify.put(code, false);
-                            failedCodes.add(code);
-                            continue;
+                        synchronized (qtyLock) {
+                            int existingQty = 0;
+                            for (TagLocalEntity t : scannedList) {
+                                if (info.getItemId().equals(t.getItmId())) existingQty++;
+                            }
+                            int reserved = reservedQtyMap.getOrDefault(info.getItemId(), 0);
+                            if (existingQty + reserved >= requiredQtyMap.get(info.getItemId())) {
+                                rejectionReasons.put(code, "Quantity requirement met");
+                                shouldNotify.put(code, false);
+                                failedCodes.add(code);
+                                continue;
+                            }
+                            reservedQtyMap.put(info.getItemId(), reserved + 1);
                         }
                         String epcKey = info.getEpcTag() != null ? info.getEpcTag().toUpperCase() : code;
                         if (scannedEpcSet.contains(epcKey)) {
@@ -1245,6 +1252,10 @@ public class StockPrepProductActivity extends ScannerActivity
                     if (tag.getTagId() != null) scannedEpcSet.remove(tag.getTagId().toUpperCase());
                     scannedList.remove(position);
                     scanCount = Math.max(0, scanCount - 1);
+                    synchronized (qtyLock) {
+                        int r = reservedQtyMap.getOrDefault(tag.getItmId(), 0);
+                        if (r > 0) reservedQtyMap.put(tag.getItmId(), r - 1);
+                    }
                     if (isListProductTab) {
                         adapter.notifyItemRemoved(position);
                         adapter.notifyItemRangeChanged(position, scannedList.size());
