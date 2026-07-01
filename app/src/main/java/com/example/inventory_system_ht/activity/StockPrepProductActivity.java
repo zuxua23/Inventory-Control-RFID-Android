@@ -441,6 +441,8 @@ public class StockPrepProductActivity extends ScannerActivity
                     sumProductList.clear();
                     scannedRawSet.clear();
                     scannedEpcSet.clear();
+                    synchronized (tagBuffer) { tagBuffer.clear(); }
+                    isProcessingBuffer = false;
                     buildSumProductList();
                     if (isListProductTab) adapter.notifyDataSetChanged();
                     else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
@@ -873,6 +875,28 @@ public class StockPrepProductActivity extends ScannerActivity
 
             final boolean networkAvailable = isNetworkConnected();
 
+            Map<String, TagResponses.TagInfoDto> infoByCode = new HashMap<>();
+            boolean bulkFetchFailed = false;
+            if (networkAvailable) {
+                try {
+                    TagResponses.PrepBulkInfoReq req = new TagResponses.PrepBulkInfoReq(
+                            codes, isRfid ? "RFID" : "QR", currentDoId);
+                    Response<List<TagResponses.TagInfoDto>> response = api.getTagsInfoBulk(token, req).execute();
+                    if (response.isSuccessful() && response.body() != null) {
+                        for (TagResponses.TagInfoDto dto : response.body()) {
+                            String matchKey = isRfid ? dto.getEpcTag() : dto.getTagId();
+                            if (matchKey != null) infoByCode.put(matchKey.toUpperCase(), dto);
+                        }
+                    } else {
+                        bulkFetchFailed = true;
+                    }
+                } catch (Exception e) {
+                    LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
+                            "Stock Preparation", String.valueOf(codes.size()), "Bulk tag API error: " + e.getMessage(), userId);
+                    bulkFetchFailed = true;
+                }
+            }
+
             for (String code : codes) {
                 TagLocalEntity candidate = null;
 
@@ -937,26 +961,20 @@ public class StockPrepProductActivity extends ScannerActivity
 
                 } else {
                     try {
-                        TagResponses.PrepBulkInfoReq req = new TagResponses.PrepBulkInfoReq(
-                                Arrays.asList(code), isRfid ? "RFID" : "QR", currentDoId);
-                        Response<List<TagResponses.TagInfoDto>> response = api.getTagsInfoBulk(token, req).execute();
-
-                        if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {
-                            rejectionReasons.put(code, "Tag not registered");
+                        if (bulkFetchFailed) {
+                            rejectionReasons.put(code, "Network error");
                             shouldNotify.put(code, !isRfid);
                             failedCodes.add(code);
                             continue;
                         }
 
-                        TagResponses.TagInfoDto info = null;
-                        for (TagResponses.TagInfoDto dto : response.body()) {
-                            String matchKey = isRfid ? dto.getEpcTag() : dto.getTagId();
-                            if (matchKey != null && matchKey.equalsIgnoreCase(code)) {
-                                info = dto;
-                                break;
-                            }
+                        TagResponses.TagInfoDto info = infoByCode.get(code.toUpperCase());
+                        if (info == null) {
+                            rejectionReasons.put(code, "Tag not registered");
+                            shouldNotify.put(code, !isRfid);
+                            failedCodes.add(code);
+                            continue;
                         }
-                        if (info == null) info = response.body().get(0);
 
                         TagCacheEntity cache = new TagCacheEntity();
                         cache.epcTag = info.getEpcTag() != null ? info.getEpcTag() : code;
@@ -1221,6 +1239,8 @@ public class StockPrepProductActivity extends ScannerActivity
         sumProductList.clear();
         scannedRawSet.clear();
         scannedEpcSet.clear();
+        synchronized (tagBuffer) { tagBuffer.clear(); }
+        isProcessingBuffer = false;
         buildSumProductList();
         adapter.notifyDataSetChanged();
         if (sumAdapter != null) sumAdapter.updateData(sumProductList);
