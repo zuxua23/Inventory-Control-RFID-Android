@@ -441,6 +441,8 @@ public class StockPrepProductActivity extends ScannerActivity
                     sumProductList.clear();
                     scannedRawSet.clear();
                     scannedEpcSet.clear();
+                    synchronized (tagBuffer) { tagBuffer.clear(); }
+                    isProcessingBuffer = false;
                     buildSumProductList();
                     if (isListProductTab) adapter.notifyDataSetChanged();
                     else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
@@ -1221,6 +1223,8 @@ public class StockPrepProductActivity extends ScannerActivity
         sumProductList.clear();
         scannedRawSet.clear();
         scannedEpcSet.clear();
+        synchronized (tagBuffer) { tagBuffer.clear(); }
+        isProcessingBuffer = false;
         buildSumProductList();
         adapter.notifyDataSetChanged();
         if (sumAdapter != null) sumAdapter.updateData(sumProductList);

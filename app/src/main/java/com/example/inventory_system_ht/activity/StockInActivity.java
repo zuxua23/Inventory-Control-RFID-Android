@@ -883,7 +883,7 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
                     }
                     if (!notFound.isEmpty()) {
                         playScanFeedback(2);
-                        showError(" tag not found");
+                        showError("Tag not found or not eligible for stock in (status must be PRINTED/STANDBY)");
                     }
                 });
             } catch (Exception e) {
@@ -1047,6 +1047,8 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
     private void clearAllData() {
         scannedItemsList.clear();
         sumProductList.clear();
+        synchronized (tagBuffer) { tagBuffer.clear(); }
+        isProcessingBuffer = false;
         if (isListProductTab) adapter.notifyDataSetChanged();
         else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
         totalScanCount = 0;
