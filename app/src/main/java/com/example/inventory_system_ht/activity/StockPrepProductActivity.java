@@ -189,9 +189,6 @@ public class StockPrepProductActivity extends ScannerActivity
     private int scannerArmRetryCount = 0;
     private static final int SCANNER_ARM_MAX_RETRIES = 10;
 
-    private int scannerArmRetryCount = 0;
-    private static final int SCANNER_ARM_MAX_RETRIES = 10;
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -211,11 +208,28 @@ public class StockPrepProductActivity extends ScannerActivity
                     ? spinnerPower.getSelectedItem().toString() : "27 dBm", 27);
             new Thread(() -> {
                 RfidBulkHelper.closeBarcode(scanner);
-                RfidBulkHelper.openInventory(scanner, StockPrepProductActivity.this, power);
+                boolean ok = RfidBulkHelper.openInventory(scanner, StockPrepProductActivity.this, power);
+                runOnUiThread(() -> {
+                    if (ok) {
+                        resultScan.setEnabled(false);
+                        spinnerPower.setVisibility(View.VISIBLE);
+                    } else if (scannerArmRetryCount < SCANNER_ARM_MAX_RETRIES) {
+                        scannerArmRetryCount++;
+                        resultScan.postDelayed(this::armScanner, 300);
+                    }
+                });
             }).start();
         } else if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
             CommScanner s = scanner;
-            new Thread(() -> RfidBulkHelper.openBarcode(s, StockPrepProductActivity.this)).start();
+            new Thread(() -> {
+                boolean ok = RfidBulkHelper.openBarcode(s, StockPrepProductActivity.this);
+                runOnUiThread(() -> {
+                    if (!ok && scannerArmRetryCount < SCANNER_ARM_MAX_RETRIES) {
+                        scannerArmRetryCount++;
+                        resultScan.postDelayed(this::armScanner, 300);
+                    }
+                });
+            }).start();
         } else if (!ScannerManager.getInstance().isClaimed() && scannerArmRetryCount < SCANNER_ARM_MAX_RETRIES) {
             scannerArmRetryCount++;
             resultScan.postDelayed(this::armScanner, 300);
