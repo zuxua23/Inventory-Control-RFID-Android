@@ -303,6 +303,7 @@ public abstract class ScannerActivity extends AppCompatActivity {
     }
 
     public void showLoading() {
+        if (isFinishing() || isDestroyed()) return;
         if (loadingDialog == null) {
             loadingDialog = new Dialog(this);
             loadingDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
