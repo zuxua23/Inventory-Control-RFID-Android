@@ -190,11 +190,17 @@ public class StockPrepProductActivity extends ScannerActivity
     protected void onResume() {
         super.onResume();
         CommScanner scanner = getScannerInstance();
-        if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
+        if (switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
+            int power = parsePower(spinnerPower.getSelectedItem() != null
+                    ? spinnerPower.getSelectedItem().toString() : "27 dBm", 27);
+            new Thread(() -> {
+                RfidBulkHelper.closeBarcode(scanner);
+                RfidBulkHelper.openInventory(scanner, StockPrepProductActivity.this, power);
+            }).start();
+        }else if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
             CommScanner s = scanner;
             new Thread(() -> RfidBulkHelper.openBarcode(s, StockPrepProductActivity.this)).start();
         }
-
         int bat = getHTBatteryLevel();
         if (bat <= 15) {
             showWarning("Battery low: " + bat + "%");
@@ -227,7 +233,7 @@ public class StockPrepProductActivity extends ScannerActivity
         tvProcessing = findViewById(R.id.tvProcessing);
 
         spinnerPower.setVisibility(View.GONE);
-        switchRfid.setChecked(false);
+        switchRfid.setChecked(true);
 
         scannedList = new ArrayList<>();
         adapter = new TagAdapter(scannedList);

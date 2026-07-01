@@ -177,7 +177,14 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
     protected void onResume() {
         super.onResume();
         CommScanner scanner = getScannerInstance();
-        if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
+        if (switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
+            int power = parsePower(spinnerPower.getSelectedItem() != null
+                    ? spinnerPower.getSelectedItem().toString() : "27 dBm", 27);
+            new Thread(() -> {
+                RfidBulkHelper.closeBarcode(scanner);
+                RfidBulkHelper.openInventory(scanner, StockInActivity.this, power);
+            }).start();
+        }else if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
             CommScanner s = scanner;
             new Thread(() -> RfidBulkHelper.openBarcode(s, StockInActivity.this)).start();
         }
@@ -222,7 +229,7 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
         fabScanCamera = findViewById(R.id.fabScanCamera);
         tvProcessing = findViewById(R.id.tvProcessing);
 
-        switchRfid.setChecked(false);
+        switchRfid.setChecked(true);
         spinnerPower.setVisibility(View.GONE);
         rvTags.setItemAnimator(null);
 
@@ -794,7 +801,7 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
                 }
 
                 List<String> notFound = new ArrayList<>();
-                List<String[]> resolved = new ArrayList<>(); // [code, itemId, itemName, epc, tagId]
+                List<String[]> resolved = new ArrayList<>();
                 for (String code : codes) {
                     TagResponses.TagResponse t = tagMap.get(code.toUpperCase());
                     if (t != null) {

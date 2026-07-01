@@ -166,7 +166,15 @@ public class StockTakingActivity extends ScannerActivity
     protected void onResume() {
         super.onResume();
         CommScanner scanner = getScannerInstance();
-        if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
+        if (switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
+            int power = parsePower(spinnerPower.getSelectedItem() != null
+                    ? spinnerPower.getSelectedItem().toString() : "27 dBm", 27);
+            new Thread(() -> {
+                RfidBulkHelper.closeBarcode(scanner);
+                RfidBulkHelper.openInventory(scanner, StockTakingActivity.this, power);
+            }).start();
+        }
+        else if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
             CommScanner s = scanner;
             new Thread(() -> RfidBulkHelper.openBarcode(s, StockTakingActivity.this)).start();
         }
@@ -203,7 +211,7 @@ public class StockTakingActivity extends ScannerActivity
 
         rvTags.setVisibility(View.VISIBLE);
         spinnerPower.setVisibility(View.GONE);
-        switchRfid.setChecked(false);
+        switchRfid.setChecked(true);
         tvRemark.setText("Note: " + (remark.isEmpty() ? "-" : remark));
     }
 

@@ -61,6 +61,7 @@
             android:fontFamily="@font/raleway_bold"
             android:textSize="14sp"
             android:switchPadding="8dp"
+            android:checked="true"
             tools:ignore="UseSwitchCompatOrMaterialXml, TouchTargetSizeCheck" />
     </androidx.cardview.widget.CardView>
 
