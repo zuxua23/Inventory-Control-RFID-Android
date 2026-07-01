@@ -814,7 +814,9 @@ public class StockPrepProductActivity extends ScannerActivity
             return;
         }
 
-        String key = scannedData.toUpperCase();
+        String cleanData = scannedData.trim().replace("\r", "").replace("\n", "");
+        if (cleanData.isEmpty()) return;
+        String key = cleanData.toUpperCase();
 
         if (scannedEpcSet.contains(key)) {
             playScanFeedback(1);
@@ -964,6 +966,13 @@ public class StockPrepProductActivity extends ScannerActivity
                         cache.status = info.getStatus();
                         cache.cachedAt = System.currentTimeMillis();
                         appDao.insertTagCache(cache);
+
+                        if (!"IN_STOCK".equals(info.getStatus())) {
+                            rejectionReasons.put(code, "Tag not available");
+                            shouldNotify.put(code, false);
+                            failedCodes.add(code);
+                            continue;
+                        }
 
                         if (info.getItemId() == null || !requiredQtyMap.containsKey(info.getItemId())) {
                             rejectionReasons.put(code, "Item not in this DO");
