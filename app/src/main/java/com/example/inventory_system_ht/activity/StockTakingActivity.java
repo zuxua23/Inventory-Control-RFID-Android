@@ -635,6 +635,7 @@ public class StockTakingActivity extends ScannerActivity
                 } else if ("REMOVE".equals(q.action)) {
                     submitItem.tagId = q.epcTag;
                 } else if ("MANUAL_ADD".equals(q.action)) {
+                    submitItem.tagId = q.epcTag;
                     submitItem.itemId = q.itemId;
                     submitItem.newTagId = q.newTagId;
                     submitItem.remark = q.remark;
