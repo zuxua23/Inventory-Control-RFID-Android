@@ -911,7 +911,7 @@ public class StockPrepProductActivity extends ScannerActivity
                         int reserved = reservedQtyMap.getOrDefault(cached.itemId, 0);
                         if (existingQty + reserved >= requiredQtyMap.get(cached.itemId)) {
                             rejectionReasons.put(code, "Quantity requirement met");
-                            shouldNotify.put(code, false);
+                            shouldNotify.put(code, !isRfid);
                             failedCodes.add(code);
                             continue;
                         }
@@ -920,7 +920,7 @@ public class StockPrepProductActivity extends ScannerActivity
                     String epcKeyCached = cached.epcTag != null ? cached.epcTag.toUpperCase() : code;
                     if (scannedEpcSet.contains(epcKeyCached)) {
                         rejectionReasons.put(code, "Already scanned");
-                        shouldNotify.put(code, false);
+                        shouldNotify.put(code, !isRfid);
                         failedCodes.add(code);
                         continue;
                     }
@@ -988,7 +988,7 @@ public class StockPrepProductActivity extends ScannerActivity
                             int reserved = reservedQtyMap.getOrDefault(info.getItemId(), 0);
                             if (existingQty + reserved >= requiredQtyMap.get(info.getItemId())) {
                                 rejectionReasons.put(code, "Quantity requirement met");
-                                shouldNotify.put(code, false);
+                                shouldNotify.put(code, !isRfid);
                                 failedCodes.add(code);
                                 continue;
                             }
@@ -997,7 +997,7 @@ public class StockPrepProductActivity extends ScannerActivity
                         String epcKey = info.getEpcTag() != null ? info.getEpcTag().toUpperCase() : code;
                         if (scannedEpcSet.contains(epcKey)) {
                             rejectionReasons.put(code, "Already scanned");
-                            shouldNotify.put(code, false);
+                            shouldNotify.put(code, !isRfid);
                             failedCodes.add(code);
                             continue;
                         }
