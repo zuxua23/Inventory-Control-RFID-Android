@@ -162,9 +162,23 @@ public class StockTakingActivity extends ScannerActivity
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Taking", "", "Opened Stock Taking", new PrefManager(this).getUserId());
     }
 
+    private int scannerArmRetryCount = 0;
+    private static final int SCANNER_ARM_MAX_RETRIES = 10;
+
     @Override
     protected void onResume() {
         super.onResume();
+        scannerArmRetryCount = 0;
+        armScanner();
+        checkSessionStatus();
+        int bat = getHTBatteryLevel();
+        if (bat <= 15) {
+            showWarning("Battery low: " + bat + "%");
+            playScanFeedback(2);
+        }
+    }
+
+    private void armScanner() {
         CommScanner scanner = getScannerInstance();
         if (switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
             int power = parsePower(spinnerPower.getSelectedItem() != null
@@ -173,16 +187,12 @@ public class StockTakingActivity extends ScannerActivity
                 RfidBulkHelper.closeBarcode(scanner);
                 RfidBulkHelper.openInventory(scanner, StockTakingActivity.this, power);
             }).start();
-        }
-        else if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
+        } else if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
             CommScanner s = scanner;
             new Thread(() -> RfidBulkHelper.openBarcode(s, StockTakingActivity.this)).start();
-        }
-        checkSessionStatus();
-        int bat = getHTBatteryLevel();
-        if (bat <= 15) {
-            showWarning("Battery low: " + bat + "%");
-            playScanFeedback(2);
+        } else if (!ScannerManager.getInstance().isClaimed() && scannerArmRetryCount < SCANNER_ARM_MAX_RETRIES) {
+            scannerArmRetryCount++;
+            resultScan.postDelayed(this::armScanner, 300);
         }
     }
 

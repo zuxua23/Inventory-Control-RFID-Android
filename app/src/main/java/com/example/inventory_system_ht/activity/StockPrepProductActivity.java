@@ -187,9 +187,22 @@ public class StockPrepProductActivity extends ScannerActivity
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Preparation", "", "Opened Stock Preparation", new PrefManager(this).getUserId());
     }
 
+    private int scannerArmRetryCount = 0;
+    private static final int SCANNER_ARM_MAX_RETRIES = 10;
+
     @Override
     protected void onResume() {
         super.onResume();
+        scannerArmRetryCount = 0;
+        armScanner();
+        int bat = getHTBatteryLevel();
+        if (bat <= 15) {
+            showWarning("Battery low: " + bat + "%");
+            playScanFeedback(2);
+        }
+    }
+
+    private void armScanner() {
         CommScanner scanner = getScannerInstance();
         if (switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
             int power = parsePower(spinnerPower.getSelectedItem() != null
@@ -198,14 +211,12 @@ public class StockPrepProductActivity extends ScannerActivity
                 RfidBulkHelper.closeBarcode(scanner);
                 RfidBulkHelper.openInventory(scanner, StockPrepProductActivity.this, power);
             }).start();
-        }else if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
+        } else if (!switchRfid.isChecked() && ScannerManager.getInstance().isClaimed() && scanner != null) {
             CommScanner s = scanner;
             new Thread(() -> RfidBulkHelper.openBarcode(s, StockPrepProductActivity.this)).start();
-        }
-        int bat = getHTBatteryLevel();
-        if (bat <= 15) {
-            showWarning("Battery low: " + bat + "%");
-            playScanFeedback(2);
+        } else if (!ScannerManager.getInstance().isClaimed() && scannerArmRetryCount < SCANNER_ARM_MAX_RETRIES) {
+            scannerArmRetryCount++;
+            resultScan.postDelayed(this::armScanner, 300);
         }
     }
 
@@ -919,7 +930,15 @@ public class StockPrepProductActivity extends ScannerActivity
                             continue;
                         }
 
-                        TagResponses.TagInfoDto info = response.body().get(0);
+                        TagResponses.TagInfoDto info = null;
+                        for (TagResponses.TagInfoDto dto : response.body()) {
+                            String matchKey = isRfid ? dto.getEpcTag() : dto.getTagId();
+                            if (matchKey != null && matchKey.equalsIgnoreCase(code)) {
+                                info = dto;
+                                break;
+                            }
+                        }
+                        if (info == null) info = response.body().get(0);
 
                         TagCacheEntity cache = new TagCacheEntity();
                         cache.epcTag = info.getEpcTag() != null ? info.getEpcTag() : code;
