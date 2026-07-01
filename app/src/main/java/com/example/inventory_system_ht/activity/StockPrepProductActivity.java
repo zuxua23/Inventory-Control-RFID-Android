@@ -122,6 +122,7 @@ public class StockPrepProductActivity extends ScannerActivity
             "5 dBm", "10 dBm", "15 dBm", "18 dBm", "21 dBm", "24 dBm", "27 dBm", "30 dBm"));
     private ArrayAdapter<String> locationSpinnerAdapter;
     private final Set<String> tagBuffer = new HashSet<>();
+    private final Set<String> inFlightEpcSet = new HashSet<>();
     private boolean isProcessingBuffer = false;
     private static final int BATCH_DELAY_MS = 500;
     private int inFlightCount = 0;
@@ -441,8 +442,9 @@ public class StockPrepProductActivity extends ScannerActivity
                     sumProductList.clear();
                     scannedRawSet.clear();
                     scannedEpcSet.clear();
-                    synchronized (tagBuffer) { tagBuffer.clear(); }
+                    synchronized (tagBuffer) { tagBuffer.clear(); inFlightEpcSet.clear(); }
                     isProcessingBuffer = false;
+                    synchronized (qtyLock) { reservedQtyMap.clear(); }
                     buildSumProductList();
                     if (isListProductTab) adapter.notifyDataSetChanged();
                     else if (sumAdapter != null) sumAdapter.updateData(sumProductList);
@@ -788,6 +790,7 @@ public class StockPrepProductActivity extends ScannerActivity
                 }
                 runOnUiThread(() -> {
                     scannedList.clear(); scannedRawSet.clear(); scannedEpcSet.clear(); scanCount = 0;
+                    synchronized (qtyLock) { reservedQtyMap.clear(); }
                     for (TagLocalEntity t : forThis) {
                         scannedList.add(t);
                         scannedEpcSet.add(t.getEpcTag().toUpperCase());
@@ -795,6 +798,11 @@ public class StockPrepProductActivity extends ScannerActivity
                             scannedEpcSet.add(t.getTagId().toUpperCase());
                         scannedRawSet.add(t.getEpcTag().toUpperCase());
                         scanCount++;
+                        if (t.getItmId() != null) {
+                            synchronized (qtyLock) {
+                                reservedQtyMap.merge(t.getItmId(), 1, Integer::sum);
+                            }
+                        }
                     }
                     adapter.notifyDataSetChanged();
                     tvScanned.setText("Scanned : " + scanCount);
@@ -830,6 +838,7 @@ public class StockPrepProductActivity extends ScannerActivity
         }
 
         synchronized (tagBuffer) {
+            if (inFlightEpcSet.contains(key)) return;
             tagBuffer.add(key);
 
             if (!isProcessingBuffer) {
@@ -844,6 +853,7 @@ public class StockPrepProductActivity extends ScannerActivity
         synchronized (tagBuffer) {
             batchToProcess.addAll(tagBuffer);
             tagBuffer.clear();
+            inFlightEpcSet.addAll(batchToProcess);
             isProcessingBuffer = false;
         }
 
@@ -928,14 +938,10 @@ public class StockPrepProductActivity extends ScannerActivity
                         continue;
                     }
                     synchronized (qtyLock) {
-                        int existingQty = 0;
-                        for (TagLocalEntity t : scannedList) {
-                            if (cached.itemId.equals(t.getItmId())) existingQty++;
-                        }
                         int reserved = reservedQtyMap.getOrDefault(cached.itemId, 0);
-                        if (existingQty + reserved >= requiredQtyMap.get(cached.itemId)) {
+                        if (reserved >= requiredQtyMap.get(cached.itemId)) {
                             rejectionReasons.put(code, "Quantity requirement met");
-                            shouldNotify.put(code, !isRfid);
+                            shouldNotify.put(code, true);
                             failedCodes.add(code);
                             continue;
                         }
@@ -999,14 +1005,10 @@ public class StockPrepProductActivity extends ScannerActivity
                             continue;
                         }
                         synchronized (qtyLock) {
-                            int existingQty = 0;
-                            for (TagLocalEntity t : scannedList) {
-                                if (info.getItemId().equals(t.getItmId())) existingQty++;
-                            }
                             int reserved = reservedQtyMap.getOrDefault(info.getItemId(), 0);
-                            if (existingQty + reserved >= requiredQtyMap.get(info.getItemId())) {
+                            if (reserved >= requiredQtyMap.get(info.getItemId())) {
                                 rejectionReasons.put(code, "Quantity requirement met");
-                                shouldNotify.put(code, !isRfid);
+                                shouldNotify.put(code, true);
                                 failedCodes.add(code);
                                 continue;
                             }
@@ -1043,6 +1045,10 @@ public class StockPrepProductActivity extends ScannerActivity
 
                 successfulTags.add(candidate);
                 appDao.insertScannedTag(candidate);
+            }
+
+            synchronized (tagBuffer) {
+                inFlightEpcSet.removeAll(codes);
             }
 
             runOnUiThread(() -> {
@@ -1239,8 +1245,9 @@ public class StockPrepProductActivity extends ScannerActivity
         sumProductList.clear();
         scannedRawSet.clear();
         scannedEpcSet.clear();
-        synchronized (tagBuffer) { tagBuffer.clear(); }
+        synchronized (tagBuffer) { tagBuffer.clear(); inFlightEpcSet.clear(); }
         isProcessingBuffer = false;
+        synchronized (qtyLock) { reservedQtyMap.clear(); }
         buildSumProductList();
         adapter.notifyDataSetChanged();
         if (sumAdapter != null) sumAdapter.updateData(sumProductList);
