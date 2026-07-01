@@ -161,6 +161,8 @@ public class StockTakingActivity extends ScannerActivity
         }
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Taking", "", "Opened Stock Taking", new PrefManager(this).getUserId());
     }
+    private int scannerArmRetryCount = 0;
+    private static final int SCANNER_ARM_MAX_RETRIES = 10;
 
     private int scannerArmRetryCount = 0;
     private static final int SCANNER_ARM_MAX_RETRIES = 10;

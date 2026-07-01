@@ -172,6 +172,8 @@ public class StockInActivity extends ScannerActivity implements BarcodeDataDeleg
         fetchLocations();
         restoreFromRoom();
     }
+    private int scannerArmRetryCount = 0;
+    private static final int SCANNER_ARM_MAX_RETRIES = 10;
 
     private int scannerArmRetryCount = 0;
     private static final int SCANNER_ARM_MAX_RETRIES = 10;

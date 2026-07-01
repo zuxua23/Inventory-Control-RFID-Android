@@ -186,6 +186,8 @@ public class StockPrepProductActivity extends ScannerActivity
         }
         LogManager.get(this).log(LogManager.INFO, LogManager.ACTION_OPEN, "Stock Preparation", "", "Opened Stock Preparation", new PrefManager(this).getUserId());
     }
+    private int scannerArmRetryCount = 0;
+    private static final int SCANNER_ARM_MAX_RETRIES = 10;
 
     private int scannerArmRetryCount = 0;
     private static final int SCANNER_ARM_MAX_RETRIES = 10;
@@ -219,6 +221,7 @@ public class StockPrepProductActivity extends ScannerActivity
             resultScan.postDelayed(this::armScanner, 300);
         }
     }
+
 
     @Override
     protected void onPause() {
@@ -915,7 +918,6 @@ public class StockPrepProductActivity extends ScannerActivity
                     if (dupInBatchCached) continue;
 
                     candidate = new TagLocalEntity(cached.epcTag, cached.tagId, cached.itemId, cached.itemName, currentDoNo, 0);
-                    batchQtyMap.put(cached.itemId, batchQty + 1);
 
                 } else {
                     try {
@@ -988,8 +990,6 @@ public class StockPrepProductActivity extends ScannerActivity
                         candidate = new TagLocalEntity(
                                 info.getEpcTag() != null ? info.getEpcTag() : code,
                                 info.getTagId(), info.getItemId(), info.getItemName(), currentDoNo, 0);
-                        batchQtyMap.put(info.getItemId(), batchQty + 1);
-
                     } catch (Exception e) {
                         LogManager.get(this).log(LogManager.ERROR, LogManager.ACTION_SCAN,
                                 "Stock Preparation", code, "Tag API error: " + e.getMessage(), userId);
